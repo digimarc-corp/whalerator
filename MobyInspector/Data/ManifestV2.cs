@@ -2,7 +2,7 @@
 
 namespace MobyInspector.Data
 {
-    public class Manifest
+    public class ManifestV2
     {
         public int SchemaVersion { get; set; }
         public string MediaType { get; set; }

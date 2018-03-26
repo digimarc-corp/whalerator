@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace MobyInspector
 {
-    public abstract class TokenSourceBase : ITokenSource
+    public abstract class TokenSource : ITokenSource
     {
         public string GetToken(AuthenticationHeaderValue authenticateHeader)
         {

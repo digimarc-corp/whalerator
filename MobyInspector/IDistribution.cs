@@ -25,10 +25,17 @@ namespace MobyInspector
 
         [Headers("Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
         [Get("/v2/{repository}/manifests/{tag}")]
-        Task<HttpResponseMessage> GetManifest(string repository, string tag);
+        Task<HttpResponseMessage> GetV2Manifest(string repository, string tag);
         [Headers("Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
         [Get("/v2/{repository}/manifests/{tag}")]
-        Task<HttpResponseMessage> GetManifest(string repository, string tag, [Header("Authorization")] string authorization);
+        Task<HttpResponseMessage> GetV2Manifest(string repository, string tag, [Header("Authorization")] string authorization);
+
+        [Headers("Accept: application/vnd.docker.distribution.manifest.v1+json")]
+        [Get("/v2/{repository}/manifests/{tag}")]
+        Task<HttpResponseMessage> GetV1Manifest(string repository, string tag);
+        [Headers("Accept: application/vnd.docker.distribution.manifest.v1+json")]
+        [Get("/v2/{repository}/manifests/{tag}")]
+        Task<HttpResponseMessage> GetV1Manifest(string repository, string tag, [Header("Authorization")] string authorization);
 
         [Get("/v2/{repository}/blobs/{digest}")]
         Task<HttpResponseMessage> GetLayerAsync(string repository, string digest);

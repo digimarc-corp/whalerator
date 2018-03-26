@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace MobyInspector
@@ -19,8 +20,59 @@ namespace MobyInspector
         public Uri RegistryEndpoint { get; set; }
         public string LayerCache { get; set; }
         public int Retries { get; set; } = 3;
+        public IPatherator Patherator { get; set; }
 
-        public byte[] GetLayerFile(string repository, string digest, string path, bool ignoreCase = true)
+        public Registry()
+        {
+            TokenSource = new AnonTokenSource();
+            Patherator = new Patherator();
+        }
+
+        public Registry(ITokenSource tokenSource, IPatherator patherator)
+        {
+            TokenSource = tokenSource;
+            Patherator = patherator;
+        }
+
+        public (byte[] data, string layerDigest) Find(string search, string repository, string tag, Platform platform, bool ignoreCase = true)
+        {
+            var searchParams = Patherator.Parse(search);
+
+            var manifest = GetManifest(repository, tag, platform);
+
+            //search layers in reverse order, from newest to oldest
+            var layers = manifest.Layers.Reverse().ToList();
+
+            foreach (var layer in layers)
+            {
+                var files = GetLayerFiles(repository, layer);
+                foreach (var file in files)
+                {
+                    if (file.Matches(searchParams.searchPath, ignoreCase))
+                    {
+                        return (GetLayerFile(repository, layer, searchParams.searchPath, ignoreCase), layer.Digest);
+                    }
+                    else
+                    {
+                        if (file.Matches(searchParams.fileWhiteout, ignoreCase))
+                        {
+                            //found a whiteout entry for the file
+                            return (null, null);
+                        }
+
+                        if (file.Matches(searchParams.pathWhiteout, ignoreCase))
+                        {
+                            //found a opaque point for the whole path
+                            return (null, null);
+                        }
+                    }
+                }
+            }
+
+            return (null, null);
+        }
+
+        public byte[] GetLayerFile(string repository, MediaDigest digest, string path, bool ignoreCase = true)
         {
             using (var stream = GetLayer(repository, digest))
             {
@@ -37,7 +89,7 @@ namespace MobyInspector
                             while (entry != null)
                             {
                                 //if we're ignoring case and there are multiple possible matches, we just return the first one we find
-                                if (entry.Name == path || (ignoreCase && entry.Name.ToLowerInvariant() == path.ToLowerInvariant())) { break; }
+                                if (entry.Name.Matches(path, ignoreCase)) { break; }
                                 entry = tarStream.GetNextEntry();
                             }
 
@@ -65,7 +117,7 @@ namespace MobyInspector
             }
         }
 
-        public IEnumerable<string> GetLayerFiles(string repository, string digest)
+        public IEnumerable<string> GetLayerFiles(string repository, MediaDigest digest)
         {
             var files = new List<string>();
             using (var stream = GetLayer(repository, digest))
@@ -100,34 +152,99 @@ namespace MobyInspector
             return files;
         }
 
-        public Stream GetLayer(string repository, string digest)
+        public Stream GetLayer(string repository, MediaDigest media)
         {
             if (!string.IsNullOrEmpty(LayerCache))
             {
                 // registry path is ignored for caching purposes; only digest matters
-                var digestPath = digest.Replace(':', Path.DirectorySeparatorChar);
+                var digestPath = media.Digest.Replace(':', Path.DirectorySeparatorChar);
                 var cachedFile = Path.Combine(LayerCache, digestPath);
                 var digestFolder = Path.GetDirectoryName(cachedFile);
                 if (!Directory.Exists(digestFolder)) { Directory.CreateDirectory(digestFolder); }
-                if (!File.Exists(cachedFile))
+
+                if (File.Exists(cachedFile) && ValidateLayer(cachedFile, media))
                 {
-                    using (var stream = new FileStream(cachedFile, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+                    return new FileStream(cachedFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                }
+                else
+                {
+                    using (var stream = new FileStream(cachedFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
                     {
-                        FetchLayer(repository, digest, stream);
+                        DownloadLayer(repository, media, stream);
+                    }
+                    if (ValidateLayer(cachedFile, media))
+                    {
+                        return new FileStream(cachedFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    }
+                    else
+                    {
+                        throw new Exception("Downloaded layer does not match the requested digest/hash.");
                     }
                 }
-                return new FileStream(cachedFile, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
             else
             {
                 var stream = new MemoryStream();
-                FetchLayer(repository, digest, stream);
+                DownloadLayer(repository, media, stream);
                 stream.Seek(0, SeekOrigin.Begin);
                 return stream;
             }
         }
 
-        private void FetchLayer(string repostiory, string digest, Stream buffer) => FetchLayer(repostiory, digest, buffer, retries: Retries);
+        private bool ValidateLayer(string filename, MediaDigest digest)
+        {
+            using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return ValidateLayer(stream, digest);
+            }
+        }
+
+        private bool ValidateLayer(Stream stream, MediaDigest digest)
+        {
+            var parts = digest.Digest.Split(':').ToList();
+            if (parts.Count() != 2) { throw new ArgumentException("Could not parse digest string."); }
+            else
+            {
+                var alg = parts[0];
+                var checkHash = parts[1].ToLowerInvariant();
+                HashAlgorithm hasher;
+                switch (alg)
+                {
+                    case "sha256":
+                        hasher = System.Security.Cryptography.SHA256.Create();
+                        break;
+                    default:
+                        throw new ArgumentException($"Don't know how to calculated digest hash of type {alg}");
+                }
+                var calcHash = BitConverter.ToString(hasher.ComputeHash(stream)).Replace("-", string.Empty).ToLowerInvariant();
+                return calcHash == checkHash;
+            }
+        }
+
+        private void DownloadLayer(string repository, MediaDigest media, Stream stream)
+        {
+            if (media.MediaType == "application/vnd.docker.image.rootfs.diff.tar.gzip") { FetchLayer(repository, media.Digest, stream); }
+            else if (media.MediaType == "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip") { FetchForeignLayer(media.Urls.First(), stream); }
+            else { throw new NotSupportedException($"Don't know how to fetch media of type '{media.MediaType}'"); }
+        }
+
+        private void FetchForeignLayer(string url, Stream buffer)
+        {
+            using (var client = new HttpClient() { Timeout = new TimeSpan(0, 10, 0) })
+            {
+                var result = client.GetAsync(url).Result;
+                if (result.StatusCode == HttpStatusCode.OK)
+                {
+                    result.Content.CopyToAsync(buffer).Wait();
+                }
+                else
+                {
+                    throw new Exception($"Failed to get layer data at {url}: {result.StatusCode} {result.ReasonPhrase}");
+                }
+            }
+        }
+
+        private void FetchLayer(string repository, string digest, Stream buffer) => FetchLayer(repository, digest, buffer, retries: Retries);
 
         private void FetchLayer(string repository, string digest, Stream buffer, int retries, string token = null)
         {
@@ -150,18 +267,7 @@ namespace MobyInspector
                 }
                 else if (result.StatusCode == System.Net.HttpStatusCode.Redirect || result.StatusCode == System.Net.HttpStatusCode.RedirectKeepVerb)
                 {
-                    using (var redirectClient = new HttpClient() { Timeout = new TimeSpan(0, 10, 0) })
-                    {
-                        var redirectResult = redirectClient.GetAsync(result.Headers.Location).Result;
-                        if (redirectResult.StatusCode == HttpStatusCode.OK)
-                        {
-                            redirectResult.Content.CopyToAsync(buffer).Wait();
-                        }
-                        else
-                        {
-                            throw new Exception($"Failed to get layer data on redirect: {redirectResult.StatusCode} {redirectResult.ReasonPhrase}");
-                        }
-                    }
+                    FetchForeignLayer(result.Headers.Location.ToString(), buffer);
                 }
                 else
                 {
@@ -170,24 +276,92 @@ namespace MobyInspector
             }
         }
 
-        public Manifest GetManifest(string repository, string tag) => GetManifest(repository, tag, retries: Retries);
+        public IEnumerable<Platform> GetPlatforms(string repository, string tag) => GetPlatforms(repository, tag, retries: Retries);
 
-        private Manifest GetManifest(string repository, string tag, int retries, string token = null)
+        private IEnumerable<Platform> GetPlatforms(string repository, string tag, int retries, string token = null)
         {
             var distributionApi = RestService.For<IDistribution>(RegistryEndpoint.ToString());
 
-            var response = token == null ? distributionApi.GetManifest(repository, tag).Result : distributionApi.GetManifest(repository, tag, $"Bearer {token}").Result;
+            HttpResponseMessage v1response, v2response;
+            v2response = token == null ? distributionApi.GetV2Manifest(repository, tag).Result : distributionApi.GetV2Manifest(repository, tag, $"Bearer {token}").Result;
+
+            if (v2response.StatusCode == HttpStatusCode.OK)
+            {
+                if (v2response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
+                {
+                    var manifest = JsonConvert.DeserializeObject<FatManifest>(v2response.Content.ReadAsStringAsync().Result);
+                    return manifest.Manifests.Select(m => m.Platform).ToList();
+                }
+                else
+                {
+                    //we got back a single "skinny" V2 manifest, so we need to get the V1 manifest w/ history to get platform info
+                    if (v2response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
+                    {
+                        v1response = token == null ? distributionApi.GetV1Manifest(repository, tag).Result : distributionApi.GetV1Manifest(repository, tag, $"Bearer {token}").Result;
+                        if (v1response.StatusCode != HttpStatusCode.OK)
+                        {
+                            throw new Exception($"Failed to get V1 manifest from registry API: {v1response.StatusCode} {v1response.ReasonPhrase}");
+                        }
+                    }
+                    else if (v2response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v1+json")
+                    {
+                        v1response = v2response;
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"Don't know how to handle a manifest of type '{v2response.Content.Headers.ContentType.MediaType}'");
+                    }
+
+                    var manifest = JsonConvert.DeserializeObject<ManifestV1>(v1response.Content.ReadAsStringAsync().Result);
+                    var history = manifest.History.Select(h => h.ToPlatform()).FirstOrDefault(p => p != null);
+                    if (history != null) { return new[] { history }; }
+                    else { return null; }
+                }
+            }
+            else if (v2response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                var challenge = v2response.Headers.WwwAuthenticate.First(h => h.Scheme == "Bearer");
+
+                token = TokenSource.GetToken(challenge);
+                return GetPlatforms(repository, tag, retries - 1, token);
+            }
+            else
+            {
+                throw new Exception($"Failed to get manifest: {v2response.StatusCode} {v2response.ReasonPhrase}");
+            }
+        }
+
+        public ManifestV2 GetManifest(string repository, string tag, Platform platform) => GetManifest(repository, tag, platform, retries: Retries);
+
+        private ManifestV2 GetManifest(string repository, string tag, Platform platform, int retries, string token = null)
+        {
+            var distributionApi = RestService.For<IDistribution>(RegistryEndpoint.ToString());
+
+            var response = token == null ? distributionApi.GetV2Manifest(repository, tag).Result : distributionApi.GetV2Manifest(repository, tag, $"Bearer {token}").Result;
 
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                return JsonConvert.DeserializeObject<Manifest>(response.Content.ReadAsStringAsync().Result);
+                if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
+                {
+                    var fatManifest = JsonConvert.DeserializeObject<FatManifest>(response.Content.ReadAsStringAsync().Result);
+                    var subManifest = fatManifest.Manifests.Where(m => m.Platform == platform).FirstOrDefault();
+                    return subManifest == null ? null : GetManifest(repository, subManifest.Digest, platform);
+                }
+                else if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
+                {
+                    return JsonConvert.DeserializeObject<ManifestV2>(response.Content.ReadAsStringAsync().Result);
+                }
+                else
+                {
+                    throw new NotImplementedException($"Can't handle manifest of type '{response.Content.Headers.ContentType.MediaType}'");
+                }
             }
             else if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 var challenge = response.Headers.WwwAuthenticate.First(h => h.Scheme == "Bearer");
 
                 token = TokenSource.GetToken(challenge);
-                return GetManifest(repository, tag, retries - 1, token);
+                return GetManifest(repository, tag, platform, retries - 1, token);
             }
             else
             {
