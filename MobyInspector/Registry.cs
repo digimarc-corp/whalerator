@@ -19,17 +19,15 @@ namespace MobyInspector
     {
         public string LayerCache { get; set; }
 
-        IDistribution DistributionAPI { get; set; }
+        IDistributionClient DistributionAPI { get; set; }
 
-        public Registry() : this("registry-1.docker.io") { }
-
-        public Registry(string host, string username = null, string password = null)
+        public Registry(string host = "registry-1.docker.io", string username = null, string password = null)
         {
-            var tokenSource = string.IsNullOrEmpty(username) ? (ITokenSource)new AnonTokenSource() : new BasicAuthTokenSource() { UserName = username, Password = password };
-            DistributionAPI = new Distribution(new MiniClient(tokenSource), host);
+            var tokenSource = string.IsNullOrEmpty(username) ? (IAuthHandler)new AnonAuthHandler() : new BasicAuthHandler() { UserName = username, Password = password };
+            DistributionAPI = new DistributionClient(tokenSource) { Host = host };
         }
 
-        public Registry(IDistribution distribution)
+        public Registry(IDistributionClient distribution)
         {
             DistributionAPI = distribution;
         }

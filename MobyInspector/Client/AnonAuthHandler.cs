@@ -7,7 +7,7 @@ using System.Text;
 
 namespace MobyInspector.Client
 {
-    public class AnonTokenSource : TokenSource
+    public class AnonAuthHandler : AuthHandler
     {
         public override string GetToken(string realm, string service, string scope)
         {

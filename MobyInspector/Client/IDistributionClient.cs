@@ -2,16 +2,14 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MobyInspector.Client
 {
-    /// <summary>
-    /// Refit wrapper definition for Docker Distribution/Registry API V2
-    /// </summary>
-    public interface IDistribution
+    public interface IDistributionClient
     {
+        HttpResponseMessage Get(Uri uri, string accept = null);
+
         Task<RepositoryList> GetRepositoriesAsync();
 
         Task<TagList> GetTagsAsync(string repository);

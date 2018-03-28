@@ -7,7 +7,7 @@ using System.Text;
 
 namespace MobyInspector.Client
 {
-    public class BasicAuthTokenSource: TokenSource
+    public class BasicAuthHandler : AuthHandler
     {
         public string UserName { get; set; }
         public string Password { get; set; }
@@ -26,7 +26,7 @@ namespace MobyInspector.Client
                 uri.Query = $"?service={WebUtility.UrlEncode(service)}&scope={WebUtility.UrlEncode(scope)}";
 
                 var response = client.GetAsync(uri.Uri).Result;
-                if (response.StatusCode== HttpStatusCode.Unauthorized)
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", EncodeCredentials());
                     response = client.GetAsync(uri.Uri).Result;
