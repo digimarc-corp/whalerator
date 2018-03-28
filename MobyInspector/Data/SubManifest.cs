@@ -1,4 +1,6 @@
-﻿namespace MobyInspector.Data
+﻿using MobyInspector.Model;
+
+namespace MobyInspector.Data
 {
     public class SubManifest
     {

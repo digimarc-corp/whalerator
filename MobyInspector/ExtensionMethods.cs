@@ -11,6 +11,5 @@ namespace MobyInspector
         {            
             return ignoreCase ? str.Equals(value, StringComparison.InvariantCultureIgnoreCase) : str == value;
         }
-
     }
 }
