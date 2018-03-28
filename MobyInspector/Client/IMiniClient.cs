@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 
-namespace MobyInspector
+namespace MobyInspector.Client
 {
     public interface IMiniClient
     {

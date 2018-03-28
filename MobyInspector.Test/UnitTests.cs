@@ -24,8 +24,7 @@ namespace MobyInspector.Test
         [TestMethod]
         public void PatheratorCanHandleUnixPath()
         {
-            var pather = new Patherator();
-            var search = pather.Parse("/var/data/myfile");
+            var search = "/var/data/myfile".Patherate();
 
             Assert.AreEqual("var/data/myfile", search.searchPath);
             Assert.AreEqual("var/data/.wh.myfile", search.fileWhiteout);
@@ -35,8 +34,7 @@ namespace MobyInspector.Test
         [TestMethod]
         public void PatheratorCanHandleWindowsPath()
         {
-            var pather = new Patherator();
-            var search = pather.Parse(@"Program Files\CoolApp\license.txt");
+            var search = @"Program Files\CoolApp\license.txt".Patherate();
 
             Assert.AreEqual("Program Files/CoolApp/license.txt", search.searchPath);
             Assert.AreEqual("Program Files/CoolApp/.wh.license.txt", search.fileWhiteout);
@@ -46,8 +44,7 @@ namespace MobyInspector.Test
         [TestMethod]
         public void PatheratorCanHandleRootedFile()
         {
-            var pather = new Patherator();
-            var search = pather.Parse(@"readme.md");
+            var search = @"readme.md".Patherate();
 
             Assert.AreEqual("readme.md", search.searchPath);
             Assert.AreEqual(".wh.readme.md", search.fileWhiteout);

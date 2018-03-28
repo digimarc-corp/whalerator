@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Headers;
 
-namespace MobyInspector
+namespace MobyInspector.Client
 {
     public interface ITokenSource
     {

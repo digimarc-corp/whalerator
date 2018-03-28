@@ -1,16 +1,15 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
+using MobyInspector.Client;
 using MobyInspector.Data;
 using MobyInspector.Model;
 using Newtonsoft.Json;
-using Refit;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -19,20 +18,25 @@ namespace MobyInspector
     public class Registry : IRegistry
     {
         public string LayerCache { get; set; }
-        public IPatherator Patherator { get; set; }
 
-        ScopedAuthenticationClientHandler AuthenticationClientHandler { get; set; } = new ScopedAuthenticationClientHandler();
         IDistribution DistributionAPI { get; set; }
+
+        public Registry() : this("registry-1.docker.io") { }
+
+        public Registry(string host, string username = null, string password = null)
+        {
+            var tokenSource = string.IsNullOrEmpty(username) ? (ITokenSource)new AnonTokenSource() : new BasicAuthTokenSource() { UserName = username, Password = password };
+            DistributionAPI = new Distribution(new MiniClient(tokenSource), host);
+        }
 
         public Registry(IDistribution distribution)
         {
-            Patherator = new Patherator();
             DistributionAPI = distribution;
         }
 
         public (byte[] data, string layerDigest) FindFile(string repository, Image image, string search, bool ignoreCase = true)
         {
-            var searchParams = Patherator.Parse(search);
+            var searchParams = search.Patherate();
 
             //search layers in reverse order, from newest to oldest
             var layers = image.Layers.Reverse().ToList();

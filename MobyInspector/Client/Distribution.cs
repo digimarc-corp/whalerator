@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MobyInspector.Data;
 using Newtonsoft.Json;
 
-namespace MobyInspector
+namespace MobyInspector.Client
 {
     public class Distribution : IDistribution
     {

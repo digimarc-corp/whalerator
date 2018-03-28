@@ -6,12 +6,14 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace MobyInspector
+namespace MobyInspector.Client
 {
     public class MiniClient : IMiniClient
     {
         private ITokenSource _TokenSource;
         private Dictionary<string, AuthenticationHeaderValue> _Authorizations = new Dictionary<string, AuthenticationHeaderValue>();
+
+        public TimeSpan Timeout { get; set; } = new TimeSpan(0, 3, 0);
 
         public MiniClient(ITokenSource tokenSource)
         {
@@ -25,6 +27,7 @@ namespace MobyInspector
         {
             using (var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }))
             {
+                client.Timeout = Timeout;
                 HttpResponseMessage result;
                 var message = new HttpRequestMessage { RequestUri = uri };
                 if (_Authorizations.ContainsKey(uri.Host)) { message.Headers.Authorization = _Authorizations[uri.Host]; }
