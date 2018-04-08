@@ -13,13 +13,13 @@ namespace Whalerator.Client
 {
     public class DistributionClient : IDistributionClient
     {
-        private IAuthHandler _TokenSource;
+        private IAuthHandler2 _TokenSource;
         private ICacheFactory _CacheFactory;
 
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 3, 0);
-        public string Host { get; set; } = "registry-1.docker.io";
+        public string Host { get; set; } = Registry.DockerHubHost;
 
-        public DistributionClient(IAuthHandler tokenSource, ICacheFactory cacheFactory)
+        public DistributionClient(IAuthHandler2 tokenSource, ICacheFactory cacheFactory)
         {
             _TokenSource = tokenSource;
             _CacheFactory = cacheFactory;
@@ -32,16 +32,26 @@ namespace Whalerator.Client
             return Task.FromResult(JsonConvert.DeserializeObject<T>(json));
         }
 
+        public bool IsDockerHub => Registry.DockerAliases.Contains(Host);
+
         public HttpResponseMessage Get(Uri uri, string accept = null) => Get(uri, accept, retries: 3);
 
         private HttpResponseMessage Get(Uri uri, string accept, int retries)
         {
+            //work out the basic scope + action we'd need to perform this GET
+            string scope = null;
+            if (_TokenSource.TryParseScope(uri, out var scopePath))
+            {
+                var action = scopePath == "registry:catalog" ? "*" : "pull";
+                scope = $"{scopePath}:{action}";
+            }
+
             using (var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }))
             {
                 client.Timeout = Timeout;
                 HttpResponseMessage result;
                 var message = new HttpRequestMessage { RequestUri = uri };
-                message.Headers.Authorization = _TokenSource.GetAuthorization(uri);
+                message.Headers.Authorization = _TokenSource.GetAuthorization(IsDockerHub ? Registry.DockerHubService : Host, scope);
 
                 if (!string.IsNullOrEmpty(accept)) { message.Headers.Add("Accept", accept); }
 
@@ -53,9 +63,14 @@ namespace Whalerator.Client
                 }
                 else if (retries > 0)
                 {
-                    if (result.StatusCode == HttpStatusCode.Unauthorized)
+                    if (result.StatusCode == HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(scope))
                     {
-                        if (_TokenSource.HandleUnauthorized(uri, result.Headers))
+                        var authRequest = _TokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
+                        if (authRequest.scope != scope) { throw new ArgumentException($"The scope requested by the server ({authRequest.scope}) does not match that expected by the auth engine ({scope})"); }
+                        // skip service check for dockerhub, since it returns inconsistent values
+                        if (!IsDockerHub && authRequest.service != Host) { throw new ArgumentException($"The service indicated by the server ({authRequest.service}), does not match that expected by the auth engine ({Host})."); }
+
+                        if (_TokenSource.UpdateAuthentication(authRequest.realm, authRequest.service, authRequest.scope))
                         {
                             return Get(uri, accept, retries - 1);
                         }
@@ -89,6 +104,7 @@ namespace Whalerator.Client
 
         public Task<RepositoryList> GetRepositoriesAsync()
         {
+            /*
             var cache = _CacheFactory?.Get<RepositoryList>();
             RepositoryList list;
             if (cache != null && cache.TryGet(_TokenSource.GetCachePrefix() + "repos", out list))
@@ -96,11 +112,11 @@ namespace Whalerator.Client
                 return Task.FromResult(list);
             }
             else
-            {
-                list = Get<RepositoryList>(new Uri($"https://{Host}/v2/_catalog")).Result;
-                cache?.Set(_TokenSource.GetCachePrefix() + "repos", list);
-                return Task.FromResult(list);
-            }
+            {*/
+            var list = Get<RepositoryList>(new Uri($"https://{Host}/v2/_catalog")).Result;
+            //cache?.Set(_TokenSource.GetCachePrefix() + "repos", list);
+            return Task.FromResult(list);
+            //}
         }
 
         public Task<TagList> GetTagsAsync(string repository)

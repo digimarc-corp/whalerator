@@ -15,19 +15,13 @@ namespace Whalerator.WebAPI
         public IRegistry GetRegistry(string name, string username, string password)
         {
             name = name.ToLowerInvariant();
-            if (DockerAliases.Contains(name))
+            if (Registry.DockerAliases.Contains(name))
             {
-                name = "registry-1.docker.io";
+                name = Registry.DockerHubService;
             }
 
             return new Registry(name, username, password, _CacheFactory);
         }
-
-        HashSet<string> DockerAliases = new HashSet<string> {
-            "docker.io",
-            "hub.docker.io",
-            "registry.docker.io"
-        };
 
         private ICacheFactory _CacheFactory;
     }

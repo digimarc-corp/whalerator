@@ -17,13 +17,24 @@ namespace Whalerator
 {
     public class Registry : IRegistry
     {
+        // Docker uses a bizarre amalgam of names for Docker Hub
+        public const string DockerHubService = "registry.docker.io";
+        public const string DockerHubHost = "registry-1.docker.io";
+        public static HashSet<string> DockerAliases = new HashSet<string> {
+            "docker.io",
+            "hub.docker.io",
+            "registry.docker.io",
+            "registry-1.docker.io"
+        };
+
         public string LayerCache { get; set; }
 
         IDistributionClient DistributionAPI { get; set; }
 
-        public Registry(string host = "registry-1.docker.io", string username = null, string password = null, ICacheFactory cacheFactory = null)
+        public Registry(string host = DockerHubHost, string username = null, string password = null, ICacheFactory cacheFactory = null)
         {
-            var tokenSource = string.IsNullOrEmpty(username) ? (IAuthHandler)new AnonAuthHandler() : new BasicAuthHandler() { UserName = username, Password = password };
+            //var tokenSource = string.IsNullOrEmpty(username) ? (IAuthHandler)new AnonAuthHandler() : new BasicAuthHandler() { UserName = username, Password = password };
+            var tokenSource = new AuthHandler() { Username = username, Password = password };
             DistributionAPI = new DistributionClient(tokenSource, cacheFactory) { Host = host };
         }
 

@@ -7,10 +7,15 @@ namespace Whalerator
 {
     public static class ExtensionMethods
     {
+        public static TValue Get<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key) where TValue : class
+        {
+            return dict.ContainsKey(key) ? dict[key] : null;
+        }
+
         // Compares string values with flag to control case sensitivity.
         // Overloading Equals(this string, etc) does not work because of ambiguity with object.Equals(...)
         public static bool Matches(this string str, string value, bool ignoreCase)
-        {            
+        {
             return ignoreCase ? str.Equals(value, StringComparison.InvariantCultureIgnoreCase) : str == value;
         }
 

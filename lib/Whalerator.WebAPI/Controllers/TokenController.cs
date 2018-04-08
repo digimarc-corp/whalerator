@@ -31,7 +31,7 @@ namespace Whalerator.WebAPI.Controllers
                 var result = client.GetAsync($"https://{credentials.Registry}/v2/").Result;
                 if (result.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    var handler = new BasicAuthHandler() { UserName = credentials.Username, Password = credentials.Password };
+                    var handler = new AuthHandler() { Username = credentials.Username, Password = credentials.Password };
                     var token = handler.GetToken(result.Headers.WwwAuthenticate.First());
                     var json = JsonConvert.SerializeObject(credentials);
                     var cipherText = _Crypto.Encrypt(json);

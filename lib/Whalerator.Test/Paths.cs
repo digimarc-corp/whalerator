@@ -4,11 +4,12 @@ using Whalerator.Model;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Client;
 
 namespace Whalerator.Test
 {
     [TestClass]
-    public class UnitTests
+    public class Paths
     {
         [TestMethod]
         public void CanEquatePlatforms()
@@ -19,6 +20,24 @@ namespace Whalerator.Test
 
             Assert.IsTrue(p1 == p2);
             Assert.IsTrue(p1 != p3);
+        }
+
+        [TestMethod]
+        public void CanParseUriPathToScope()
+        {
+            var auth = new AuthHandler();
+            Assert.AreEqual("registry:catalog", auth.ParseScope(new Uri("https://myregistry.io/v2/_catalog")));
+            Assert.AreEqual("repository:coolimage", auth.ParseScope(new Uri("https://myregistry.io/v2/coolimage/tags/list")));
+            Assert.AreEqual("repository:cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/cool/image/manifests/latest")));
+            Assert.AreEqual("repository:super/cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/super/cool/image/blobs/sha256:digest")));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void CanThrowOnBadUriPath()
+        {
+            var auth = new AuthHandler();
+            auth.ParseScope(new Uri("https://myregistry.io/something/else"));
         }
 
         [TestMethod]
