@@ -32,12 +32,19 @@ namespace Whalerator.WebAPI.Controllers
                 if (result.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     var handler = new AuthHandler() { Username = credentials.Username, Password = credentials.Password };
-                    var token = handler.GetToken(result.Headers.WwwAuthenticate.First());
-                    var json = JsonConvert.SerializeObject(credentials);
-                    var cipherText = _Crypto.Encrypt(json);
+                    var challenge = handler.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
+                    if (handler.UpdateAuthentication(challenge.realm, challenge.service, challenge.scope))
+                    {
+                        var json = JsonConvert.SerializeObject(credentials);
+                        var cipherText = _Crypto.Encrypt(json);
 
-                    var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToRSACryptoServiceProvider(), Jose.JwsAlgorithm.RS256);
-                    return Ok(new { token = jwt });
+                        var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToRSACryptoServiceProvider(), Jose.JwsAlgorithm.RS256);
+                        return Ok(new { token = jwt });
+                    }
+                    else
+                    {
+                        return Unauthorized();
+                    }
                 }
                 else
                 {

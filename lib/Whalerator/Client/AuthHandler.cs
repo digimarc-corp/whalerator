@@ -76,7 +76,7 @@ namespace Whalerator.Client
 
         public bool UpdateAuthentication(string realm, string service, string scope)
         {
-            var action = scope.Split(':')[2].Split(',')[0];
+            var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
             using (var client = new HttpClient())
             {
                 var uri = new UriBuilder(realm);
@@ -97,7 +97,7 @@ namespace Whalerator.Client
                     var payload = Jose.JWT.Payload(token);
                     var access = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>() }).access;
 
-                    if (access.Any(a => a.Actions.Contains(action)))
+                    if (scope == null || access.Any(a => a.Actions.Contains(action)))
                     {
                         _Authorizations[(service, scope)] = new AuthenticationHeaderValue("Bearer", token);
                         return true;
