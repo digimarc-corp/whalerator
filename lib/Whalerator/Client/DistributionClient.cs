@@ -13,13 +13,13 @@ namespace Whalerator.Client
 {
     public class DistributionClient : IDistributionClient
     {
-        private IAuthHandler2 _TokenSource;
+        private IAuthHandler _TokenSource;
         private ICacheFactory _CacheFactory;
 
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 3, 0);
-        public string Host { get; set; } = Registry.DockerHubHost;
+        public string Host { get; set; } = Registry.DockerHub;
 
-        public DistributionClient(IAuthHandler2 tokenSource, ICacheFactory cacheFactory)
+        public DistributionClient(IAuthHandler tokenSource, ICacheFactory cacheFactory)
         {
             _TokenSource = tokenSource;
             _CacheFactory = cacheFactory;
@@ -32,7 +32,7 @@ namespace Whalerator.Client
             return Task.FromResult(JsonConvert.DeserializeObject<T>(json));
         }
 
-        public bool IsDockerHub => Registry.DockerAliases.Contains(Host);
+        public bool IsDockerHub => Registry.DockerHubAliases.Contains(Host);
 
         public HttpResponseMessage Get(Uri uri, string accept = null) => Get(uri, accept, retries: 3);
 
@@ -51,7 +51,7 @@ namespace Whalerator.Client
                 client.Timeout = Timeout;
                 HttpResponseMessage result;
                 var message = new HttpRequestMessage { RequestUri = uri };
-                message.Headers.Authorization = _TokenSource.GetAuthorization(IsDockerHub ? Registry.DockerHubService : Host, scope);
+                message.Headers.Authorization = _TokenSource.GetAuthorization(scope);
 
                 if (!string.IsNullOrEmpty(accept)) { message.Headers.Add("Accept", accept); }
 
@@ -70,7 +70,7 @@ namespace Whalerator.Client
                         // skip service check for dockerhub, since it returns inconsistent values
                         if (!IsDockerHub && authRequest.service != Host) { throw new ArgumentException($"The service indicated by the server ({authRequest.service}), does not match that expected by the auth engine ({Host})."); }
 
-                        if (_TokenSource.UpdateAuthentication(authRequest.realm, authRequest.service, authRequest.scope))
+                        if (_TokenSource.UpdateAuthorization(authRequest.scope))
                         {
                             return Get(uri, accept, retries - 1);
                         }
@@ -104,19 +104,25 @@ namespace Whalerator.Client
 
         public Task<RepositoryList> GetRepositoriesAsync()
         {
-            /*
             var cache = _CacheFactory?.Get<RepositoryList>();
             RepositoryList list;
-            if (cache != null && cache.TryGet(_TokenSource.GetCachePrefix() + "repos", out list))
+            if (_TokenSource.Authorize("registry:catalog:*"))
             {
-                return Task.FromResult(list);
+                if (cache != null && cache.TryGet(Host + ":repos", out list))
+                {
+                    return Task.FromResult(list);
+                }
+                else
+                {
+                    list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
+                    cache?.Set(Host + ":repos", list);
+                    return Task.FromResult(list);
+                }
             }
             else
-            {*/
-            var list = Get<RepositoryList>(new Uri($"https://{Host}/v2/_catalog")).Result;
-            //cache?.Set(_TokenSource.GetCachePrefix() + "repos", list);
-            return Task.FromResult(list);
-            //}
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
         }
 
         public Task<TagList> GetTagsAsync(string repository)

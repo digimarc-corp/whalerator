@@ -10,20 +10,94 @@ using System.Text.RegularExpressions;
 
 namespace Whalerator.Client
 {
-    public class AuthHandler : IAuthHandler2
+    public class AuthHandler : IAuthHandler
     {
-        Dictionary<(string service, string scope), AuthenticationHeaderValue> _Authorizations = new Dictionary<(string service, string scope), AuthenticationHeaderValue>();
-        public string Username { get; set; }
-        public string Password { get; set; }
+        Dictionary<string, AuthenticationHeaderValue> _Authorizations = new Dictionary<string, AuthenticationHeaderValue>();
 
-        public AuthenticationHeaderValue GetAuthorization(string service, string scope)
+        public string Username { get; private set; }
+        public string Password { get; private set; }
+        public string RegistryEndpoint { get; private set; }
+
+        public string Service { get; private set; }
+        public string Realm { get; private set; }
+
+        /// <summary>
+        /// If true, the registry is running in fully open mode, with no Authentication of any kind. Any calls to UpdateAuthorization will be ignored.
+        /// </summary>
+        public bool AnonymousMode { get; private set; }
+
+        /// <summary>
+        /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
+        /// </summary>
+        /// <param name="registryHost">Actual registry host, i.e. myregistry.io</param>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public void Login(string registryHost, string username = null, string password = null)
         {
-            return _Authorizations.Get((service, scope));
+            _Authorizations = new Dictionary<string, AuthenticationHeaderValue>();
+            AnonymousMode = false;
+            Username = username;
+            Password = password;
+            RegistryEndpoint = Registry.HostToEndpoint(registryHost);
+
+            using (var client = new HttpClient())
+            {
+                var preLogin = client.GetAsync(RegistryEndpoint).Result;
+                if (preLogin.IsSuccessStatusCode)
+                {
+                    if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password))
+                    {
+                        throw new AuthenticationException("A username or password was specified, but the registry server does not support authentication.");
+                    }
+                    else
+                    {
+                        AnonymousMode = true;
+                        return;
+                    }
+                }
+                else if (preLogin.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    var challenge = ParseWwwAuthenticate(preLogin.Headers.WwwAuthenticate.First());
+                    Service = challenge.service;
+                    Realm = challenge.realm;
+
+                    if (UpdateAuthorization(null))
+                    {
+                        client.DefaultRequestHeaders.Authorization = GetAuthorization(null);
+                        var confirmation = client.GetAsync(RegistryEndpoint).Result;
+
+                        if (!confirmation.IsSuccessStatusCode)
+                        {
+                            throw new AuthenticationException($"Authentication succeded against the realm '{Realm}', but the registry returned status code '{confirmation.StatusCode}'");
+                        }
+                    }
+                    else
+                    {
+                        throw new AuthenticationException($"Authentication failed.");
+                    }
+                }
+                else
+                {
+                    throw new AuthenticationException($"The registry server returned an unexpected result code: {preLogin.StatusCode}");
+                }
+            }
         }
 
-        public bool HasAuthorization(string service, string scope)
+        public AuthenticationHeaderValue GetAuthorization(string scope)
         {
-            return _Authorizations.ContainsKey((service, scope));
+            scope = scope ?? string.Empty;
+            return _Authorizations.Get(scope);
+        }
+
+        public bool Authorize(string scope)
+        {
+            return HasAuthorization(scope) || UpdateAuthorization(scope);
+        }
+
+        public bool HasAuthorization(string scope)
+        {
+            scope = scope ?? string.Empty;
+            return _Authorizations.ContainsKey(scope);
         }
 
         public string ParseScope(Uri uri)
@@ -74,14 +148,18 @@ namespace Whalerator.Client
             return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Username}:{Password}"));
         }
 
-        public bool UpdateAuthentication(string realm, string service, string scope)
+        public bool UpdateAuthorization(string scope)
         {
+            // registry is fully anonymous, so authorization is moot
+            if (AnonymousMode) { return true; }
+
+            scope = scope ?? string.Empty;
             var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
             using (var client = new HttpClient())
             {
-                var uri = new UriBuilder(realm);
+                var uri = new UriBuilder(Realm);
 
-                var parameters = $"service={WebUtility.UrlEncode(service)}";
+                var parameters = $"service={WebUtility.UrlEncode(Service)}";
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
                 uri.Query = $"?{parameters}";
 
@@ -97,9 +175,9 @@ namespace Whalerator.Client
                     var payload = Jose.JWT.Payload(token);
                     var access = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>() }).access;
 
-                    if (scope == null || access.Any(a => a.Actions.Contains(action)))
+                    if (string.IsNullOrEmpty(scope) || access.Any(a => a.Actions.Contains(action)))
                     {
-                        _Authorizations[(service, scope)] = new AuthenticationHeaderValue("Bearer", token);
+                        _Authorizations[scope] = new AuthenticationHeaderValue("Bearer", token);
                         return true;
                     }
                 }

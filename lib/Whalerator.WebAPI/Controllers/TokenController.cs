@@ -26,30 +26,19 @@ namespace Whalerator.WebAPI.Controllers
         [HttpPost]
         public IActionResult Post([FromBody]RegistryCredentials credentials)
         {
-            using (var client = new HttpClient())
+            try
             {
-                var result = client.GetAsync($"https://{credentials.Registry}/v2/").Result;
-                if (result.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                {
-                    var handler = new AuthHandler() { Username = credentials.Username, Password = credentials.Password };
-                    var challenge = handler.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
-                    if (handler.UpdateAuthentication(challenge.realm, challenge.service, challenge.scope))
-                    {
-                        var json = JsonConvert.SerializeObject(credentials);
-                        var cipherText = _Crypto.Encrypt(json);
+                var handler = new AuthHandler();
+                handler.Login(credentials.Registry, credentials.Username, credentials.Password);
+                var json = JsonConvert.SerializeObject(credentials);
+                var cipherText = _Crypto.Encrypt(json);
 
-                        var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToRSACryptoServiceProvider(), Jose.JwsAlgorithm.RS256);
-                        return Ok(new { token = jwt });
-                    }
-                    else
-                    {
-                        return Unauthorized();
-                    }
-                }
-                else
-                {
-                    return BadRequest($"The remote server returned an unexpected status: {result.StatusCode}");
-                }
+                var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToRSACryptoServiceProvider(), Jose.JwsAlgorithm.RS256);
+                return Ok(new { token = jwt });
+            }
+            catch
+            {
+                return Unauthorized();
             }
         }
     }

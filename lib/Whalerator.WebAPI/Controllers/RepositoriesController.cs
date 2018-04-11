@@ -44,10 +44,17 @@ namespace Whalerator.WebAPI.Controllers
                         password = User.Claims.First(c => c.Type.Equals("Password")).Value;
                     }
                 }
-                var registryApi = _RegFactory.GetRegistry(registry, username, password);
-                var repos = registryApi.GetRepositories();
+                try
+                {
+                    var registryApi = _RegFactory.GetRegistry(registry, username, password);
+                    var repos = registryApi.GetRepositories();
 
-                return Ok(repos);
+                    return Ok(repos);
+                }
+                catch (Client.AuthenticationException)
+                {
+                    return Unauthorized();
+                }
             }
         }
     }

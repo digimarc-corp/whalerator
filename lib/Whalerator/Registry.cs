@@ -17,24 +17,39 @@ namespace Whalerator
 {
     public class Registry : IRegistry
     {
-        // Docker uses a bizarre amalgam of names for Docker Hub
-        public const string DockerHubService = "registry.docker.io";
-        public const string DockerHubHost = "registry-1.docker.io";
-        public static HashSet<string> DockerAliases = new HashSet<string> {
+        // Docker uses some nonstandard names for Docker Hub
+        public const string DockerHub = "registry-1.docker.io";
+        public static HashSet<string> DockerHubAliases = new HashSet<string> {
             "docker.io",
             "hub.docker.io",
             "registry.docker.io",
             "registry-1.docker.io"
         };
 
+        public static string HostToEndpoint(string host, string resource = null)
+        {
+            var sb = new StringBuilder();
+            if (host.Contains("://"))
+            {
+                sb.Append(host.TrimEnd('/') + "/v2/");
+            }
+            else
+            {
+                sb.Append($"https://{host.TrimEnd('/')}/v2/");
+            }
+            sb.Append(resource ?? string.Empty);
+
+            return sb.ToString();
+        }
+
         public string LayerCache { get; set; }
 
         IDistributionClient DistributionAPI { get; set; }
 
-        public Registry(string host = DockerHubHost, string username = null, string password = null, ICacheFactory cacheFactory = null)
+        public Registry(string host = DockerHub, string username = null, string password = null, ICacheFactory cacheFactory = null)
         {
-            //var tokenSource = string.IsNullOrEmpty(username) ? (IAuthHandler)new AnonAuthHandler() : new BasicAuthHandler() { UserName = username, Password = password };
-            var tokenSource = new AuthHandler() { Username = username, Password = password };
+            var tokenSource = new AuthHandler();
+            tokenSource.Login(host, username, password);
             DistributionAPI = new DistributionClient(tokenSource, cacheFactory) { Host = host };
         }
 

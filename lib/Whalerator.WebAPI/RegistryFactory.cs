@@ -15,9 +15,9 @@ namespace Whalerator.WebAPI
         public IRegistry GetRegistry(string name, string username, string password)
         {
             name = name.ToLowerInvariant();
-            if (Registry.DockerAliases.Contains(name))
+            if (Registry.DockerHubAliases.Contains(name))
             {
-                name = Registry.DockerHubService;
+                name = Registry.DockerHub;
             }
 
             return new Registry(name, username, password, _CacheFactory);
