@@ -12,17 +12,6 @@ namespace Whalerator.Test
     public class Paths
     {
         [TestMethod]
-        public void CanEquatePlatforms()
-        {
-            var p1 = new Platform { Architecture = "x86", OS = "msdos" };
-            var p2 = new Platform { Architecture = "x86", OS = "msdos" };
-            var p3 = new Platform { Architecture = "ppc", OS = "minix" };
-
-            Assert.IsTrue(p1 == p2);
-            Assert.IsTrue(p1 != p3);
-        }
-
-        [TestMethod]
         public void CanParseUriPathToScope()
         {
             var auth = new AuthHandler();
