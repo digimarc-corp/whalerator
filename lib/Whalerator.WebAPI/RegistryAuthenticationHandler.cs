@@ -22,8 +22,7 @@ namespace Whalerator.WebAPI
         {
             if (string.IsNullOrEmpty(Request.Headers["Authorization"]))
             {
-                var identity = new ClaimsIdentity("anonymous");
-                return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), "anonymous")));
+                return Task.FromResult(AuthenticateResult.Fail("{ error: \"Authorization is required.\"}"));
             }
             else
             {

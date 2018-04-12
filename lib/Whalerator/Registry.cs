@@ -28,6 +28,8 @@ namespace Whalerator
 
         public static string HostToEndpoint(string host, string resource = null)
         {
+            if (DockerHubAliases.Contains(host.ToLowerInvariant())) { host = DockerHub; }
+
             var sb = new StringBuilder();
             if (host.Contains("://"))
             {

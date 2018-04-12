@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Whalerator.Support;
+using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -21,40 +22,21 @@ namespace Whalerator.WebAPI.Controllers
             _RegFactory = regFactory;
         }
 
-        public IActionResult Get([FromQuery]string registry)
+        public IActionResult Get()
         {
-            if (string.IsNullOrEmpty(registry))
-            {
-                return BadRequest(new { error = "No registry host supplied" });
-            }
-            else
-            {
-                string username = null;
-                string password = null;
-                if (User.Identity.AuthenticationType != "anonymous")
-                {
-                    var userRegisty = User.Claims.First(c => c.Type.Equals("Registry")).Value;
-                    if (userRegisty.ToLowerInvariant() != registry.ToLowerInvariant())
-                    {
-                        throw new ArgumentException("The requested registry does not match the supplied credentials");
-                    }
-                    else
-                    {
-                        username = User.Claims.First(c => c.Type.Equals("Username")).Value;
-                        password = User.Claims.First(c => c.Type.Equals("Password")).Value;
-                    }
-                }
-                try
-                {
-                    var registryApi = _RegFactory.GetRegistry(registry, username, password);
-                    var repos = registryApi.GetRepositories();
+            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
-                    return Ok(repos);
-                }
-                catch (Client.AuthenticationException)
-                {
-                    return Unauthorized();
-                }
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var repos = registryApi.GetRepositories();
+
+                return Ok(repos);
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
             }
         }
     }

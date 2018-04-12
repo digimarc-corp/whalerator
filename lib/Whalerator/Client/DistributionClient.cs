@@ -105,17 +105,19 @@ namespace Whalerator.Client
         public Task<RepositoryList> GetRepositoriesAsync()
         {
             var cache = _CacheFactory?.Get<RepositoryList>();
+            var key = $"{Host}:repos";
+
             RepositoryList list;
             if (_TokenSource.Authorize("registry:catalog:*"))
             {
-                if (cache != null && cache.TryGet(Host + ":repos", out list))
+                if (cache != null && cache.TryGet(key, out list))
                 {
                     return Task.FromResult(list);
                 }
                 else
                 {
                     list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
-                    cache?.Set(Host + ":repos", list);
+                    cache?.Set(key, list);
                     return Task.FromResult(list);
                 }
             }
@@ -127,7 +129,27 @@ namespace Whalerator.Client
 
         public Task<TagList> GetTagsAsync(string repository)
         {
-            return Get<TagList>(new Uri($"https://{Host}/v2/{repository}/tags/list"));
+            var cache = _CacheFactory?.Get<TagList>();
+            var key = $"{Host}:tags:{repository}";
+
+            TagList list;
+            if (_TokenSource.Authorize($"repository:{repository}:pull"))
+            {
+                if (cache != null && cache.TryGet(key, out list))
+                {
+                    return Task.FromResult(list);
+                }
+                else
+                {
+                    list = Get<TagList>(new Uri(Registry.HostToEndpoint(Host, $"{repository}/tags/list"))).Result;
+                    cache?.Set(key, list);
+                    return Task.FromResult(list);
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
         }
 
         public Task<HttpResponseMessage> GetV2Manifest(string repository, string tag)
