@@ -18,7 +18,6 @@
     },
     "Whalerator.WebAPI": {
       "commandName": "Project",
-      "launchBrowser": true,
       "launchUrl": "api/repositories",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

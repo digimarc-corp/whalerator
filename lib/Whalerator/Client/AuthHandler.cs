@@ -12,7 +12,13 @@ namespace Whalerator.Client
 {
     public class AuthHandler : IAuthHandler
     {
-        Dictionary<string, AuthenticationHeaderValue> _Authorizations = new Dictionary<string, AuthenticationHeaderValue>();
+        private ICache<Authorization> _AuthCache;
+
+        public AuthHandler(ICache<Authorization> cache)
+        {
+            _AuthCache = cache;
+        }
+
 
         public string Username { get; private set; }
         public string Password { get; private set; }
@@ -34,51 +40,64 @@ namespace Whalerator.Client
         /// <param name="password"></param>
         public void Login(string registryHost, string username = null, string password = null)
         {
-            _Authorizations = new Dictionary<string, AuthenticationHeaderValue>();
             AnonymousMode = false;
             Username = username;
             Password = password;
             RegistryEndpoint = Registry.HostToEndpoint(registryHost);
 
-            using (var client = new HttpClient())
+            var key = GetKey(null);
+
+            if (_AuthCache.TryGet(key, out var authorization))
             {
-                var preLogin = client.GetAsync(RegistryEndpoint).Result;
-                if (preLogin.IsSuccessStatusCode)
+                Service = authorization.Service;
+                Realm = authorization.Realm;
+            }
+            else
+            {
+                using (var client = new HttpClient())
                 {
-                    if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password))
+                    var preLogin = client.GetAsync(RegistryEndpoint).Result;
+                    if (preLogin.IsSuccessStatusCode)
                     {
-                        throw new AuthenticationException("A username or password was specified, but the registry server does not support authentication.");
-                    }
-                    else
-                    {
-                        AnonymousMode = true;
-                        return;
-                    }
-                }
-                else if (preLogin.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    var challenge = ParseWwwAuthenticate(preLogin.Headers.WwwAuthenticate.First());
-                    Service = challenge.service;
-                    Realm = challenge.realm;
-
-                    if (UpdateAuthorization(null))
-                    {
-                        client.DefaultRequestHeaders.Authorization = GetAuthorization(null);
-                        var confirmation = client.GetAsync(RegistryEndpoint).Result;
-
-                        if (!confirmation.IsSuccessStatusCode)
+                        if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password))
                         {
-                            throw new AuthenticationException($"Authentication succeded against the realm '{Realm}', but the registry returned status code '{confirmation.StatusCode}'");
+                            throw new AuthenticationException("A username or password was specified, but the registry server does not support authentication.");
+                        }
+                        else
+                        {
+                            AnonymousMode = true;
+                            return;
+                        }
+                    }
+                    else if (preLogin.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        var challenge = ParseWwwAuthenticate(preLogin.Headers.WwwAuthenticate.First());
+                        Service = challenge.service;
+                        Realm = challenge.realm;
+
+                        if (UpdateAuthorization(null))
+                        {
+                            client.DefaultRequestHeaders.Authorization = GetAuthorization(null);
+                            var confirmation = client.GetAsync(RegistryEndpoint).Result;
+
+                            if (!confirmation.IsSuccessStatusCode)
+                            {
+                                throw new AuthenticationException($"Authentication succeded against the realm '{Realm}', but the registry returned status code '{confirmation.StatusCode}'");
+                            }
+                            else
+                            {
+                                _AuthCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service });
+                            }
+                        }
+                        else
+                        {
+                            throw new AuthenticationException($"Authentication failed.");
                         }
                     }
                     else
                     {
-                        throw new AuthenticationException($"Authentication failed.");
+                        throw new AuthenticationException($"The registry server returned an unexpected result code: {preLogin.StatusCode}");
                     }
-                }
-                else
-                {
-                    throw new AuthenticationException($"The registry server returned an unexpected result code: {preLogin.StatusCode}");
                 }
             }
         }
@@ -86,7 +105,7 @@ namespace Whalerator.Client
         public AuthenticationHeaderValue GetAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return _Authorizations.Get(scope);
+            return _AuthCache.TryGet(GetKey(scope), out var authorization) ? new AuthenticationHeaderValue("Bearer", authorization.JWT) : null;
         }
 
         public bool Authorize(string scope)
@@ -97,8 +116,10 @@ namespace Whalerator.Client
         public bool HasAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return _Authorizations.ContainsKey(scope);
+            return _AuthCache.Exists(GetKey(scope));
         }
+
+        private string GetKey(string scope) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope);
 
         public string ParseScope(Uri uri)
         {
@@ -177,7 +198,7 @@ namespace Whalerator.Client
 
                     if (string.IsNullOrEmpty(scope) || access.Any(a => a.Actions.Contains(action)))
                     {
-                        _Authorizations[scope] = new AuthenticationHeaderValue("Bearer", token);
+                        _AuthCache.Set(GetKey(scope), new Authorization { JWT = token, Realm = Realm, Service = Service });
                         return true;
                     }
                 }

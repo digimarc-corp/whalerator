@@ -48,7 +48,7 @@ namespace Whalerator
 
         public Registry(string host = DockerHub, string username = null, string password = null, ICacheFactory cacheFactory = null)
         {
-            var tokenSource = new AuthHandler();
+            var tokenSource = new AuthHandler(cacheFactory.Get<Client.Authorization>());
             tokenSource.Login(host, username, password);
             DistributionAPI = new DistributionClient(tokenSource, cacheFactory) { Host = host };
         }

@@ -17,10 +17,12 @@ namespace Whalerator.WebAPI.Controllers
     public class TokenController : Controller
     {
         private ICryptoAlgorithm _Crypto;
+        private ICache<Authorization> _Cache;
 
-        public TokenController(ICryptoAlgorithm crypto)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache)
         {
             _Crypto = crypto;
+            _Cache = cache;
         }
 
         [HttpPost]
@@ -28,7 +30,7 @@ namespace Whalerator.WebAPI.Controllers
         {
             try
             {
-                var handler = new AuthHandler();
+                var handler = new AuthHandler(_Cache);
                 handler.Login(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = _Crypto.Encrypt(json);

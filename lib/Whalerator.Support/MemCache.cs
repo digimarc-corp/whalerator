@@ -37,5 +37,10 @@ namespace Whalerator.Support
             var json = JsonConvert.SerializeObject(value);
             _MemCache.Set(key, json, _Ttl);
         }
+
+        public bool Exists(string key)
+        {
+            return _MemCache.TryGetValue(key, out var discard);
+        }
     }
 }

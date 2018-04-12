@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Whalerator.Client;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI
@@ -44,6 +45,10 @@ namespace Whalerator.WebAPI
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             });
 
+            services.AddScoped<ICache<Authorization>>((provider) =>
+            {
+                return new MemCache<Authorization>(provider.GetService<IMemoryCache>(), new TimeSpan(1, 0, 0));
+            });
             services.AddScoped<IRegistryFactory, RegistryFactory>();
             services.AddScoped<ICache<IEnumerable<string>>>((provider) =>
             {
