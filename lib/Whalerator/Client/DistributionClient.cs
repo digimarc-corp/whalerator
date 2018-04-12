@@ -84,6 +84,10 @@ namespace Whalerator.Client
                         //decriment retries even though nothing failed, to ensure we don't get caught in a redirect loop
                         return Get(result.Headers.Location, accept, retries - 1);
                     }
+                    else if (result.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        throw new NotFoundException();
+                    }
                     else
                     {
                         System.Threading.Thread.Sleep(1000);
