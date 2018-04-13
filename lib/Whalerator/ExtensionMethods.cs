@@ -34,6 +34,6 @@ namespace Whalerator
             var opqWhiteout = string.IsNullOrEmpty(folder) ? ".wh..wh.opq" : $"{folder}/.wh..wh.opq";
 
             return (search, fileWhiteout, opqWhiteout);
-        }
+        }       
     }
 }

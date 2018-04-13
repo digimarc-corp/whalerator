@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Whalerator.Client;
+using Whalerator.Support;
 
 namespace Whalerator.Test
 {
@@ -14,7 +15,7 @@ namespace Whalerator.Test
         [TestMethod]
         public void CanParseUriPathToScope()
         {
-            var auth = new AuthHandler();
+            var auth = new AuthHandler(new DictCache<Authorization>());
             Assert.AreEqual("registry:catalog", auth.ParseScope(new Uri("https://myregistry.io/v2/_catalog")));
             Assert.AreEqual("repository:coolimage", auth.ParseScope(new Uri("https://myregistry.io/v2/coolimage/tags/list")));
             Assert.AreEqual("repository:cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/cool/image/manifests/latest")));
@@ -25,7 +26,7 @@ namespace Whalerator.Test
         [ExpectedException(typeof(ArgumentException))]
         public void CanThrowOnBadUriPath()
         {
-            var auth = new AuthHandler();
+            var auth = new AuthHandler(new DictCache<Authorization>());
             auth.ParseScope(new Uri("https://myregistry.io/something/else"));
         }
 

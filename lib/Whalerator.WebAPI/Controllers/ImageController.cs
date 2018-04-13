@@ -5,25 +5,24 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Whalerator.Client;
-using Whalerator.Support;
 using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
 {
     [Produces("application/json")]
-    [Route("api/repositories")]
+    [Route("api/image")]
     [Authorize]
-    public class RepositoriesController : Controller
+    public class ImageController : Controller
     {
         private IRegistryFactory _RegFactory;
 
-        public RepositoriesController(IRegistryFactory regFactory)
+        public ImageController(IRegistryFactory regFactory)
         {
             _RegFactory = regFactory;
         }
 
-        public IActionResult Get()
+        [HttpGet("{*repository}")]
+        public IActionResult Get(string repository, [FromQuery]string tag)
         {
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
@@ -31,9 +30,18 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
-                var repos = registryApi.GetRepositories();
+                var images = registryApi.GetImages(repository, tag);
 
-                return Ok(repos);
+                var platforms = images.Select(i => i.Platform);
+                var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
+
+                var result = new { Platforms = platforms, Date = date, Images = images };
+
+                return Ok(result);
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
             }
             catch (Client.AuthenticationException)
             {

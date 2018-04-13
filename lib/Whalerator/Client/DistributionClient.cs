@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Whalerator.Model;
 
 namespace Whalerator.Client
 {
@@ -25,16 +26,100 @@ namespace Whalerator.Client
             _CacheFactory = cacheFactory;
         }
 
-        public Task<T> Get<T>(Uri uri, string accept = null)
+        #region public methods
+
+        public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest)
+        {
+            return Task.FromResult(Get(new Uri($"https://{Host}/v2/{repository}/blobs/{digest}")));
+        }
+
+        public Task<RepositoryList> GetRepositoriesAsync()
+        {
+            var cache = _CacheFactory?.Get<RepositoryList>();
+            var key = $"{Host}:repos";
+            var scope = "registry:catalog:*";
+
+            return GetCached(scope, key, () =>
+            {
+                var list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
+
+                // workaround for https://github.com/docker/distribution/issues/2434
+                list.Repositories = list.Repositories.AsParallel().Where(r => Try(() => GetTagsAsync(r).Wait()));
+
+                return list;
+            });
+        }
+
+        public Task<TagList> GetTagsAsync(string repository)
+        {
+            var cache = _CacheFactory?.Get<TagList>();
+            var key = $"{Host}:tags:{repository}";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () => Get<TagList>(new Uri(Registry.HostToEndpoint(Host, $"{repository}/tags/list"))).Result);
+        }
+
+        public Task<IEnumerable<Image>> GetImages(string repository, string tag)
+        {
+            var cache = _CacheFactory?.Get<List<Image>>();
+            var key = $"{Host}:{repository}:{tag}:images";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () =>
+            {
+                var images = new List<Image>();
+                var uri = new Uri($"https://{Host}/v2/{repository}/manifests/{tag}");
+                var response = Get(uri, "application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json");
+
+                if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
+                {
+                    var json = response.Content.ReadAsStringAsync().Result;
+                    var fatManifest = JsonConvert.DeserializeObject<FatManifest>(json);
+                    foreach (var subManifest in fatManifest.Manifests)
+                    {
+                        images.AddRange(GetImages(repository, subManifest.Digest).Result);
+                    }
+                }
+                else if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
+                {
+                    var json = response.Content.ReadAsStringAsync().Result;
+                    var manifest = JsonConvert.DeserializeObject<ManifestV2>(json);
+                    var config = GetImageConfig(repository, manifest.Config.Digest);
+                    var image = new Image
+                    {
+                        History = config.History.Select(h => new Model.History { Command = new[] { h.Created_By }, Created = h.Created }),
+                        Layers = manifest.Layers.Select(l => l.ToLayer()),
+                        Digest = response.Headers.First(h => h.Key.ToLowerInvariant() == "docker-content-digest").Value.First(),
+                        Platform = new Platform
+                        {
+                            Architecture = config.Architecture,
+                            OS = config.OS,
+                            OSVerion = config.OSVersion
+                        }
+                    };
+                    image.Layers = manifest.Layers.Select(l => l.ToLayer());
+
+                    images.Add(image);
+                }
+                else
+                {
+                    throw new Exception($"Cannot build image set from mediatype '{response.Content.Headers.ContentType.MediaType}'");
+                }
+
+                return (IEnumerable<Image>)images;
+            });
+        }
+        
+        #endregion
+
+        private Task<T> Get<T>(Uri uri, string accept = null)
         {
             var result = Get(uri, accept);
             var json = result.Content.ReadAsStringAsync().Result;
             return Task.FromResult(JsonConvert.DeserializeObject<T>(json));
         }
 
-        public bool IsDockerHub => Registry.DockerHubAliases.Contains(Host);
-
-        public HttpResponseMessage Get(Uri uri, string accept = null) => Get(uri, accept, retries: 3);
+        private HttpResponseMessage Get(Uri uri, string accept = null) => Get(uri, accept, retries: 3);
 
         private HttpResponseMessage Get(Uri uri, string accept, int retries)
         {
@@ -68,7 +153,7 @@ namespace Whalerator.Client
                         var authRequest = _TokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
                         if (authRequest.scope != scope) { throw new ArgumentException($"The scope requested by the server ({authRequest.scope}) does not match that expected by the auth engine ({scope})"); }
                         // skip service check for dockerhub, since it returns inconsistent values
-                        if (!IsDockerHub && authRequest.service != Host) { throw new ArgumentException($"The service indicated by the server ({authRequest.service}), does not match that expected by the auth engine ({Host})."); }
+                        //if (!IsDockerHub && authRequest.service != Host) { throw new ArgumentException($"The service indicated by the server ({authRequest.service}), does not match that expected by the auth engine ({Host})."); }
 
                         if (_TokenSource.UpdateAuthorization(authRequest.scope))
                         {
@@ -100,29 +185,23 @@ namespace Whalerator.Client
                 }
             }
         }
-
-        public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest)
+       
+        private Task<T> GetCached<T>(string scope, string key, Func<T> func) where T : class
         {
-            return Task.FromResult(Get(new Uri($"https://{Host}/v2/{repository}/blobs/{digest}")));
-        }
+            var cache = _CacheFactory?.Get<T>();
 
-        public Task<RepositoryList> GetRepositoriesAsync()
-        {
-            var cache = _CacheFactory?.Get<RepositoryList>();
-            var key = $"{Host}:repos";
-
-            RepositoryList list;
-            if (_TokenSource.Authorize("registry:catalog:*"))
+            T result;
+            if (_TokenSource.Authorize(scope))
             {
-                if (cache != null && cache.TryGet(key, out list))
+                if (cache != null && cache.TryGet(key, out result))
                 {
-                    return Task.FromResult(list);
+                    return Task.FromResult(result);
                 }
                 else
                 {
-                    list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
-                    cache?.Set(key, list);
-                    return Task.FromResult(list);
+                    result = func();
+                    cache?.Set(key, result);
+                    return Task.FromResult(result);
                 }
             }
             else
@@ -131,35 +210,29 @@ namespace Whalerator.Client
             }
         }
 
-        public Task<TagList> GetTagsAsync(string repository)
+        /// <summary>
+        /// Runs a throwaway action and returns true if it succeeded, false, if it threw an exception
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        bool Try(Action action)
         {
-            var cache = _CacheFactory?.Get<TagList>();
-            var key = $"{Host}:tags:{repository}";
-
-            TagList list;
-            if (_TokenSource.Authorize($"repository:{repository}:pull"))
+            try
             {
-                if (cache != null && cache.TryGet(key, out list))
-                {
-                    return Task.FromResult(list);
-                }
-                else
-                {
-                    list = Get<TagList>(new Uri(Registry.HostToEndpoint(Host, $"{repository}/tags/list"))).Result;
-                    cache?.Set(key, list);
-                    return Task.FromResult(list);
-                }
+                action();
+                return true;
             }
-            else
+            catch
             {
-                throw new AuthenticationException("The request could not be authorized.");
+                return false;
             }
         }
-
-        public Task<HttpResponseMessage> GetV2Manifest(string repository, string tag)
+        
+        private ImageConfig GetImageConfig(string repository, string digest)
         {
-            var uri = new Uri($"https://{Host}/v2/{repository}/manifests/{tag}");
-            return Task.FromResult(Get(uri, "application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json"));
+            var result = GetBlobAsync(repository, digest).Result;
+            var json = result.Content.ReadAsStringAsync().Result;
+            return JsonConvert.DeserializeObject<ImageConfig>(json);
         }
     }
 }

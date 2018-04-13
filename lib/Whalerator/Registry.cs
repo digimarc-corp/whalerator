@@ -17,6 +17,9 @@ namespace Whalerator
 {
     public class Registry : IRegistry
     {
+
+        #region statics
+
         // Docker uses some nonstandard names for Docker Hub
         public const string DockerHub = "registry-1.docker.io";
         public static HashSet<string> DockerHubAliases = new HashSet<string> {
@@ -44,13 +47,13 @@ namespace Whalerator
             return sb.ToString();
         }
 
-        public string LayerCache { get; set; }
+        #endregion
 
-        IDistributionClient DistributionAPI { get; set; }
+        #region ctors
 
         public Registry(string host = DockerHub, string username = null, string password = null, ICacheFactory cacheFactory = null)
         {
-            var tokenSource = new AuthHandler(cacheFactory.Get<Client.Authorization>());
+            var tokenSource = new AuthHandler(cacheFactory?.Get<Client.Authorization>());
             tokenSource.Login(host, username, password);
             DistributionAPI = new DistributionClient(tokenSource, cacheFactory) { Host = host };
         }
@@ -60,6 +63,31 @@ namespace Whalerator
             DistributionAPI = distribution;
         }
 
+        #endregion
+
+        #region public methods & properties
+
+        public string LayerCache { get; set; }
+
+        public IEnumerable<string> GetRepositories()
+        {
+            return DistributionAPI.GetRepositoriesAsync().Result.Repositories;
+        }
+
+        public IEnumerable<string> GetTags(string repository)
+        {
+            return DistributionAPI.GetTagsAsync(repository).Result.Tags;
+        }
+
+        public IEnumerable<Image> GetImages(string repository, string tag)
+        {
+            return DistributionAPI.GetImages(repository, tag).Result;
+        }
+        
+        #endregion
+
+        IDistributionClient DistributionAPI { get; set; }                
+        
         public (byte[] data, string layerDigest) FindFile(string repository, Image image, string search, bool ignoreCase = true)
         {
             var searchParams = search.Patherate();
@@ -271,66 +299,6 @@ namespace Whalerator
         {
             var result = DistributionAPI.GetBlobAsync(repository, layer.Digest).Result;
             result.Content.CopyToAsync(buffer).Wait();
-        }
-
-        public IEnumerable<Image> GetImages(string repository, string tag)
-        {
-            var response = DistributionAPI.GetV2Manifest(repository, tag).Result;
-
-            var images = new List<Image>();
-            if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
-            {
-                var json = response.Content.ReadAsStringAsync().Result;
-                var fatManifest = JsonConvert.DeserializeObject<FatManifest>(json);
-                foreach (var subManifest in fatManifest.Manifests)
-                {
-                    images.AddRange(GetImages(repository, subManifest.Digest));
-                }
-            }
-            else if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
-            {
-                var json = response.Content.ReadAsStringAsync().Result;
-                var manifest = JsonConvert.DeserializeObject<ManifestV2>(json);
-                var config = GetImageConfig(repository, manifest.Config.Digest);
-                var image = new Image
-                {
-                    History = config.History.Select(h => new Model.History { Command = new[] { h.Created_By }, Created = h.Created }),
-                    Layers = manifest.Layers.Select(l => l.ToLayer()),
-                    ManifestDigest = response.Headers.First(h => h.Key.ToLowerInvariant() == "docker-content-digest").Value.First(),
-                    Platform = new Platform
-                    {
-                        Architecture = config.Architecture,
-                        OS = config.OS,
-                        OSVerion = config.OSVersion
-                    }
-                };
-                image.Layers = manifest.Layers.Select(l => l.ToLayer());
-
-                images.Add(image);
-            }
-            else
-            {
-                throw new Exception($"Cannot build image set from mediatype '{response.Content.Headers.ContentType.MediaType}'");
-            }
-
-            return images;
-        }
-
-        private ImageConfig GetImageConfig(string repository, string digest)
-        {
-            var result = DistributionAPI.GetBlobAsync(repository, digest).Result;
-            var json = result.Content.ReadAsStringAsync().Result;
-            return JsonConvert.DeserializeObject<ImageConfig>(json);
-        }
-
-        public IEnumerable<string> GetTags(string repository)
-        {
-            return DistributionAPI.GetTagsAsync(repository).Result.Tags;
-        }
-
-        public IEnumerable<string> GetRepositories()
-        {
-            return DistributionAPI.GetRepositoriesAsync().Result.Repositories;
         }
     }
 }
