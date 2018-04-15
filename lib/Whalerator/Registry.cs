@@ -12,6 +12,7 @@ using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Whalerator
 {
@@ -49,45 +50,83 @@ namespace Whalerator
 
         #endregion
 
+        IDistributionClient DistributionAPI { get; set; }
+        ICacheFactory CacheFactory { get; set; }
+        IAuthHandler AuthHandler { get; set; }
+        public string LayerCache { get; set; }
+        string Host { get; set; }
+
         #region ctors
 
         public Registry(string host = DockerHub, string username = null, string password = null, ICacheFactory cacheFactory = null)
         {
-            var tokenSource = new AuthHandler(cacheFactory?.Get<Client.Authorization>());
-            tokenSource.Login(host, username, password);
-            DistributionAPI = new DistributionClient(tokenSource, cacheFactory) { Host = host };
+            AuthHandler = new AuthHandler(cacheFactory?.Get<Client.Authorization>());
+            AuthHandler.Login(host, username, password);
+            DistributionAPI = new DistributionClient(AuthHandler) { Host = host };
+            CacheFactory = cacheFactory;
         }
 
-        public Registry(IDistributionClient distribution)
+        public Registry(IDistributionClient distribution, ICacheFactory cacheFactory, IAuthHandler authHandler)
         {
             DistributionAPI = distribution;
+            CacheFactory = cacheFactory;
+            AuthHandler = authHandler;
         }
 
         #endregion
 
-        #region public methods & properties
-
-        public string LayerCache { get; set; }
+        #region public methods
 
         public IEnumerable<string> GetRepositories()
         {
-            return DistributionAPI.GetRepositoriesAsync().Result.Repositories;
+            var key = $"{Host}:repos";
+            var scope = "registry:catalog:*";
+
+            return GetCached(scope, key, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
         }
 
         public IEnumerable<string> GetTags(string repository)
         {
-            return DistributionAPI.GetTagsAsync(repository).Result.Tags;
+            var key = $"{Host}:tags:{repository}";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
         }
 
         public IEnumerable<Image> GetImages(string repository, string tag)
         {
-            return DistributionAPI.GetImages(repository, tag).Result;
+            var key = $"{Host}:{repository}:{tag}:images";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () => DistributionAPI.GetImages(repository, tag).Result);
         }
-        
+
         #endregion
 
-        IDistributionClient DistributionAPI { get; set; }                
-        
+        private T GetCached<T>(string scope, string key, Func<T> func) where T : class
+        {
+            var cache = CacheFactory?.Get<T>();
+
+            T result;
+            if (AuthHandler.Authorize(scope))
+            {
+                if (cache != null && cache.TryGet(key, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    result = func();
+                    cache?.Set(key, result);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
+        }
+
         public Layer FindFile(string repository, Image image, string search, bool ignoreCase = true)
         {
             var searchParams = search.Patherate();
