@@ -88,7 +88,7 @@ namespace Whalerator
 
         IDistributionClient DistributionAPI { get; set; }                
         
-        public (byte[] data, string layerDigest) FindFile(string repository, Image image, string search, bool ignoreCase = true)
+        public Layer FindFile(string repository, Image image, string search, bool ignoreCase = true)
         {
             var searchParams = search.Patherate();
 
@@ -102,26 +102,26 @@ namespace Whalerator
                 {
                     if (file.Matches(searchParams.searchPath, ignoreCase))
                     {
-                        return (GetFile(repository, layer, searchParams.searchPath, ignoreCase), layer.Digest);
+                        return layer;
                     }
                     else
                     {
                         if (file.Matches(searchParams.fileWhiteout, ignoreCase))
                         {
                             //found a whiteout entry for the file
-                            return (null, null);
+                            break;
                         }
 
                         if (file.Matches(searchParams.pathWhiteout, ignoreCase))
                         {
                             //found a opaque point for the whole path
-                            return (null, null);
+                            break;
                         }
                     }
                 }
             }
 
-            return (null, null);
+            return null;
         }
 
         public byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true)

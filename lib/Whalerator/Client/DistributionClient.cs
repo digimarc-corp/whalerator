@@ -108,8 +108,8 @@ namespace Whalerator.Client
 
                 return (IEnumerable<Image>)images;
             });
-        }
-        
+        }       
+
         #endregion
 
         private Task<T> Get<T>(Uri uri, string accept = null)
@@ -140,7 +140,15 @@ namespace Whalerator.Client
 
                 if (!string.IsNullOrEmpty(accept)) { message.Headers.Add("Accept", accept); }
 
-                result = client.SendAsync(message).Result;
+                try
+                {
+                    result = client.SendAsync(message).Result;
+                }
+                catch (Exception ex)
+                {
+                    if (retries > 0) { result = Get(uri, accept, retries - 1); }
+                    else { throw; }
+                }
 
                 if (result.IsSuccessStatusCode)
                 {
@@ -185,7 +193,7 @@ namespace Whalerator.Client
                 }
             }
         }
-       
+
         private Task<T> GetCached<T>(string scope, string key, Func<T> func) where T : class
         {
             var cache = _CacheFactory?.Get<T>();
@@ -227,7 +235,7 @@ namespace Whalerator.Client
                 return false;
             }
         }
-        
+
         private ImageConfig GetImageConfig(string repository, string digest)
         {
             var result = GetBlobAsync(repository, digest).Result;

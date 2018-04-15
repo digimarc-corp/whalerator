@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,6 +69,9 @@ namespace Whalerator.WebAPI
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
+            app.UseActionReverser("/api/repository");
 
             app.UseAuthentication();
             app.UseMvc();

@@ -39,6 +39,6 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }
+        }        
     }
 }
