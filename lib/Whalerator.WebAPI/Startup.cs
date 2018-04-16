@@ -49,7 +49,7 @@ namespace Whalerator.WebAPI
 
             var mux = ConnectionMultiplexer.Connect("localhost");
 
-            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = "c:\\layerdata" });
+            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = "c:\\layercache" });
             services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = new TimeSpan(0, 15, 0) });
             services.AddSingleton<ICryptoAlgorithm>(crypto);
         }
