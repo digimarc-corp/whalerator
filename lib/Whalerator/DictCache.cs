@@ -13,6 +13,9 @@ namespace Whalerator
         public Dictionary<string, T> Cache { get; set; } = new Dictionary<string, T>();
         public bool Exists(string key) => Cache.ContainsKey(key);
         public void Set(string key, T value) => Cache[key] = value;
+
+        public void Set(string key, T value, TimeSpan? ttl) => Set(key, value);
+
         public bool TryGet(string key, out T value)
         {
             var exists = Exists(key);

@@ -20,16 +20,15 @@ namespace Whalerator.Support
             _Ttl = ttl;
         }
 
-        public bool Exists(string key)
-        {
-            return _Mux.GetDatabase(_Db).KeyExists(key);
-        }
+        public bool Exists(string key) => _Mux.GetDatabase(_Db).KeyExists(key);
 
-        public void Set(string key, T value)
+        public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
-            _Mux.GetDatabase(_Db).StringSet(key, json, _Ttl);
+            _Mux.GetDatabase(_Db).StringSet(key, json, ttl);
         }
+
+        public void Set(string key, T value) => Set(key, value, _Ttl);
 
         public bool TryGet(string key, out T value)
         {

@@ -27,6 +27,8 @@ namespace Whalerator.Client
         public string Service { get; private set; }
         public string Realm { get; private set; }
 
+        public TimeSpan AuthTtl { get; set; } = new TimeSpan(1, 0, 0);
+
         /// <summary>
         /// If true, the registry is running in fully open mode, with no Authentication of any kind. Any calls to UpdateAuthorization will be ignored.
         /// </summary>
@@ -86,7 +88,7 @@ namespace Whalerator.Client
                             }
                             else
                             {
-                                _AuthCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service });
+                                _AuthCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service }, AuthTtl);
                             }
                         }
                         else
@@ -198,7 +200,7 @@ namespace Whalerator.Client
 
                     if (string.IsNullOrEmpty(scope) || access.Any(a => a.Actions.Contains(action)))
                     {
-                        _AuthCache.Set(GetKey(scope), new Authorization { JWT = token, Realm = Realm, Service = Service });
+                        _AuthCache.Set(GetKey(scope), new Authorization { JWT = token, Realm = Realm, Service = Service }, AuthTtl);
                         return true;
                     }
                 }

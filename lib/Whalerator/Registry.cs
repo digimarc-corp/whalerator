@@ -53,7 +53,10 @@ namespace Whalerator
         IDistributionClient DistributionAPI { get; set; }
         ICacheFactory CacheFactory { get; set; }
         IAuthHandler AuthHandler { get; set; }
-        public string LayerCache { get; set; }        
+        public string LayerCache { get; set; }
+
+        public TimeSpan VolatileTtl { get; set; } = new TimeSpan(0, 20, 0);
+        public TimeSpan? StaticTtl { get; set; } = null;
 
         #region ctors
 
@@ -74,38 +77,38 @@ namespace Whalerator
 
         #endregion
 
-        #region public methods
+        #region cached methods
 
         public IEnumerable<string> GetRepositories()
         {
-            var key = $"{DistributionAPI.Host}:repos";
+            var key = $"volatile:{DistributionAPI.Host}:repos";
             var scope = "registry:catalog:*";
 
-            return GetCached(scope, key, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
+            return GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
         }
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var key = $"{DistributionAPI.Host}:tags:{repository}";
+            var key = $"volatile:{DistributionAPI.Host}:tags:{repository}";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
+            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
         }
 
         public IEnumerable<Image> GetImages(string repository, string tag)
         {
-            var key = $"{DistributionAPI.Host}:repos:{repository}:{tag}:images";
+            var key = $"volatile:{DistributionAPI.Host}:repos:{repository}:{tag}:images";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, () => DistributionAPI.GetImages(repository, tag).Result);
+            return GetCached(scope, key, true, () => DistributionAPI.GetImages(repository, tag).Result);
         }
 
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
         {
-            var key = $"{DistributionAPI.Host}:image:{image.Digest}:files:{maxDepth}";
+            var key = $"static:image:{image.Digest}:files:{maxDepth}";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, () =>
+            return GetCached(scope, key, false, () =>
             {
                 var files = new List<ImageFile>();
 
@@ -130,10 +133,10 @@ namespace Whalerator
 
         public IEnumerable<string> GetFiles(string repository, Layer layer)
         {
-            var key = $"{DistributionAPI.Host}:layer:{layer.Digest}:files";
+            var key = $"static:layer:{layer.Digest}:files";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, () =>
+            return GetCached(scope, key, false, () =>
             {
                 var files = new List<string>();
                 using (var stream = GetLayer(repository, layer))
@@ -171,7 +174,7 @@ namespace Whalerator
 
         #endregion
 
-        private T GetCached<T>(string scope, string key, Func<T> func) where T : class
+        private T GetCached<T>(string scope, string key, bool isVolatile, Func<T> func) where T : class
         {
             var cache = CacheFactory?.Get<T>();
 
@@ -185,7 +188,7 @@ namespace Whalerator
                 else
                 {
                     result = func();
-                    cache?.Set(key, result);
+                    cache?.Set(key, result, isVolatile ? VolatileTtl : StaticTtl);
                     return result;
                 }
             }
@@ -277,8 +280,6 @@ namespace Whalerator
                 }
             }
         }
-
-
 
         public Stream GetLayer(string repository, Layer layer)
         {

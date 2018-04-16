@@ -32,15 +32,15 @@ namespace Whalerator.Support
             return false;
         }
 
-        public void Set(string key, T value)
+        public void Set(string key, T value) => Set(key, value, _Ttl);
+
+        public bool Exists(string key) => _MemCache.TryGetValue(key, out var discard);
+
+        public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
-            _MemCache.Set(key, json, _Ttl);
-        }
-
-        public bool Exists(string key)
-        {
-            return _MemCache.TryGetValue(key, out var discard);
+            if (ttl == null) { _MemCache.Set(key, json); }
+            else { _MemCache.Set(key, json, (TimeSpan)ttl); }            
         }
     }
 }
