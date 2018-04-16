@@ -14,7 +14,7 @@ namespace Whalerator.Client
         {
             var rawKey = $"{registry}:{username}:{password}:{scope}";
             var hash = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(rawKey));
-            return Convert.ToBase64String(hash);
+            return $"auth:{Convert.ToBase64String(hash)}";
         }
     }
 }

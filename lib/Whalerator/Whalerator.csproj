@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="jose-jwt" Version="2.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.1.4" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.2" />
     <PackageReference Include="SharpZipLib.NETStandard" Version="1.0.7" />
   </ItemGroup>
 

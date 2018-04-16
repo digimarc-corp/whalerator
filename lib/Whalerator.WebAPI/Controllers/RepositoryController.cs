@@ -15,27 +15,75 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoryController : Controller
     {
-        private ICache<IEnumerable<string>> _Cache;
         private IRegistryFactory _RegFactory;
 
-        public RepositoryController(IRegistryFactory regFactory, ICache<IEnumerable<string>> cache)
+        public RepositoryController(IRegistryFactory regFactory)
         {
-            _Cache = cache;
             _RegFactory = regFactory;
         }
 
-        [HttpGet("file/{*repository}")]
-        public IActionResult GetFile(string repository, string layer, string file)
+        [HttpGet("files/{digest}/{*repository}")]
+        public IActionResult GetFiles(string repository, string digest, int maxDepth = 0)
         {
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("An image identifier (digest or single-platform tag) is required."); }
+
+            digest = Validate(digest);
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
 
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
-                var data = registryApi.GetFile(repository, new Model.Layer { Digest = layer }, file);
-                
-                Response.Headers.Add("Content-Disposition", Path.GetFileName(file));
+                var images = registryApi.GetImages(repository, digest);
+                if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
+                var files = registryApi.GetImageFiles(repository, images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
+
+                return Ok(files);
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
+        string Validate(string digest)
+        {
+            var validated = digest;
+            var digestParts = digest.Trim(':').Split(':');
+            if (digestParts.Length == 1 && digestParts[0].Length == 64) { validated = $"sha256:{digestParts[0]}"; }
+            else if (digestParts.Length != 2) { validated = null; }
+
+            return validated;
+        }
+
+        [HttpGet("file/{digest}/{*repository}")]
+        public IActionResult GetFile(string repository, string digest, string path)
+        {
+            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            digest = Validate(digest);
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var image = registryApi.GetImages(repository, digest);
+
+                if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
+
+                // find a the actual layer first - this lets us work from cached file lists during the search (or build them if they're missing), and avoid expensive gunzipping until we have a hit
+                var layer = registryApi.FindFile(repository, image.First(), path);
+                if (layer == null) { return NotFound(); }
+
+                var data = registryApi.GetFile(repository, layer, path);
+
+                Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 return File(data, "application/octet-stream");
             }
@@ -49,6 +97,7 @@ namespace Whalerator.WebAPI.Controllers
             }
         }
 
+        /*
         [HttpGet("find/{*repository}")]
         public IActionResult Find(string repository, string image, string file)
         {
@@ -74,9 +123,9 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }
+        }*/
 
-        [HttpGet("tags/{*repository}")]
+        [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
         {
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);
@@ -99,8 +148,8 @@ namespace Whalerator.WebAPI.Controllers
             }
         }
 
-        [HttpGet("images/{*repository}")]
-        public IActionResult GetImages(string repository, [FromQuery]string tag)
+        [HttpGet("tag/{tag}/{*repository}")]
+        public IActionResult GetImages(string repository, string tag)
         {
             if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);

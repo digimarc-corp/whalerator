@@ -16,7 +16,7 @@ namespace Whalerator.WebAPI
         /// <param name="app"></param>
         /// <param name="root"></param>
         /// <returns></returns>
-        public static IApplicationBuilder UseActionReverser(this IApplicationBuilder app, string root)
+        public static IApplicationBuilder UseActionReverser(this IApplicationBuilder app, string root, int actions)
         {
             return app.Use(async (context, next) =>
             {
@@ -29,9 +29,9 @@ namespace Whalerator.WebAPI
                     var segments = context.Request.Path.Value.Trim('/').Split('/');
                     if (segments.Length >= rootLength + 2)
                     {
-                        var repository = segments.Skip(rootLength).Take(segments.Length - (rootLength + 1));
-                        var action = segments.Last();
-                        context.Request.Path = new PathString($"{root}/{action}/{string.Join('/', repository)}");
+                        var repository = segments.Skip(rootLength).Take(segments.Length - (rootLength + actions));
+                        var actionList = segments.Skip(segments.Length - actions).Take(actions);
+                        context.Request.Path = new PathString($"{root}/{string.Join('/', actionList)}/{string.Join('/', repository)}");
                     }
                 }
 

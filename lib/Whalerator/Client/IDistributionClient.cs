@@ -9,7 +9,7 @@ namespace Whalerator.Client
 {
     public interface IDistributionClient
     {
-
+        string Host { get; }
         Task<RepositoryList> GetRepositoriesAsync();
         Task<TagList> GetTagsAsync(string repository);
         Task<HttpResponseMessage> GetBlobAsync(string repository, string digest);

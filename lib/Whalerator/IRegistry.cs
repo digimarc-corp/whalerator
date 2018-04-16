@@ -13,5 +13,6 @@ namespace Whalerator
         IEnumerable<string> GetFiles(string repository, Layer layer);
         byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true);
         Layer FindFile(string repository, Image image, string filename, bool ignoreCase = true);
+        IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth);
     }
 }

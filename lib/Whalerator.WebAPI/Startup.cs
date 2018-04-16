@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 using Whalerator.Client;
 using Whalerator.Support;
 
@@ -46,19 +47,14 @@ namespace Whalerator.WebAPI
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             });
 
-            services.AddScoped<ICache<Authorization>>((provider) =>
-            {
-                return new MemCache<Authorization>(provider.GetService<IMemoryCache>(), new TimeSpan(1, 0, 0));
-            });
-            services.AddScoped<IRegistryFactory, RegistryFactory>();
-            services.AddScoped<ICache<IEnumerable<string>>>((provider) =>
-            {
-                return new MemCache<IEnumerable<string>>(provider.GetService<IMemoryCache>(), new TimeSpan(0, 15, 0));
-            });
-            services.AddScoped<ICacheFactory>((provider) =>
-            {
-                return new MemCacheFactory(provider.GetService<IMemoryCache>(), new TimeSpan(0, 15, 0));
-            });
+            var mux = ConnectionMultiplexer.Connect("localhost");
+
+            //services.AddScoped<ICache<Authorization>>((provider) => new MemCache<Authorization>(provider.GetService<IMemoryCache>(), new TimeSpan(1, 0, 0)));
+            //services.AddScoped<ICache<Authorization>>((provider) => new RedCache<Authorization>(mux, 15, new TimeSpan(1, 0, 0)));
+
+            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = "c:\\layerdata" });
+            //services.AddScoped<ICache<IEnumerable<string>>>((provider) => new RedCache<IEnumerable<string>>(mux, 14, new TimeSpan(0, 15, 0)));
+            services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = new TimeSpan(0, 15, 0) });
             services.AddSingleton<ICryptoAlgorithm>(crypto);
         }
 
@@ -71,7 +67,7 @@ namespace Whalerator.WebAPI
             }
 
             //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
-            app.UseActionReverser("/api/repository");
+            app.UseActionReverser("/api/repository", 2);
 
             app.UseAuthentication();
             app.UseMvc();

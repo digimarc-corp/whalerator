@@ -53,8 +53,7 @@ namespace Whalerator
         IDistributionClient DistributionAPI { get; set; }
         ICacheFactory CacheFactory { get; set; }
         IAuthHandler AuthHandler { get; set; }
-        public string LayerCache { get; set; }
-        string Host { get; set; }
+        public string LayerCache { get; set; }        
 
         #region ctors
 
@@ -79,7 +78,7 @@ namespace Whalerator
 
         public IEnumerable<string> GetRepositories()
         {
-            var key = $"{Host}:repos";
+            var key = $"{DistributionAPI.Host}:repos";
             var scope = "registry:catalog:*";
 
             return GetCached(scope, key, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
@@ -87,7 +86,7 @@ namespace Whalerator
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var key = $"{Host}:tags:{repository}";
+            var key = $"{DistributionAPI.Host}:tags:{repository}";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
@@ -95,10 +94,79 @@ namespace Whalerator
 
         public IEnumerable<Image> GetImages(string repository, string tag)
         {
-            var key = $"{Host}:{repository}:{tag}:images";
+            var key = $"{DistributionAPI.Host}:repos:{repository}:{tag}:images";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, () => DistributionAPI.GetImages(repository, tag).Result);
+        }
+
+        public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
+        {
+            var key = $"{DistributionAPI.Host}:image:{image.Digest}:files:{maxDepth}";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () =>
+            {
+                var files = new List<ImageFile>();
+
+                var layers = image.Layers.Reverse();
+                var depth = 1;
+                foreach (var layer in layers)
+                {
+                    var layerFiles = GetFiles(repository, layer);
+                    files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => new ImageFile
+                    {
+                        //Layer = layer.Digest,
+                        LayerDepth = depth,
+                        Path = f
+                    }));
+                    depth++;
+                    if (depth > maxDepth) { break; }
+                }
+
+                return files.OrderBy(f => f.Path).ToList();
+            });
+        }
+
+        public IEnumerable<string> GetFiles(string repository, Layer layer)
+        {
+            var key = $"{DistributionAPI.Host}:layer:{layer.Digest}:files";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, () =>
+            {
+                var files = new List<string>();
+                using (var stream = GetLayer(repository, layer))
+                {
+                    var temp = Path.GetTempFileName();
+                    try
+                    {
+                        using (var gunzipped = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                        {
+                            using (var gzipStream = new GZipInputStream(stream)) { gzipStream.CopyTo(gunzipped); }
+                            gunzipped.Seek(0, SeekOrigin.Begin);
+                            using (var tarStream = new TarInputStream(gunzipped))
+                            {
+                                var entry = tarStream.GetNextEntry();
+                                while (entry != null)
+                                {
+                                    files.Add(entry.Name);
+                                    entry = tarStream.GetNextEntry();
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        File.Delete(temp);
+                    }
+                }
+                return files;
+            });
         }
 
         #endregion
@@ -165,6 +233,8 @@ namespace Whalerator
 
         public byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true)
         {
+            var searchParams = path.Patherate();
+
             using (var stream = GetLayer(repository, layer))
             {
                 var temp = Path.GetTempFileName();
@@ -180,7 +250,7 @@ namespace Whalerator
                             while (entry != null)
                             {
                                 //if we're ignoring case and there are multiple possible matches, we just return the first one we find
-                                if (entry.Name.Matches(path, ignoreCase)) { break; }
+                                if (entry.Name.Matches(searchParams.searchPath, ignoreCase)) { break; }
                                 entry = tarStream.GetNextEntry();
                             }
 
@@ -208,40 +278,7 @@ namespace Whalerator
             }
         }
 
-        public IEnumerable<string> GetFiles(string repository, Layer layer)
-        {
-            var files = new List<string>();
-            using (var stream = GetLayer(repository, layer))
-            {
-                var temp = Path.GetTempFileName();
-                try
-                {
-                    using (var gunzipped = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
-                    {
-                        using (var gzipStream = new GZipInputStream(stream)) { gzipStream.CopyTo(gunzipped); }
-                        gunzipped.Seek(0, SeekOrigin.Begin);
-                        using (var tarStream = new TarInputStream(gunzipped))
-                        {
-                            var entry = tarStream.GetNextEntry();
-                            while (entry != null)
-                            {
-                                files.Add(entry.Name);
-                                entry = tarStream.GetNextEntry();
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    File.Delete(temp);
-                }
-            }
-            return files;
-        }
+
 
         public Stream GetLayer(string repository, Layer layer)
         {

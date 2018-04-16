@@ -7,6 +7,8 @@ namespace Whalerator.WebAPI
 {
     public class RegistryFactory : IRegistryFactory
     {
+        public string LayerCache { get; set; }
+
         public RegistryFactory(ICacheFactory cacheFactory)
         {
             _CacheFactory = cacheFactory;
@@ -20,7 +22,7 @@ namespace Whalerator.WebAPI
                 name = Registry.DockerHub;
             }
 
-            return new Registry(name, username, password, _CacheFactory);
+            return new Registry(name, username, password, _CacheFactory) { LayerCache = LayerCache };
         }
 
         private ICacheFactory _CacheFactory;

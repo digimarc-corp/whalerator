@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using Newtonsoft.Json;
+using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace Whalerator.Support
 {
-    /*
-    public class RedCache : ICache<int>
+    public class RedCache<T> : ICache<T> where T : class
     {
         private IConnectionMultiplexer _Mux;
         private int _Db;
@@ -20,24 +20,29 @@ namespace Whalerator.Support
             _Ttl = ttl;
         }
 
-        public void Set(string key, int value)
+        public bool Exists(string key)
         {
-            _Mux.GetDatabase(_Db).StringSet(key, value, _Ttl);
+            return _Mux.GetDatabase(_Db).KeyExists(key);
         }
 
-        public bool TryGet(string key, out int value)
+        public void Set(string key, T value)
+        {
+            var json = JsonConvert.SerializeObject(value);
+            _Mux.GetDatabase(_Db).StringSet(key, json, _Ttl);
+        }
+
+        public bool TryGet(string key, out T value)
         {
             try
             {
-                var redValue = _Mux.GetDatabase(_Db).StringGet(key);
-                value = (int)redValue; //null RedisValue casts to default(int)
-                return redValue.IsNull ? false : true;
+                var json = _Mux.GetDatabase(_Db).StringGet(key);
+                value = json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
             }
             catch
             {
-                value = default(int);
-                return false;
+                value = null;
             }
+            return value == null ? false : true;
         }
-    }*/
+    }
 }

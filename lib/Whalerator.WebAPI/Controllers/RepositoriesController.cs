@@ -23,6 +23,7 @@ namespace Whalerator.WebAPI.Controllers
             _RegFactory = regFactory;
         }
 
+        [HttpGet("list")]
         public IActionResult Get()
         {
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);
