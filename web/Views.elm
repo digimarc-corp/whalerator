@@ -5,6 +5,7 @@ import Models exposing (..)
 import Html.Events exposing (onWithOptions)
 import Json.Decode as Decode
 import Html.Attributes exposing (href)
+import Paths exposing (..)
 
 
 view : Model -> Html Msg
@@ -37,9 +38,9 @@ onLinkClick will prevent the browser reloading the page.
 nav : Model -> Html Msg
 nav model =
     div []
-        [ a [ href homePath, onLinkClick (ChangeLocation homePath) ] [ text "Home" ]
+        [ a [ href (rooted homePath), onLinkClick (ChangeLocation (rooted homePath)) ] [ text "Home" ]
         , text " "
-        , a [ href aboutPath, onLinkClick (ChangeLocation aboutPath) ] [ text "About" ]
+        , a [ href (rooted aboutPath), onLinkClick (ChangeLocation (rooted aboutPath)) ] [ text "About" ]
         , text (" " ++ toString model.changes)
         ]
 

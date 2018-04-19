@@ -1,5 +1,6 @@
 module Models exposing (..)
 
+import Paths exposing (Route)
 import Navigation
 
 {-|
@@ -11,11 +12,6 @@ type alias Model =
     , changes : Int
     }
 
-type Route
-    = HomeRoute
-    | AboutRoute
-    | NotFoundRoute
-
 {-|
 - ChangeLocation will be used for initiating a url change
 - OnLocationChange will be triggered after a location change
@@ -24,13 +20,6 @@ type Msg
     = ChangeLocation String
     | OnLocationChange Navigation.Location
 
-homePath : String
-homePath =
-    "/"
-
-aboutPath : String
-aboutPath =
-    "/about"
 
 {-|
 initialModel will be called with the current matched route.

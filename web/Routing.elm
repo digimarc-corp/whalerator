@@ -1,9 +1,9 @@
 module Routing exposing (..)
 
 import Navigation exposing (Location)
-import Models exposing (..)
 import UrlParser exposing (..)
-
+import Paths exposing (..)
+--exposing (..)
 
 
 {-|
@@ -12,9 +12,10 @@ Define how to match urls
 matchers : UrlParser.Parser (Route -> a) a
 matchers =
     UrlParser.oneOf
-        [ UrlParser.map HomeRoute UrlParser.top
-        , UrlParser.map AboutRoute (UrlParser.s "about")
+        [ UrlParser.map homePath.route UrlParser.top
+        , UrlParser.map aboutPath.route (UrlParser.s aboutPath.path)
         ]
+
 
 
 {-|
