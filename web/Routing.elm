@@ -13,6 +13,7 @@ matchers : UrlParser.Parser (Route -> a) a
 matchers =
     UrlParser.oneOf
         [ UrlParser.map homePath.route UrlParser.top
+        , UrlParser.map loginPath.route (UrlParser.s loginPath.path)
         , UrlParser.map aboutPath.route (UrlParser.s aboutPath.path)
         ]
 

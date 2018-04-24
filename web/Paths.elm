@@ -2,6 +2,7 @@ module Paths exposing (..)
 
 type Route
     = HomeRoute
+    | LoginRoute
     | AboutRoute
     | NotFoundRoute
 
@@ -17,6 +18,10 @@ rooted path =
 homePath : Path
 homePath =
     Path "" HomeRoute
+
+loginPath : Path
+loginPath =
+    Path "login" LoginRoute
 
 aboutPath : Path
 aboutPath =

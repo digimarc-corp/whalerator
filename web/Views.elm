@@ -39,9 +39,11 @@ nav : Model -> Html Msg
 nav model =
     div []
         [ a [ href (rooted homePath), onLinkClick (ChangeLocation (rooted homePath)) ] [ text "Home" ]
-        , text " "
+        , text " | "
+        , a [ href (rooted aboutPath), onLinkClick (ChangeLocation (rooted loginPath)) ] [ text "Login" ]
+        , text " | "
         , a [ href (rooted aboutPath), onLinkClick (ChangeLocation (rooted aboutPath)) ] [ text "About" ]
-        , text (" " ++ toString model.changes)
+        , text (" | " ++ toString model.changes)
         ]
 
 
@@ -53,6 +55,9 @@ page model =
     case model.route of
         HomeRoute ->
             text "Home"
+
+        LoginRoute ->
+            text "Login"
 
         AboutRoute ->
             text "About"
