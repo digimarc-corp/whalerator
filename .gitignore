@@ -5,6 +5,8 @@ web/guide/
 web/spa/
 web/elm-stuff
 
+.vscode/
+
 # User-specific files
 *.suo
 *.user
