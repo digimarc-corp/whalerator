@@ -1,0 +1,7 @@
+<p>
+  <input [(ngModel)]="username" placeholder="Username"/>
+  <input [(ngModel)]="password" placeholder="Password"/>
+  <input [(ngModel)]="registry" placeholder="Registry"/>
+  <button (click)="submit()">Submit</button>
+  <span>{{sessionService.sessionToken}}</span>
+</p>
