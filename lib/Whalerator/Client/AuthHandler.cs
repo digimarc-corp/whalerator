@@ -44,7 +44,7 @@ namespace Whalerator.Client
         {
             AnonymousMode = false;
             Username = username;
-            Password = password;
+            Password = password ?? string.Empty;
             RegistryEndpoint = Registry.HostToEndpoint(registryHost);
 
             var key = GetKey(null);
