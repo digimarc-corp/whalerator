@@ -44,6 +44,8 @@ namespace Whalerator.WebAPI
                 o.Algorithm = crypto;
             });
 
+            services.AddCors();
+
             services.AddMvc().AddJsonOptions(options =>
             {
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
@@ -79,6 +81,12 @@ namespace Whalerator.WebAPI
 
             //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
             app.UseActionReverser("/api/repository", 2);
+
+            app.UseCors(builder =>
+                builder.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+            );
 
             app.UseAuthentication();
             app.UseMvc();
