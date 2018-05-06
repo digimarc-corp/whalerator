@@ -4,6 +4,8 @@
 web/guide/
 web/spa/
 web/elm-stuff
+lib/Whalerator.Test/testkey
+lib/Whalerator.WebAPI/Properties/launchSettings.json
 
 .vscode/
 
@@ -265,3 +267,4 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+lib/Whalerator.WebAPI/Properties/launchSettings.json
