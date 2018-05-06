@@ -18,6 +18,6 @@ export class LoginFormComponent implements OnInit {
   }
 
   submit() {
-    this.sessionService.getToken(this.username, this.password, this.registry);
+    this.sessionService.getToken(this.username, this.password, this.registry).subscribe(t => console.log(`Got ${ t.token }`));
   }
 }
