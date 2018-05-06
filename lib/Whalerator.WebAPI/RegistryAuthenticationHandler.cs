@@ -29,7 +29,7 @@ namespace Whalerator.WebAPI
                 try
                 {
                     var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                    var token = Jose.JWT.Decode<Token>(header.Parameter, Options.Algorithm.ToRSACryptoServiceProvider());
+                    var token = Jose.JWT.Decode<Token>(header.Parameter, Options.Algorithm.ToDotNetRSA());
                     var json = Options.Algorithm.Decrypt(token.Crd);
                     var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
                     var principal = new ClaimsPrincipal(credentials.ToClaimsIdentity());

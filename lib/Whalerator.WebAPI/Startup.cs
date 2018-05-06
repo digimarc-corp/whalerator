@@ -20,12 +20,14 @@ namespace Whalerator.WebAPI
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, ILogger<Startup> logger)
         {
             Configuration = configuration;
+            Logger = logger;
         }
 
         public IConfiguration Configuration { get; }
+        public ILogger Logger { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -47,10 +49,23 @@ namespace Whalerator.WebAPI
                 options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
             });
 
-            var mux = ConnectionMultiplexer.Connect("localhost");
+            var redis = Configuration["redis"];
+            if (string.IsNullOrEmpty(redis))
+            {
+                Logger.LogInformation("Using in-memory cache.");
+                services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
+                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), new TimeSpan(0, 15, 0)));
+            }
+            else
+            {
+                Logger.LogInformation($"Using Redis cache ({redis})");
+                var mux = ConnectionMultiplexer.Connect("localhost");
+                services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = new TimeSpan(0, 15, 0) });
+            }
+            services.AddScoped<ICache<Authorization>>(p => p.GetService<ICacheFactory>().Get<Authorization>());
 
-            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = "c:\\layercache" });
-            services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = new TimeSpan(0, 15, 0) });
+            Logger.LogInformation($"Using layer cache ({Configuration["layercache"]})");
+            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = Configuration["layercache"] });
             services.AddSingleton<ICryptoAlgorithm>(crypto);
         }
 

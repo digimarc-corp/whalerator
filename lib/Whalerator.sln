@@ -11,7 +11,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whalerator.Integration", "W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whalerator.WebAPI", "Whalerator.WebAPI\Whalerator.WebAPI.csproj", "{7A05E9E7-99A9-4CD6-9BF1-1F54B9225D33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Whalerator.Support", "Whalerator.Support\Whalerator.Support.csproj", "{4A5C03CD-4D6F-4E03-8C16-94C8314FC724}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Whalerator.Support", "Whalerator.Support\Whalerator.Support.csproj", "{4A5C03CD-4D6F-4E03-8C16-94C8314FC724}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B2C424F0-D6A5-4258-8523-BD5F914EC0EE}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile = Dockerfile
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

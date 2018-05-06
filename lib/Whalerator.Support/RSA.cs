@@ -9,7 +9,7 @@ using Org.BouncyCastle.X509;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
+//using System.Security.Cryptography;
 using System.Text;
 
 namespace Whalerator.Support
@@ -40,15 +40,13 @@ namespace Whalerator.Support
             }
         }
 
-        public RSACryptoServiceProvider ToRSACryptoServiceProvider()
+        public System.Security.Cryptography.RSA ToDotNetRSA()
         {
             RsaPrivateCrtKeyParameters keyParams = (RsaPrivateCrtKeyParameters)_KeyPair.Private;
-            RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(keyParams);
-            CspParameters cspParameters = new CspParameters();
-            cspParameters.KeyContainerName = "MyKeyContainer";
-            RSACryptoServiceProvider rsaKey = new RSACryptoServiceProvider(KeyLength, cspParameters);
-            rsaKey.ImportParameters(rsaParameters);
-            return rsaKey;
+            System.Security.Cryptography.RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(keyParams);
+            var rsa = System.Security.Cryptography.RSA.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
         }
 
         public string Sign(string text)

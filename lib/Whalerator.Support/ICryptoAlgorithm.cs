@@ -7,7 +7,6 @@
         string Sign(string text);
         bool VerifySignature(string text, string signature);
         int KeyLength { get; }
-        System.Security.Cryptography.RSACryptoServiceProvider ToRSACryptoServiceProvider();
-
+        System.Security.Cryptography.RSA ToDotNetRSA();
     }
 }

@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Whalerator.Client;
 using Whalerator.Support;
@@ -19,10 +20,13 @@ namespace Whalerator.WebAPI.Controllers
         private ICryptoAlgorithm _Crypto;
         private ICache<Authorization> _Cache;
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache)
+        public ILogger<TokenController> Logger { get; }
+
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger)
         {
             _Crypto = crypto;
             _Cache = cache;
+            Logger = logger;
         }
 
         [HttpPost]
@@ -35,11 +39,12 @@ namespace Whalerator.WebAPI.Controllers
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = _Crypto.Encrypt(json);
 
-                var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToRSACryptoServiceProvider(), Jose.JwsAlgorithm.RS256);
+                var jwt = Jose.JWT.Encode(new Token { Crd = cipherText }, _Crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256);
                 return Ok(new { token = jwt });
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogError(ex, "Error authenticating token request.");
                 return Unauthorized();
             }
         }

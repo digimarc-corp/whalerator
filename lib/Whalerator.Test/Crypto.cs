@@ -23,7 +23,7 @@ namespace Whalerator.Test
         public void CanGetProviderWithPemKey()
         {
             var crypto = new RSA(TestKey);
-            var provider = crypto.ToRSACryptoServiceProvider();
+            var provider = crypto.ToDotNetRSA();
 
             Assert.IsNotNull(provider);
         }
@@ -32,7 +32,7 @@ namespace Whalerator.Test
         public void CanGetProviderWithSelfGeneratedKey()
         {
             var crypto = new RSA();
-            var provider = crypto.ToRSACryptoServiceProvider();
+            var provider = crypto.ToDotNetRSA();
 
             Assert.IsNotNull(provider);
         }
