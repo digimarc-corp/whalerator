@@ -10,26 +10,39 @@ const httpOptions = {
   headers: new HttpHeaders({ 'Content-Type': 'application/json' })
 };
 
+const sessionKey = 'sessionToken';
+
 @Injectable({ providedIn: 'root' })
 export class SessionService {
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    this.sessionToken = localStorage.getItem(sessionKey) ? localStorage.getItem(sessionKey) : sessionStorage.getItem(sessionKey);
+  }
 
   sessionToken: String;
 
   whaleratorUrl = 'http://localhost:16545/api';
 
-  getToken(username: String, password: String, registry: String): Observable<Token> {
+  logout(): void {
+    sessionStorage.removeItem(sessionKey);
+    localStorage.removeItem(sessionKey);
+    this.sessionToken = null;
+  }
+
+  login(username: String, password: String, registry: String, remember: Boolean): Observable<Token> {
     const tokenRequest = new TokenRequest();
     tokenRequest.username = username;
     tokenRequest.password = password;
     tokenRequest.registry = registry;
 
     const endpoint = this.whaleratorUrl + '/token';
-    const json = JSON.stringify(tokenRequest);
 
     return this.http.post<Token>(endpoint, tokenRequest, httpOptions).pipe(
-      tap((token: Token) => this.sessionToken = token.token),
+      tap((token: Token) => {
+        this.sessionToken = token.token;
+        sessionStorage.setItem(sessionKey, token.token.toString());
+        if (remember) { localStorage.setItem(sessionKey, token.token.toString()); }
+      }),
       catchError(this.handleError<Token>('getToken'))
     );
   }

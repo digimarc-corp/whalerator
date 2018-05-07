@@ -1,7 +1,13 @@
-<p>
-  <input [(ngModel)]="username" placeholder="Username"/>
-  <input [(ngModel)]="password" placeholder="Password"/>
-  <input [(ngModel)]="registry" placeholder="Registry"/>
-  <button (click)="submit()">Submit</button>
-  <span>{{sessionService.sessionToken}}</span>
-</p>
+<div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
+<ng-template #thenBlock>
+  <button (click)="logout()">Log out</button>
+</ng-template>
+<ng-template #elseBlock>
+  <form (ngSubmit)="submit()">
+    <input [(ngModel)]="username" name="username" placeholder="Username" />
+    <input [(ngModel)]="password" name="password" type="password" placeholder="Password" />
+    <input [(ngModel)]="registry" name="registry" placeholder="Registry" />
+    <span>Remember me:</span><input [(ngModel)]="remember" name="remember" type="checkbox" />
+    <button (click)="submit()">Submit</button>
+  </form>
+</ng-template>
