@@ -6,8 +6,8 @@ namespace Whalerator
 {
     public interface IRegistry
     {
-        IEnumerable<string> GetRepositories();
-        IEnumerable<string> GetTags(string repository);
+        IEnumerable<Repository> GetRepositories();
+        IEnumerable<Tag> GetTags(string repository);
         IEnumerable<Image> GetImages(string repository, string tag);
         Stream GetLayer(string repository, Layer layer);
         IEnumerable<string> GetFiles(string repository, Layer layer);

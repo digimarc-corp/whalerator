@@ -10,7 +10,7 @@ import { CatalogService } from '../catalog.service';
 })
 export class CatalogComponent implements OnInit {
 
-  public repos: String[];
+  public repos: Repository[];
 
   constructor(private sessionService: SessionService, private catalogService: CatalogService) { }
 

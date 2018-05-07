@@ -1,7 +1,6 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
 using Whalerator.Client;
-using Whalerator.Data;
 using Whalerator.Model;
 using Newtonsoft.Json;
 using System;
@@ -79,20 +78,20 @@ namespace Whalerator
 
         #region cached methods
 
-        public IEnumerable<string> GetRepositories()
+        public IEnumerable<Repository> GetRepositories()
         {
             var key = $"volatile:{DistributionAPI.Host}:repos";
             var scope = "registry:catalog:*";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
+            return GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories.Select(r => new Repository { Name = r, Delete = false, Pull = true, Push = true }));
         }
 
-        public IEnumerable<string> GetTags(string repository)
+        public IEnumerable<Tag> GetTags(string repository)
         {
             var key = $"volatile:{DistributionAPI.Host}:tags:{repository}";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
+            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags.Select(t => new Tag { Name = t }));
         }
 
         public IEnumerable<Image> GetImages(string repository, string tag)

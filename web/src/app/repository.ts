@@ -1,3 +1,3 @@
 export class Repository {
-    public Name: String;
+    public name: String;
 }
