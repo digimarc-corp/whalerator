@@ -8,5 +8,6 @@ namespace Whalerator.WebAPI
     public class Token
     {
         public string Crd { get; set; }
+        public string Usr { get; set; }
     }
 }
