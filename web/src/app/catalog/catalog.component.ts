@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { SessionService } from '../session.service';
+import { Repository } from '../repository';
+import { CatalogService } from '../catalog.service';
 
 @Component({
   selector: 'app-catalog',
@@ -8,9 +10,11 @@ import { SessionService } from '../session.service';
 })
 export class CatalogComponent implements OnInit {
 
-  constructor(private sessionService: SessionService) { }
+  public repos: String[];
+
+  constructor(private sessionService: SessionService, private catalogService: CatalogService) { }
 
   ngOnInit() {
+    this.catalogService.getRepos().subscribe(r => this.repos = r);
   }
-
 }

@@ -1,3 +1,11 @@
-<p>
-  catalog works!
-</p>
+<h2>Repositories</h2>
+<ul>
+  <li *ngFor="let repo of repos">
+    <!--<a routerLink="/detail/{{hero.id}}">
+        <span class="badge">{{hero.id}}</span> {{hero.name}}
+      </a>
+      <button class="delete" title="delete hero"
+      (click)="delete(hero)">x</button>-->
+    {{repo}}
+  </li>
+</ul>

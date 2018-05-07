@@ -1,6 +1,7 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
   <button (click)="logout()">Log out</button>
+  <span>{{sessionService.sessionToken}}</span>
 </ng-template>
 <ng-template #elseBlock>
   <form (ngSubmit)="submit()">
