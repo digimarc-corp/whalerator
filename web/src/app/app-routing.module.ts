@@ -3,14 +3,16 @@ import { RouterModule, Routes } from '@angular/router';
 import { LoginFormComponent } from './login-form/login-form.component';
 import { CatalogComponent } from './catalog/catalog.component';
 import { SessionGuard } from './session-guard.service';
+import { RepositoryComponent } from './repository/repository.component';
 
 
 const routes: Routes = [
   { path: '', redirectTo: '/catalog', pathMatch: 'full' },
-  // { path: 'dashboard', component: DashboardComponent },
-  // { path: 'detail/:id', component: HeroDetailComponent },
   { path: 'login', component: LoginFormComponent },
-  { path: 'catalog', component: CatalogComponent, canActivate: [SessionGuard] }
+  { path: 'catalog', component: CatalogComponent, canActivate: [SessionGuard] },
+  { path: 'repo', component: RepositoryComponent, canActivate: [SessionGuard], children: [{
+    path: '**', component: RepositoryComponent
+  }] }
 ];
 
 @NgModule({

@@ -16,12 +16,12 @@ export class CatalogService {
   constructor(private http: HttpClient,
     private sessionService: SessionService) { }
 
-  getRepos(): Observable<String[]> {
+  getRepos(): Observable<Repository[]> {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get<String[]>(this.listUrl, { headers: headers }).pipe(
+    return this.http.get<Repository[]>(this.listUrl, { headers: headers }).pipe(
       tap(repos => console.log('got repo list')),
-      catchError(this.handleError<String[]>('getRepos'))
+      catchError(this.handleError<Repository[]>('getRepos'))
     );
   }
 

@@ -6,6 +6,6 @@
       </a>
       <button class="delete" title="delete hero"
       (click)="delete(hero)">x</button>-->
-    {{repo.name}}
+    <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
   </li>
 </ul>
