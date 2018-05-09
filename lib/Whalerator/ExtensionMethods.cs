@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace Whalerator
 {
     public static class ExtensionMethods
     {
+        public static string ToImageSetDigest(this IEnumerable<Model.Image> images) {
+            return string.Join(":", images.Select(i => i.Digest));
+        }
+
         public static TValue Get<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key) where TValue : class
         {
             return dict.ContainsKey(key) ? dict[key] : null;

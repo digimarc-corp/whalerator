@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { SessionService } from './session.service';
 import { Observable, of } from 'rxjs';
-import { Repository } from './repository';
+import { Repository } from './models/repository';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
+import { Image } from './models/image';
 
 
 @Injectable({
@@ -11,17 +12,38 @@ import { catchError, map, tap } from 'rxjs/operators';
 })
 export class CatalogService {
 
-  private listUrl = 'http://localhost:16545/api/repositories/list';
+  private apiBase = 'http://localhost:16545/api';
 
   constructor(private http: HttpClient,
     private sessionService: SessionService) { }
 
   getRepos(): Observable<Repository[]> {
+    const listUrl = this.apiBase + '/repositories/list';
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get<Repository[]>(this.listUrl, { headers: headers }).pipe(
+    return this.http.get<Repository[]>(listUrl, { headers: headers }).pipe(
       tap(repos => console.log('got repo list')),
       catchError(this.handleError<Repository[]>('getRepos'))
+    );
+  }
+
+  getTags(repo: String): Observable<String[]> {
+    const tagsUrl = this.apiBase + `/repository/${repo}/tags/list`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get<String[]>(tagsUrl, { headers: headers }).pipe(
+      tap(repos => console.log('got tag list')),
+      catchError(this.handleError<String[]>('getTags'))
+    );
+  }
+
+  getImage(repo: String, tag: String): Observable<Image> {
+    const imageUrl = this.apiBase + `/repository/${repo}/tag/${tag}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get<Image>(imageUrl, { headers: headers }).pipe(
+      tap(repos => console.log('got tag list')),
+      catchError(this.handleError<Image>('getTags'))
     );
   }
 

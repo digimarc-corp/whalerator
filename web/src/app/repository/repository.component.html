@@ -1,3 +1,13 @@
 <p>
   {{Name}}
 </p>
+<ul>
+  <li *ngFor="let key of objectKeys(Images)">
+    <span>{{Images[key].setDigest}}</span>
+    <ul>
+      <li *ngFor="let tag of Images[key].tags">
+        <span>{{tag}}</span>
+      </li>
+    </ul>
+  </li>
+</ul>

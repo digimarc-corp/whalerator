@@ -8,13 +8,15 @@ import { LoginFormComponent } from './login-form/login-form.component';
 import { AppRoutingModule } from './/app-routing.module';
 import { CatalogComponent } from './catalog/catalog.component';
 import { RepositoryComponent } from './repository/repository.component';
+import { TagSortPipe } from './tag-sort.pipe';
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginFormComponent,
     CatalogComponent,
-    RepositoryComponent
+    RepositoryComponent,
+    TagSortPipe
   ],
   imports: [
     BrowserModule,

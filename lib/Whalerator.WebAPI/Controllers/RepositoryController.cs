@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
@@ -16,10 +17,12 @@ namespace Whalerator.WebAPI.Controllers
     public class RepositoryController : Controller
     {
         private IRegistryFactory _RegFactory;
+        private ILogger<RepositoryController> _Logger;
 
-        public RepositoryController(IRegistryFactory regFactory)
+        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger)
         {
             _RegFactory = regFactory;
+            this._Logger = logger;
         }
 
         [HttpGet("files/{digest}/{*repository}")]
@@ -128,6 +131,7 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
         {
+            _Logger.LogInformation($"Got request for {repository}");
             var credentials = RegistryCredentials.FromClaimsPrincipal(User);
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
@@ -163,7 +167,7 @@ namespace Whalerator.WebAPI.Controllers
                 var platforms = images.Select(i => i.Platform);
                 var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
 
-                var result = new { Platforms = platforms, Date = date, Images = images };
+                var result = new { Platforms = platforms, Date = date, Images = images, SetDigest = images.ToImageSetDigest() };
 
                 return Ok(result);
             }

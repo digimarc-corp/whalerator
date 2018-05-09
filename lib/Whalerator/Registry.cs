@@ -86,12 +86,12 @@ namespace Whalerator
             return GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories.Select(r => new Repository { Name = r, Delete = false, Pull = true, Push = true }));
         }
 
-        public IEnumerable<Tag> GetTags(string repository)
+        public IEnumerable<string> GetTags(string repository)
         {
             var key = $"volatile:{DistributionAPI.Host}:tags:{repository}";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags.Select(t => new Tag { Name = t }));
+            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
         }
 
         public IEnumerable<Image> GetImages(string repository, string tag)
