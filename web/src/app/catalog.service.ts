@@ -4,7 +4,7 @@ import { Observable, of } from 'rxjs';
 import { Repository } from './models/repository';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
-import { Image } from './models/image';
+import { ImageSet } from './models/imageSet';
 
 
 @Injectable({
@@ -37,13 +37,13 @@ export class CatalogService {
     );
   }
 
-  getImage(repo: String, tag: String): Observable<Image> {
+  getImage(repo: String, tag: String): Observable<ImageSet> {
     const imageUrl = this.apiBase + `/repository/${repo}/tag/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get<Image>(imageUrl, { headers: headers }).pipe(
+    return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
       tap(repos => console.log('got tag list')),
-      catchError(this.handleError<Image>('getTags'))
+      catchError(this.handleError<ImageSet>('getTags'))
     );
   }
 

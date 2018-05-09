@@ -17,6 +17,7 @@ FROM build AS publish
 RUN dotnet publish -c Release -o /app
 
 FROM base AS final
+COPY docker-readme.md /README.md
 WORKDIR /app
 COPY --from=publish /app .
 ENV layercache="/var/data"

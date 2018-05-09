@@ -2,8 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { PathLocationStrategy, LocationStrategy } from '@angular/common';
 import { CatalogService } from '../catalog.service';
-import { Image } from '../models/image';
+import { ImageSet } from '../models/imageSet';
 import { VersionSort } from '../version-sort';
+import { Platform } from '../models/platform';
 
 @Component({
   selector: 'app-repository',
@@ -12,11 +13,14 @@ import { VersionSort } from '../version-sort';
 })
 export class RepositoryComponent implements OnInit {
 
-  public Name: String;
+  public name: String;
 
-  public Tags: String[];
+  public tags: String[];
+  public selectedTag: String;
+  public selectedImage: ImageSet;
 
-  public Images: { [id: string]: Image} = { };
+  public images: { [id: string]: ImageSet } = { };
+  public tagMap: { [tag: string]: ImageSet } = { };
 
   private objectKeys = Object.keys;
 
@@ -26,34 +30,37 @@ export class RepositoryComponent implements OnInit {
     this.getRepo();
   }
 
+  getDigestFor(imageSet: ImageSet, platform: Platform): String {
+    return imageSet.images.find(i => i.platform.architecture === platform.architecture && i.platform.os === platform.os).digest;
+  }
+
+  onSelect(tag: String) {
+    this.selectedTag = tag;
+    this.selectedImage = this.tagMap[tag.toString()];
+  }
+
   getRepo(): void {
-    this.Name = this.route.snapshot.children[0].url.join('/');
-    this.catalog.getTags(this.Name).subscribe(tags => {
-      const latest = tags.filter(t => t === 'latest');
-      const others = tags.filter(s => s !== 'latest');
-      const final = latest.concat(others.sort(VersionSort.sort));
-      this.Tags = final;
-      this.Tags.forEach(t => this.getImage(t));
-      /*if (latest) {
-        this.catalog.getImage(this.Name, latest[0]).subscribe(i => {
-          i.tags = [latest[0]];
-          this.Images[i.setDigest.toString()] = i;
-          others.forEach(t => this.getImage(t));
-        });
-      } else {
-        this.Tags.forEach(t => this.getImage(t));
-      }*/
+    this.name = this.route.snapshot.children[0].url.join('/');
+    this.catalog.getTags(this.name).subscribe(tags => {
+      this.tags = tags.sort(VersionSort.sort);
+      if (this.tags[0].toLowerCase() === 'latest') { this.selectedTag = this.tags[0]; }
+      this.tags.forEach(t => this.getImage(t));
     });
   }
 
   getImage(tag: String): void {
-    this.catalog.getImage(this.Name, tag).subscribe(i => {
-      if (!this.Images[i.setDigest.toString()]) {
+    this.catalog.getImage(this.name, tag).subscribe(i => {
+      const digest = i.setDigest.toString();
+      if (!this.images[digest]) {
         i.tags = [tag];
-        this.Images[i.setDigest.toString()] = i;
+        this.images[digest] = i;
       } else {
-        this.Images[i.setDigest.toString()].tags.push(tag);
+        this.images[digest].tags.push(tag);
       }
+
+      this.tagMap[tag.toString()] = this.images[digest];
+      if (tag === this.selectedTag) { this.selectedImage = this.images[digest]; }
+
     });
   }
 }

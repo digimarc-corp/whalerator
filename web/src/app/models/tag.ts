@@ -1,6 +1,6 @@
-import { Image } from './image';
+import { ImageSet } from './imageSet';
 
 export class Tag {
     public name: String;
-    public image: Image;
+    public image: ImageSet;
 }

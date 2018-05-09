@@ -1,13 +1,12 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { Image } from './models/image';
+import { ImageSet } from './models/imageSet';
 
 @Pipe({
   name: 'tagSort'
 })
 export class TagSortPipe implements PipeTransform {
 
-  transform(value: Image[]): any {
+  transform(value: ImageSet[]): any {
     return value.reverse();
   }
-
 }

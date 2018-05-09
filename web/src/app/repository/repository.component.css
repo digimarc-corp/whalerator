@@ -1,0 +1,26 @@
+.tagList {
+    float: left;
+    overflow: auto;
+    padding: 10px;
+    /*overflow-x: hidden;
+    overflow-y: auto;
+    /*width: 20%;*/
+}
+
+.selected {
+    font-weight: bold;    
+}
+
+.tagLabel {
+    margin: 0.1em;
+    padding: 0.1em 0.4em;
+    background-color: lightblue;
+    border: 0.05em solid blue;
+    color: darkblue;
+    display: inline-block;
+    border-radius: 0.1em;
+}
+
+.details {
+    padding: 10px;
+}
