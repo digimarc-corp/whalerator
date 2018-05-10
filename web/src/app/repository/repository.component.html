@@ -1,39 +1,34 @@
-<p>
-  {{Name}}
-</p>
+<h1>{{Name}}</h1>
 <div class="repositoryPane">
-  <div style="overflow:scroll;" class="tagList">
-    <ul>
-      <li *ngFor="let tag of tags" (click)="onSelect(tag)" [class.selected]="tag === selectedTag">
-        <span class="tagLabel">{{tag}}</span>
-      </li>
-    </ul>
+  <div class="tagList">
+    <div *ngFor="let tag of tags" (click)="onSelect(tag)" [class.selected]="tag === selectedTag">
+      <span class="tag label">{{tag}}</span>
+    </div>
   </div>
   <div class="details">
-    <div *ngIf="selectedTag; then thenBlock else elseBlock"></div>
-    <ng-template #thenBlock>
+    <div *ngIf="selectedTag; then tagBlock else promptBlock"></div>
+    <ng-template #tagBlock>
       <h1 class="title">{{name}}:{{selectedTag}}</h1>
-      <div *ngIf="selectedImageSet; then thenBlock else elseBlock"></div>
-      <ng-template #thenBlock>
+      <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
+      <ng-template #detailBlock>
         <div>Last update: {{selectedImageSet.date}}</div>
-        <div>Tags:</div>
-        <span class="tagLabel" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
-        <div>Supported platforms
-          <ul>
-            <li *ngFor="let platform of selectedImageSet.platforms">
-              <span>{{platform.os}}/{{platform.architecture}} - {{getDigestFor(selectedImageSet, platform)}}</span>
-            </li>
-          </ul>
+        <div class="tags">Tags:
+          <span class="tag label" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
+        </div>
+        <div class="platforms">Platforms
+          <span class="platform label" *ngFor="let platform of selectedImageSet.platforms">
+            {{platform.os}}/{{platform.architecture}}
+          </span>
         </div>
         <div class="readme">
           <markdown [data]=readme></markdown>
         </div>
       </ng-template>
-      <ng-template #elseBlock>
+      <ng-template #loadingBlock>
         <span>Loading image details</span>
       </ng-template>
     </ng-template>
-    <ng-template #elseBlock>
+    <ng-template #promptBlock>
       <span>Choose a tag to view details.</span>
     </ng-template>
   </div>

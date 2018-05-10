@@ -2,16 +2,20 @@ button {
     margin: 1em;
 }
 
+.formBox {
+    /*text-align: center;*/
+}
+
 form > * {
     margin: 1em;
     display: block;
 }
 
-.token {
-    width: 50%;
-    border: 0.1em solid grey;
-    color: grey;
-    background-color: lightgrey;    
+.token {    
+    border: 0.05em solid #999;
+    color: #999;
+    background-color: #CCC;
     padding: 0.4em;
     word-break: break-all;
+    margin: 3em;
 }

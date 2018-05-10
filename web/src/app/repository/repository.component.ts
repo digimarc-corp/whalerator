@@ -46,7 +46,7 @@ export class RepositoryComponent implements OnInit {
     this.name = this.route.snapshot.children[0].url.join('/');
     this.catalog.getTags(this.name).subscribe(tags => {
       this.tags = tags.sort(VersionSort.sort);
-      if (this.tags[0].toLowerCase() === 'latest') { this.selectedTag = this.tags[0]; }
+      this.selectedTag = this.tags[0];
       this.tags.forEach(t => this.getImage(t));
     });
   }
@@ -70,7 +70,7 @@ export class RepositoryComponent implements OnInit {
   }
 
   getReadme(imageSet: ImageSet, platform: Platform) {
-    this.readme = 'Looking for embedded documentation.';
+    this.readme = 'Searching for documentation.';
     const digest = this.getDigestFor(imageSet, platform);
     this.catalog.getFile(this.name, digest, 'readme.md').subscribe(r => this.readme = r.toString());
   }

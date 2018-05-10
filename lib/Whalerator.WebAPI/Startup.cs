@@ -56,7 +56,7 @@ namespace Whalerator.WebAPI
             {
                 Logger.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
-                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), new TimeSpan(0, 15, 0)));
+                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), new TimeSpan(0, 30, 0)));
             }
             else
             {

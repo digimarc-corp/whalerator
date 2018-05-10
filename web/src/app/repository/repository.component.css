@@ -5,7 +5,10 @@
 }
 
 .tagList {
-    min-width: 20%;
+    border-right: 0.05em dotted #222;
+    margin-top: 5em;
+    padding: 0.5em;
+    text-align: right;
 }
 
 .selected {
@@ -13,20 +16,31 @@
 }
 
 .readme {
-    background-color: #FCFCFC;
-    border: 0.05em solid #999999;
+    border-top: 0.05em dotted #222;
     border-radius: 0.3em;
-    padding: 0.2em;
+    margin: 0.3em;
+    padding: 0.3em;
 }
 
-.tagLabel {
+.label {
     margin: 0.1em;
     padding: 0.1em 0.4em;
-    background-color: lightblue;
-    border: 0.05em solid blue;
-    color: darkblue;
     display: inline-block;
     border-radius: 0.1em;
+    border-style: solid;
+    border-width: 0.05em;
+}
+
+.tag {
+    background-color: #DDF;
+    border-color: #88F;
+    color: #00C;
+}
+
+.platform {
+    background-color: #FD4;
+    border-color: #D81;
+    color: #930;
 }
 
 .details {

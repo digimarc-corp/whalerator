@@ -53,7 +53,7 @@ export class CatalogService {
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get(fileUrl, { headers: headers, responseType: 'text' }).pipe(
       tap(repos => console.log('got file contents')),
-      catchError(this.handleGetFileError('getFile', path))
+      catchError(this.handleError('getFile', 'No embedded documentation found'))
     );
   }
 
