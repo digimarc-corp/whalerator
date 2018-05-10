@@ -13,17 +13,20 @@
     <div *ngIf="selectedTag; then thenBlock else elseBlock"></div>
     <ng-template #thenBlock>
       <h1 class="title">{{name}}:{{selectedTag}}</h1>
-      <div *ngIf="selectedImage; then thenBlock else elseBlock"></div>
+      <div *ngIf="selectedImageSet; then thenBlock else elseBlock"></div>
       <ng-template #thenBlock>
-        <div>Last update: {{selectedImage.date}}</div>
+        <div>Last update: {{selectedImageSet.date}}</div>
         <div>Tags:</div>
-        <span class="tagLabel" *ngFor="let tag of selectedImage.tags">{{tag}}</span>
+        <span class="tagLabel" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
         <div>Supported platforms
           <ul>
-            <li *ngFor="let platform of selectedImage.platforms">
-              <span>{{platform.os}}/{{platform.architecture}} - {{getDigestFor(selectedImage, platform)}}</span>
+            <li *ngFor="let platform of selectedImageSet.platforms">
+              <span>{{platform.os}}/{{platform.architecture}} - {{getDigestFor(selectedImageSet, platform)}}</span>
             </li>
           </ul>
+        </div>
+        <div class="readme">
+          <markdown [data]=readme></markdown>
         </div>
       </ng-template>
       <ng-template #elseBlock>

@@ -1,14 +1,22 @@
+
+.repositoryPane {
+    display: flex;
+    flex-direction: row;
+}
+
 .tagList {
-    float: left;
-    overflow: auto;
-    padding: 10px;
-    /*overflow-x: hidden;
-    overflow-y: auto;
-    /*width: 20%;*/
+    min-width: 20%;
 }
 
 .selected {
     font-weight: bold;    
+}
+
+.readme {
+    background-color: #FCFCFC;
+    border: 0.05em solid #999999;
+    border-radius: 0.3em;
+    padding: 0.2em;
 }
 
 .tagLabel {

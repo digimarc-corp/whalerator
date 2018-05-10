@@ -10,6 +10,8 @@ import { CatalogComponent } from './catalog/catalog.component';
 import { RepositoryComponent } from './repository/repository.component';
 import { TagSortPipe } from './tag-sort.pipe';
 
+import { MarkdownModule } from 'ngx-markdown';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -19,6 +21,7 @@ import { TagSortPipe } from './tag-sort.pipe';
     TagSortPipe
   ],
   imports: [
+    MarkdownModule.forRoot(),
     BrowserModule,
     FormsModule,
     HttpClientModule,

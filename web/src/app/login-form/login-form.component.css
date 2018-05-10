@@ -1,0 +1,17 @@
+button {
+    margin: 1em;
+}
+
+form > * {
+    margin: 1em;
+    display: block;
+}
+
+.token {
+    width: 50%;
+    border: 0.1em solid grey;
+    color: grey;
+    background-color: lightgrey;    
+    padding: 0.4em;
+    word-break: break-all;
+}

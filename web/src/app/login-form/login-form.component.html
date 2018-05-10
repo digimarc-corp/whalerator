@@ -1,14 +1,16 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
   <button (click)="logout()">Log out</button>
-  <span>{{sessionService.sessionToken}}</span>
+  <div class="token">
+  <span>{{sessionService.sessionToken}}</span>  
+  </div>
 </ng-template>
 <ng-template #elseBlock>
   <form (ngSubmit)="submit()">
     <input [(ngModel)]="username" name="username" placeholder="Username" />
     <input [(ngModel)]="password" name="password" type="password" placeholder="Password" />
     <input [(ngModel)]="registry" name="registry" placeholder="Registry" />
-    <span>Remember me:</span><input [(ngModel)]="remember" name="remember" type="checkbox" />
+    <span>Remember me:<input [(ngModel)]="remember" name="remember" type="checkbox" /></span>
     <button (click)="submit()">Submit</button>
   </form>
 </ng-template>

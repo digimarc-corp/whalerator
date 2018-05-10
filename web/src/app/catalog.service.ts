@@ -42,9 +42,30 @@ export class CatalogService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
-      tap(repos => console.log('got tag list')),
-      catchError(this.handleError<ImageSet>('getTags'))
+      tap(repos => console.log('got image set')),
+      catchError(this.handleError<ImageSet>('getImage'))
     );
+  }
+
+  getFile(repo: String, digest: String, path: String): Observable<Object> {
+    const fileUrl = this.apiBase + `/repository/${repo}/file/${digest}?path=${path}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get(fileUrl, { headers: headers, responseType: 'text' }).pipe(
+      tap(repos => console.log('got file contents')),
+      catchError(this.handleGetFileError('getFile', path))
+    );
+  }
+
+  private handleGetFileError (operation = 'operation', path: String, result?: Object) {
+    return (error: any): Observable<Object> => {
+      if (error.status === 404) {
+        return of(`Could not find a file at \`/${path}\`.`);
+      } else {
+        console.error(error);
+        return of(result);
+      }
+    };
   }
 
   /**

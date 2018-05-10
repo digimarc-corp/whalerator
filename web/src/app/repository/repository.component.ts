@@ -5,6 +5,7 @@ import { CatalogService } from '../catalog.service';
 import { ImageSet } from '../models/imageSet';
 import { VersionSort } from '../version-sort';
 import { Platform } from '../models/platform';
+import { Image } from '../models/image';
 
 @Component({
   selector: 'app-repository',
@@ -17,7 +18,8 @@ export class RepositoryComponent implements OnInit {
 
   public tags: String[];
   public selectedTag: String;
-  public selectedImage: ImageSet;
+  public selectedImageSet: ImageSet;
+  public readme: String;
 
   public images: { [id: string]: ImageSet } = { };
   public tagMap: { [tag: string]: ImageSet } = { };
@@ -36,7 +38,8 @@ export class RepositoryComponent implements OnInit {
 
   onSelect(tag: String) {
     this.selectedTag = tag;
-    this.selectedImage = this.tagMap[tag.toString()];
+    this.selectedImageSet = this.tagMap[tag.toString()];
+    this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0]);
   }
 
   getRepo(): void {
@@ -59,8 +62,16 @@ export class RepositoryComponent implements OnInit {
       }
 
       this.tagMap[tag.toString()] = this.images[digest];
-      if (tag === this.selectedTag) { this.selectedImage = this.images[digest]; }
-
+      if (tag === this.selectedTag) {
+        this.selectedImageSet = this.images[digest];
+        this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0]);
+      }
     });
+  }
+
+  getReadme(imageSet: ImageSet, platform: Platform) {
+    this.readme = 'Looking for embedded documentation.';
+    const digest = this.getDigestFor(imageSet, platform);
+    this.catalog.getFile(this.name, digest, 'readme.md').subscribe(r => this.readme = r.toString());
   }
 }
