@@ -20,5 +20,5 @@ FROM base AS final
 COPY docker-readme.md /README.md
 WORKDIR /app
 COPY --from=publish /app .
-ENV layercache="/var/data"
+COPY config-docker.yaml config.yaml
 ENTRYPOINT ["dotnet", "Whalerator.WebAPI.dll"]

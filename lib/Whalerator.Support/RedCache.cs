@@ -30,6 +30,22 @@ namespace Whalerator.Support
 
         public void Set(string key, T value) => Set(key, value, _Ttl);
 
+        public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
+        {
+            var value = Guid.NewGuid().ToString();
+            var db = _Mux.GetDatabase(_Db);
+            var start = DateTime.UtcNow;
+            while (!db.LockTake(key, value, lockTime))
+            {
+                if (DateTime.Now - start > lockTimeout) { throw new TimeoutException($"Could not get a lock for {key} in the allotted time."); }
+                System.Threading.Thread.Sleep(500);
+            }
+            return new Lock(
+                releaseAction: () => { db.LockRelease(key, value); },
+                extendAction: (time) => { return db.LockExtend(key, value, time); }
+            );
+        }
+
         public bool TryGet(string key, out T value)
         {
             try

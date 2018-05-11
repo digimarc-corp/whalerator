@@ -8,6 +8,8 @@ namespace Whalerator.WebAPI
     public class RegistryFactory : IRegistryFactory
     {
         public string LayerCache { get; set; }
+        public TimeSpan VolatileTtl { get; set; }
+        public TimeSpan? StaticTtl { get; set; }
 
         public RegistryFactory(ICacheFactory cacheFactory)
         {
@@ -22,7 +24,7 @@ namespace Whalerator.WebAPI
                 name = Registry.DockerHub;
             }
 
-            return new Registry(name, username, password, _CacheFactory) { LayerCache = LayerCache };
+            return new Registry(name, username, password, _CacheFactory) { LayerCache = LayerCache, VolatileTtl = VolatileTtl, StaticTtl = StaticTtl };
         }
 
         private ICacheFactory _CacheFactory;

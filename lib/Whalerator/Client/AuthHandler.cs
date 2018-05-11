@@ -16,7 +16,7 @@ namespace Whalerator.Client
 
         public AuthHandler(ICache<Authorization> cache)
         {
-            _AuthCache = cache ?? new DictCache<Authorization>();
+            _AuthCache = cache;
         }
 
 

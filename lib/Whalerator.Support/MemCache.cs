@@ -32,6 +32,55 @@ namespace Whalerator.Support
             return false;
         }
 
+        #region locking
+        bool LockTake(string key, string value, TimeSpan lockTime)
+        {
+            if (Exists(key)) { return false; }
+            else
+            {
+                _MemCache.Set(key, value, lockTime);
+                var check = _MemCache.Get<string>(key);
+                return check == value;
+            }
+        }
+
+        void LockRelease(string key, string value)
+        {
+            var check = _MemCache.Get<string>(key);
+            if (check == value) { _MemCache.Remove(key); }
+        }
+
+        bool LockExtend(string key, string value, TimeSpan time)
+        {
+            var check = _MemCache.Get<string>(key);
+            if (check == value)
+            {
+                _MemCache.Set(key, value, time);
+                check = _MemCache.Get<string>(key);
+                return check == value;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
+        {
+            var value = Guid.NewGuid().ToString();
+            var start = DateTime.UtcNow;
+            while (!LockTake(key, value, lockTime))
+            {
+                if (DateTime.Now - start > lockTimeout) { throw new TimeoutException($"Could not get a lock for {key} in the allotted time."); }
+                System.Threading.Thread.Sleep(500);
+            }
+            return new Lock(
+                releaseAction: () => { LockRelease(key, value); },
+                extendAction: (time) => { return LockExtend(key, value, time); }
+            );
+        }
+        #endregion
+
         public void Set(string key, T value) => Set(key, value, _Ttl);
 
         public bool Exists(string key) => _MemCache.TryGetValue(key, out var discard);
@@ -40,7 +89,7 @@ namespace Whalerator.Support
         {
             var json = JsonConvert.SerializeObject(value);
             if (ttl == null) { _MemCache.Set(key, json); }
-            else { _MemCache.Set(key, json, (TimeSpan)ttl); }            
+            else { _MemCache.Set(key, json, (TimeSpan)ttl); }
         }
     }
 }

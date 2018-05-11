@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Whalerator
 {
@@ -83,7 +84,17 @@ namespace Whalerator
             var key = $"volatile:{DistributionAPI.Host}:repos";
             var scope = "registry:catalog:*";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories.Select(r => new Repository { Name = r, Delete = false, Pull = true, Push = true }));
+            var cachedRepositories = GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
+            var repositories = cachedRepositories.Where(r => AuthHandler.Authorize($"repository:{r}:pull"))
+                    .Select(r => new Repository
+                    {
+                        Name = r,
+                        Pull = true,
+                        Push = AuthHandler.Authorize($"repository:{r}:push"),
+                        Delete = AuthHandler.Authorize($"repository:{r}:*")
+                    });
+
+            return repositories;
         }
 
         public IEnumerable<string> GetTags(string repository)
@@ -105,28 +116,32 @@ namespace Whalerator
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
         {
             var key = $"static:image:{image.Digest}:files:{maxDepth}";
+            var lockKey = $"lock:static:image:{image.Digest}:files:{maxDepth}";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, false, () =>
             {
-                var files = new List<ImageFile>();
-
-                var layers = image.Layers.Reverse();
-                var depth = 1;
-                foreach (var layer in layers)
+                using (var lockObj = CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
                 {
-                    var layerFiles = GetFiles(repository, layer);
-                    files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => new ImageFile
-                    {
-                        //Layer = layer.Digest,
-                        LayerDepth = depth,
-                        Path = f
-                    }));
-                    depth++;
-                    if (depth > maxDepth) { break; }
-                }
+                    var files = new List<ImageFile>();
 
-                return files.OrderBy(f => f.Path).ToList();
+                    var layers = image.Layers.Reverse();
+                    var depth = 1;
+                    foreach (var layer in layers)
+                    {
+                        var layerFiles = GetFiles(repository, layer);
+                        files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => new ImageFile
+                        {
+                            //Layer = layer.Digest,
+                            LayerDepth = depth,
+                            Path = f
+                        }));
+                        depth++;
+                        if (depth > maxDepth) { break; }
+                    }
+
+                    return files.OrderBy(f => f.Path).ToList();
+                }
             });
         }
 
@@ -171,6 +186,61 @@ namespace Whalerator
             });
         }
 
+        public byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true)
+        {
+            var key = $"static:layer:{layer.Digest}:file:{path}";
+            var scope = $"repository:{repository}:pull";
+
+            return GetCached(scope, key, false, () =>
+            {
+
+                var searchParams = path.Patherate();
+
+                using (var stream = GetLayer(repository, layer))
+                {
+                    var temp = Path.GetTempFileName();
+                    try
+                    {
+                        using (var gunzipped = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                        {
+                            using (var gzipStream = new GZipInputStream(stream)) { gzipStream.CopyTo(gunzipped); }
+                            gunzipped.Seek(0, SeekOrigin.Begin);
+                            using (var tarStream = new TarInputStream(gunzipped))
+                            {
+                                var entry = tarStream.GetNextEntry();
+                                while (entry != null)
+                                {
+                                    //if we're ignoring case and there are multiple possible matches, we just return the first one we find
+                                    if (entry.Name.Matches(searchParams.searchPath, ignoreCase)) { break; }
+                                    entry = tarStream.GetNextEntry();
+                                }
+
+                                if (entry == null || entry.IsDirectory)
+                                {
+                                    throw new FileNotFoundException();
+                                }
+                                else
+                                {
+                                    var bytes = new byte[entry.Size];
+                                    tarStream.Read(bytes, 0, (int)entry.Size);
+                                    return bytes;
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        File.Delete(temp);
+                    }
+                }
+            });
+        }
+
+
         #endregion
 
         private T GetCached<T>(string scope, string key, bool isVolatile, Func<T> func) where T : class
@@ -182,10 +252,16 @@ namespace Whalerator
             {
                 if (cache != null && cache.TryGet(key, out result))
                 {
+#if DEBUG
+                    Console.WriteLine($"Cache hit {key}");
+#endif
                     return result;
                 }
                 else
                 {
+#if DEBUG
+                    Console.WriteLine($"Cache miss {key}");
+#endif
                     result = func();
                     cache?.Set(key, result, isVolatile ? VolatileTtl : StaticTtl);
                     return result;
@@ -233,52 +309,6 @@ namespace Whalerator
             return null;
         }
 
-        public byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true)
-        {
-            var searchParams = path.Patherate();
-
-            using (var stream = GetLayer(repository, layer))
-            {
-                var temp = Path.GetTempFileName();
-                try
-                {
-                    using (var gunzipped = new FileStream(temp, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
-                    {
-                        using (var gzipStream = new GZipInputStream(stream)) { gzipStream.CopyTo(gunzipped); }
-                        gunzipped.Seek(0, SeekOrigin.Begin);
-                        using (var tarStream = new TarInputStream(gunzipped))
-                        {
-                            var entry = tarStream.GetNextEntry();
-                            while (entry != null)
-                            {
-                                //if we're ignoring case and there are multiple possible matches, we just return the first one we find
-                                if (entry.Name.Matches(searchParams.searchPath, ignoreCase)) { break; }
-                                entry = tarStream.GetNextEntry();
-                            }
-
-                            if (entry == null || entry.IsDirectory)
-                            {
-                                throw new FileNotFoundException();
-                            }
-                            else
-                            {
-                                var bytes = new byte[entry.Size];
-                                tarStream.Read(bytes, 0, (int)entry.Size);
-                                return bytes;
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    File.Delete(temp);
-                }
-            }
-        }
 
         public Stream GetLayer(string repository, Layer layer)
         {
