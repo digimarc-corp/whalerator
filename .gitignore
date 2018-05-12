@@ -7,6 +7,9 @@ web/spa/
 web/elm-stuff
 /toh*
 
+#bootstrap samples
+/bstest
+
 lib/Whalerator.Test/testkey
 lib/Whalerator.WebAPI/Properties/launchSettings.json
 

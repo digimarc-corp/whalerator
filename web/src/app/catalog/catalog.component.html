@@ -1,4 +1,5 @@
 <h2>Repositories</h2>
 <div class="repository" *ngFor="let repo of repos">
   <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
+  <span class="access">{{repo.delete ? '*' : repo.push ? 'push' : 'pull'}}</span>
 </div>

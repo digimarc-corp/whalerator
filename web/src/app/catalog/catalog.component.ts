@@ -15,7 +15,7 @@ export class CatalogComponent implements OnInit {
   constructor(private sessionService: SessionService, private catalogService: CatalogService) { }
 
   ngOnInit() {
-    this.catalogService.getRepos().subscribe(r => this.repos = r.sort(this.repositorySort));
+    this.catalogService.getRepos().subscribe(r => this.repos = r);//.sort(this.repositorySort));
   }
 
   repositorySort(a: Repository, b: Repository): number {
