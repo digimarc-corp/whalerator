@@ -34,6 +34,7 @@ namespace Whalerator.WebAPI
         {
             var config = new Config();
             Configuration.Bind(config);
+            services.AddSingleton(config);
 
             RSA crypto;
             if (File.Exists(config.Security.PrivateKey))
@@ -56,6 +57,7 @@ namespace Whalerator.WebAPI
             }).AddScheme<RegistryAuthenticationOptions, RegistryAuthenticationHandler>("Bearer", o =>
             {
                 o.Algorithm = crypto;
+                o.Registry = config.Catalog.Registry;
             });
 
             services.AddCors();
@@ -80,11 +82,34 @@ namespace Whalerator.WebAPI
                 var mux = ConnectionMultiplexer.Connect(config.Cache.Redis);
                 services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = volatileTtl });
             }
+            services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
+            services.AddTransient<IAuthHandler, AuthHandler>();
+            services.AddScoped<IDistributionClient, DistributionClient>();
+            services.AddScoped<IDistributionFactory, DistributionFactory>();
+
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
-            services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
-            services.AddScoped<IRegistryFactory>(provider => new RegistryFactory(provider.GetService<ICacheFactory>()) { LayerCache = config.Cache.LayerCache, VolatileTtl = volatileTtl, StaticTtl = staticTtl });
+            
+            services.AddScoped<IRegistryFactory>(p =>
+            {
+                var catalogHandler = string.IsNullOrEmpty(config.Catalog.User.Username) ? null : p.GetService<IAuthHandler>();
+                catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
+
+                var settings = new RegistryConfig
+                {
+                    AuthHandler = p.GetService<IAuthHandler>(),
+                    CacheFactory = p.GetService<ICacheFactory>(),
+                    CatalogAuthHandler = catalogHandler,
+                    DistributionFactory = p.GetService<IDistributionFactory>(),
+                    HiddenRepos = config.Catalog.Hidden,
+                    LayerCache = config.Cache.LayerCache,
+                    StaticRepos = config.Catalog.Repositories,
+                    StaticTtl = staticTtl,
+                    VolatileTtl = volatileTtl
+                };
+                return new RegistryFactory(settings);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -50,29 +50,19 @@ namespace Whalerator
 
         #endregion
 
-        IDistributionClient DistributionAPI { get; set; }
-        ICacheFactory CacheFactory { get; set; }
-        IAuthHandler AuthHandler { get; set; }
-        public string LayerCache { get; set; }
+        public RegistryConfig Settings { get; set; }
 
-        public TimeSpan VolatileTtl { get; set; } = new TimeSpan(0, 20, 0);
-        public TimeSpan? StaticTtl { get; set; } = null;
+        IDistributionClient DistributionClient { get; set; }
+        IDistributionClient CatalogClient { get; set; }
 
         #region ctors
 
-        public Registry(string host = DockerHub, string username = null, string password = null, ICacheFactory cacheFactory = null)
+        public Registry(RegistryCredentials credentials, RegistryConfig config)
         {
-            AuthHandler = new AuthHandler(cacheFactory?.Get<Client.Authorization>());
-            AuthHandler.Login(host, username, password);
-            DistributionAPI = new DistributionClient(AuthHandler) { Host = host };
-            CacheFactory = cacheFactory;
-        }
-
-        public Registry(IDistributionClient distribution, ICacheFactory cacheFactory, IAuthHandler authHandler)
-        {
-            DistributionAPI = distribution;
-            CacheFactory = cacheFactory;
-            AuthHandler = authHandler;
+            Settings = config;
+            Settings.AuthHandler.Login(credentials.Registry, credentials.Username, credentials.Password);
+            DistributionClient = Settings.DistributionFactory.GetClient(credentials.Registry, Settings.AuthHandler);
+            CatalogClient = Settings.DistributionFactory.GetClient(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
         }
 
         #endregion
@@ -81,36 +71,40 @@ namespace Whalerator
 
         public IEnumerable<Repository> GetRepositories()
         {
-            var key = $"volatile:{DistributionAPI.Host}:repos";
+            var key = $"volatile:{CatalogClient.Host}:repos";
             var scope = "registry:catalog:*";
 
-            var cachedRepositories = GetCached(scope, key, true, () => DistributionAPI.GetRepositoriesAsync().Result.Repositories);
-            var repositories = cachedRepositories.Where(r => AuthHandler.Authorize($"repository:{r}:pull"))
-                    .Select(r => new Repository
-                    {
-                        Name = r,
-                        Pull = true,
-                        Push = AuthHandler.Authorize($"repository:{r}:push"),
-                        Delete = AuthHandler.Authorize($"repository:{r}:*")
-                    });
+            List<string> repositories;
+            try
+            {
+                repositories = GetCached(scope, key, true, Settings.CatalogAuthHandler ?? Settings.AuthHandler, () => CatalogClient.GetRepositoriesAsync().Result.Repositories).ToList();
+            }
+            catch
+            {
+                repositories = new List<string>();
+            }
 
-            return repositories;
+            // add statics, and remove hidden
+            if (Settings.StaticRepos != null) { repositories.AddRange(Settings.StaticRepos); }
+            if (Settings.HiddenRepos != null) { repositories.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
+
+            return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository { Name = r });
         }
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var key = $"volatile:{DistributionAPI.Host}:tags:{repository}";
+            var key = $"volatile:{DistributionClient.Host}:tags:{repository}";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetTagsAsync(repository).Result.Tags);
+            return GetCached(scope, key, true, () => DistributionClient.GetTagsAsync(repository).Result.Tags);
         }
 
         public IEnumerable<Image> GetImages(string repository, string tag)
         {
-            var key = $"volatile:{DistributionAPI.Host}:repos:{repository}:{tag}:images";
+            var key = $"volatile:{DistributionClient.Host}:repos:{repository}:{tag}:images";
             var scope = $"repository:{repository}:pull";
 
-            return GetCached(scope, key, true, () => DistributionAPI.GetImages(repository, tag).Result);
+            return GetCached(scope, key, true, () => DistributionClient.GetImages(repository, tag).Result);
         }
 
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
@@ -121,7 +115,7 @@ namespace Whalerator
 
             return GetCached(scope, key, false, () =>
             {
-                using (var lockObj = CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
+                using (var lockObj = Settings.CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
                 {
                     var files = new List<ImageFile>();
 
@@ -243,12 +237,15 @@ namespace Whalerator
 
         #endregion
 
-        private T GetCached<T>(string scope, string key, bool isVolatile, Func<T> func) where T : class
+        private T GetCached<T>(string scope, string key, bool isVolatile, Func<T> func) where T : class =>
+            GetCached<T>(scope, key, isVolatile, Settings.AuthHandler, func);
+
+        private T GetCached<T>(string scope, string key, bool isVolatile, IAuthHandler authHandler, Func<T> func) where T : class
         {
-            var cache = CacheFactory?.Get<T>();
+            var cache = Settings.CacheFactory?.Get<T>();
 
             T result;
-            if (AuthHandler.Authorize(scope))
+            if (authHandler.Authorize(scope))
             {
                 if (cache != null && cache.TryGet(key, out result))
                 {
@@ -263,7 +260,7 @@ namespace Whalerator
                     Console.WriteLine($"Cache miss {key}");
 #endif
                     result = func();
-                    cache?.Set(key, result, isVolatile ? VolatileTtl : StaticTtl);
+                    cache?.Set(key, result, isVolatile ? Settings.VolatileTtl : Settings.StaticTtl);
                     return result;
                 }
             }
@@ -312,11 +309,11 @@ namespace Whalerator
 
         public Stream GetLayer(string repository, Layer layer)
         {
-            if (!string.IsNullOrEmpty(LayerCache))
+            if (!string.IsNullOrEmpty(Settings.LayerCache))
             {
                 // registry path is ignored for caching purposes; only digest matters
                 var digestPath = layer.Digest.Replace(':', Path.DirectorySeparatorChar);
-                var cachedFile = Path.Combine(LayerCache, digestPath);
+                var cachedFile = Path.Combine(Settings.LayerCache, digestPath);
                 var digestFolder = Path.GetDirectoryName(cachedFile);
                 if (!Directory.Exists(digestFolder)) { Directory.CreateDirectory(digestFolder); }
 
@@ -403,7 +400,7 @@ namespace Whalerator
 
         private void FetchLayer(string repository, Layer layer, Stream buffer)
         {
-            var result = DistributionAPI.GetBlobAsync(repository, layer.Digest).Result;
+            var result = DistributionClient.GetBlobAsync(repository, layer.Digest).Result;
             result.Content.CopyToAsync(buffer).Wait();
         }
     }

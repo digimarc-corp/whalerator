@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Whalerator.Client;
 using Whalerator.Support;
-using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -26,12 +25,12 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("list")]
         public IActionResult Get()
         {
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var registryApi = _RegFactory.GetRegistry(credentials);
                 var repos = registryApi.GetRepositories();
 
                 return Ok(repos);

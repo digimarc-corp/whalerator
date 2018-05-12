@@ -34,6 +34,7 @@ namespace Whalerator.WebAPI
         {
             public string Registry { get; set; }
             public List<string> Repositories { get; set; }
+            public List<string> Hidden { get; set; }
             public CatalogUser User { get; set; }
             public class CatalogUser
             {

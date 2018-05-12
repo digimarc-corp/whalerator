@@ -2,6 +2,6 @@
 {
     public interface IRegistryFactory
     {
-        IRegistry GetRegistry(string name, string username, string password);
+        IRegistry GetRegistry(RegistryCredentials credentials);
     }
 }

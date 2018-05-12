@@ -7,26 +7,24 @@ namespace Whalerator.WebAPI
 {
     public class RegistryFactory : IRegistryFactory
     {
-        public string LayerCache { get; set; }
-        public TimeSpan VolatileTtl { get; set; }
-        public TimeSpan? StaticTtl { get; set; }
-
-        public RegistryFactory(ICacheFactory cacheFactory)
+        public RegistryFactory(RegistryConfig settings)
         {
-            _CacheFactory = cacheFactory;
+            Settings = settings;
         }
 
-        public IRegistry GetRegistry(string name, string username, string password)
+        public IRegistry GetRegistry(RegistryCredentials credentials)
         {
-            name = name.ToLowerInvariant();
-            if (Registry.DockerHubAliases.Contains(name))
+            credentials.Registry = credentials.Registry.ToLowerInvariant();
+            if (Registry.DockerHubAliases.Contains(credentials.Registry))
             {
-                name = Registry.DockerHub;
+                credentials.Registry = Registry.DockerHub;
             }
 
-            return new Registry(name, username, password, _CacheFactory) { LayerCache = LayerCache, VolatileTtl = VolatileTtl, StaticTtl = StaticTtl };
+            return new Registry(credentials, Settings);
         }
 
         private ICacheFactory _CacheFactory;
+
+        public RegistryConfig Settings { get; }
     }
 }

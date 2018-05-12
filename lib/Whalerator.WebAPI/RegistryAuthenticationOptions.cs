@@ -10,5 +10,6 @@ namespace Whalerator.WebAPI
     public class RegistryAuthenticationOptions : AuthenticationSchemeOptions
     {
         public ICryptoAlgorithm Algorithm { get; set; }
+        public string Registry { get; set; }
     }
 }

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -28,7 +27,7 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("files/{digest}/{*repository}")]
         public IActionResult GetFiles(string repository, string digest, int maxDepth = 0)
         {
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image identifier (digest or single-platform tag) is required."); }
 
@@ -37,7 +36,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var registryApi = _RegFactory.GetRegistry(credentials);
                 var images = registryApi.GetImages(repository, digest);
                 if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
                 var files = registryApi.GetImageFiles(repository, images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
@@ -67,7 +66,7 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("file/{digest}/{*repository}")]
         public IActionResult GetFile(string repository, string digest, string path)
         {
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             digest = Validate(digest);
@@ -75,7 +74,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var registryApi = _RegFactory.GetRegistry(credentials);
                 var image = registryApi.GetImages(repository, digest);
 
                 if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
@@ -132,12 +131,12 @@ namespace Whalerator.WebAPI.Controllers
         public IActionResult GetTags(string repository)
         {
             _Logger.LogInformation($"Got request for {repository}");
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var registryApi = _RegFactory.GetRegistry(credentials);
                 var tags = registryApi.GetTags(repository);
 
                 return Ok(tags);
@@ -156,12 +155,12 @@ namespace Whalerator.WebAPI.Controllers
         public IActionResult GetImages(string repository, string tag)
         {
             if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
+            var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
+                var registryApi = _RegFactory.GetRegistry(credentials);
                 var images = registryApi.GetImages(repository, tag);
 
                 var platforms = images.Select(i => i.Platform);

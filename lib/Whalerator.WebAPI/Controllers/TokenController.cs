@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Whalerator.Client;
 using Whalerator.Support;
-using Whalerator.WebAPI.Contracts;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -21,17 +20,24 @@ namespace Whalerator.WebAPI.Controllers
         private ICache<Authorization> _Cache;
 
         public ILogger<TokenController> Logger { get; }
+        public Config Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, Config config)
         {
             _Crypto = crypto;
             _Cache = cache;
             Logger = logger;
+            Config = config;
         }
 
         [HttpPost]
         public IActionResult Post([FromBody]RegistryCredentials credentials)
         {
+            // deny requests for foreign instances, if configured
+            if (!string.IsNullOrEmpty(Config.Catalog.Registry) && credentials.Registry.ToLowerInvariant() != Config.Catalog.Registry.ToLowerInvariant())
+            {
+                return Unauthorized();
+            }
             try
             {
                 var handler = new AuthHandler(_Cache);
