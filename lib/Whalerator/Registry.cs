@@ -88,7 +88,13 @@ namespace Whalerator
             if (Settings.StaticRepos != null) { repositories.AddRange(Settings.StaticRepos); }
             if (Settings.HiddenRepos != null) { repositories.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
 
-            return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository { Name = r });
+            return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository
+            {
+                Name = r,
+                //Push = Settings.AuthHandler.Authorize($"repository:{r}:push"),
+                //Delete = Settings.AuthHandler.Authorize($"repository:{r}:*"),
+                Tags = GetTags(r).Count()
+            });
         }
 
         public IEnumerable<string> GetTags(string repository)
