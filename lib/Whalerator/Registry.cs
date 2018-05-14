@@ -91,8 +91,8 @@ namespace Whalerator
             return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository
             {
                 Name = r,
-                //Push = Settings.AuthHandler.Authorize($"repository:{r}:push"),
-                //Delete = Settings.AuthHandler.Authorize($"repository:{r}:*"),
+                Push = Settings.AuthHandler.Authorize($"repository:{r}:push"),
+                Delete = Settings.AuthHandler.Authorize($"repository:{r}:*"),
                 Tags = GetTags(r).Count()
             });
         }
@@ -193,7 +193,6 @@ namespace Whalerator
 
             return GetCached(scope, key, false, () =>
             {
-
                 var searchParams = path.Patherate();
 
                 using (var stream = GetLayer(repository, layer))
@@ -240,6 +239,50 @@ namespace Whalerator
             });
         }
 
+        public Layer FindFile(string repository, Image image, string search, int maxDepth, bool ignoreCase = true)
+        {
+            var key = $"static:image:{image.Digest}:find:{maxDepth}:{search}";
+            var scope = $"repository:{repository}:pull";
+            return GetCached(scope, key, false, () =>
+            {
+
+                var searchParams = search.Patherate();
+
+                //search layers in reverse order, from newest to oldest
+                var layers = image.Layers.Reverse().ToList();
+
+                var depth = 0;
+                foreach (var layer in layers)
+                {
+                    depth++;
+                    if (maxDepth > 0 && depth > maxDepth) { break; }
+                    var files = GetFiles(repository, layer);
+                    foreach (var file in files)
+                    {
+                        if (file.Matches(searchParams.searchPath, ignoreCase))
+                        {
+                            return layer;
+                        }
+                        else
+                        {
+                            if (file.Matches(searchParams.fileWhiteout, ignoreCase))
+                            {
+                                //found a whiteout entry for the file
+                                break;
+                            }
+
+                            if (file.Matches(searchParams.pathWhiteout, ignoreCase))
+                            {
+                                //found a opaque point for the whole path
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            });
+        }
 
         #endregion
 
@@ -275,43 +318,6 @@ namespace Whalerator
                 throw new AuthenticationException("The request could not be authorized.");
             }
         }
-
-        public Layer FindFile(string repository, Image image, string search, bool ignoreCase = true)
-        {
-            var searchParams = search.Patherate();
-
-            //search layers in reverse order, from newest to oldest
-            var layers = image.Layers.Reverse().ToList();
-
-            foreach (var layer in layers)
-            {
-                var files = GetFiles(repository, layer);
-                foreach (var file in files)
-                {
-                    if (file.Matches(searchParams.searchPath, ignoreCase))
-                    {
-                        return layer;
-                    }
-                    else
-                    {
-                        if (file.Matches(searchParams.fileWhiteout, ignoreCase))
-                        {
-                            //found a whiteout entry for the file
-                            break;
-                        }
-
-                        if (file.Matches(searchParams.pathWhiteout, ignoreCase))
-                        {
-                            //found a opaque point for the whole path
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
 
         public Stream GetLayer(string repository, Layer layer)
         {

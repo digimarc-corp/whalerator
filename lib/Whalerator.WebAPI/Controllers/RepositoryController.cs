@@ -64,7 +64,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("file/{digest}/{*repository}")]
-        public IActionResult GetFile(string repository, string digest, string path)
+        public IActionResult GetFile(string repository, string digest, string path, int maxDepth = 0)
         {
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
@@ -80,7 +80,7 @@ namespace Whalerator.WebAPI.Controllers
                 if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
                 // find a the actual layer first - this lets us work from cached file lists during the search (or build them if they're missing), and avoid expensive gunzipping until we have a hit
-                var layer = registryApi.FindFile(repository, image.First(), path);
+                var layer = registryApi.FindFile(repository, image.First(), path, maxDepth);
                 if (layer == null) { return NotFound(); }
 
                 var data = registryApi.GetFile(repository, layer, path);
