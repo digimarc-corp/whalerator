@@ -7,7 +7,7 @@ namespace Whalerator.WebAPI
 {
     public class RegistryFactory : IRegistryFactory
     {
-        public RegistryFactory(RegistryConfig settings)
+        public RegistryFactory(RegistrySettings settings)
         {
             Settings = settings;
         }
@@ -25,6 +25,6 @@ namespace Whalerator.WebAPI
 
         private ICacheFactory _CacheFactory;
 
-        public RegistryConfig Settings { get; }
+        public RegistrySettings Settings { get; }
     }
 }

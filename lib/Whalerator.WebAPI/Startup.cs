@@ -85,7 +85,6 @@ namespace Whalerator.WebAPI
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
             services.AddScoped<IDistributionClient, DistributionClient>();
-            services.AddScoped<IDistributionFactory, DistributionFactory>();
 
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
@@ -96,12 +95,11 @@ namespace Whalerator.WebAPI
                 var catalogHandler = string.IsNullOrEmpty(config.Catalog.User.Username) ? null : p.GetService<IAuthHandler>();
                 catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
 
-                var settings = new RegistryConfig
+                var settings = new RegistrySettings
                 {
                     AuthHandler = p.GetService<IAuthHandler>(),
                     CacheFactory = p.GetService<ICacheFactory>(),
                     CatalogAuthHandler = catalogHandler,
-                    DistributionFactory = p.GetService<IDistributionFactory>(),
                     HiddenRepos = config.Catalog.Hidden,
                     LayerCache = config.Cache.LayerCache,
                     StaticRepos = config.Catalog.Repositories,

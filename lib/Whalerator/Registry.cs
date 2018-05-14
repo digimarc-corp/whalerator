@@ -50,19 +50,19 @@ namespace Whalerator
 
         #endregion
 
-        public RegistryConfig Settings { get; set; }
+        public RegistrySettings Settings { get; set; }
 
         IDistributionClient DistributionClient { get; set; }
         IDistributionClient CatalogClient { get; set; }
 
         #region ctors
 
-        public Registry(RegistryCredentials credentials, RegistryConfig config)
+        public Registry(RegistryCredentials credentials, RegistrySettings config)
         {
             Settings = config;
             Settings.AuthHandler.Login(credentials.Registry, credentials.Username, credentials.Password);
-            DistributionClient = Settings.DistributionFactory.GetClient(credentials.Registry, Settings.AuthHandler);
-            CatalogClient = Settings.DistributionFactory.GetClient(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
+            DistributionClient = Settings.DistributionFactory(credentials.Registry, Settings.AuthHandler);
+            CatalogClient = Settings.DistributionFactory(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
         }
 
         #endregion

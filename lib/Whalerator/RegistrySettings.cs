@@ -5,9 +5,9 @@ using Whalerator.Client;
 
 namespace Whalerator
 {
-    public class RegistryConfig
+    public class RegistrySettings
     {
-        public IDistributionFactory DistributionFactory { get; set; } = new DistributionFactory();
+        public Func<string, IAuthHandler, IDistributionClient> DistributionFactory { get; set; } = (host, handler) => new DistributionClient(handler) { Host = host };
         public ICacheFactory CacheFactory { get; set; }
         public IAuthHandler AuthHandler { get; set; }
 
