@@ -7,7 +7,7 @@ namespace Whalerator
 {
     public class RegistryConfig
     {
-        public IDistributionFactory DistributionFactory { get; set; }
+        public IDistributionFactory DistributionFactory { get; set; } = new DistributionFactory();
         public ICacheFactory CacheFactory { get; set; }
         public IAuthHandler AuthHandler { get; set; }
 
