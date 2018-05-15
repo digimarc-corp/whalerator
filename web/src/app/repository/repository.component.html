@@ -12,7 +12,7 @@
   <div class="pure-u-1-6">
     <div class="tag-list">
       <div *ngFor="let tag of tags" (click)="onSelect(tag)">
-        <span class="badge light-blue" [class.selected]="tag === selectedTag">{{tag}}</span>
+        <span class="badge light-blue" [class.selected]="tag === selectedTag" [class.loading]="!tagMap[tag]" >{{tag}}</span>
       </div>
     </div>
   </div>
