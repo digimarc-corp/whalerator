@@ -7,22 +7,45 @@ a {
     margin: 0.3em;
 }
 
-.appBox {
-    border-top: 0.1em solid $blue-dark;
-    border-left: 0.1em solid $blue-dark;
-    border-right: 0.1em solid $blue-dark;
-    border-top-left-radius: 0.2em;
-    border-top-right-radius: 0.2em;
+%box {
+    border: 0.1em solid $blue-dark;
+    border-radius: 0.2em;
     background-color: $appForeground;
     padding: 1em;
     @media (min-width: $width-break) {
-        margin-left: 5em;
-        margin-right: 5em;
-        margin-top: 2.5em;                
+        margin-left: 2.5em;                
+        margin-right: 2.5em;                
+        margin-bottom: 0.25em;                
+    }
+    @media (max-width: $width-break) {
+        margin-top: 1em;
+    }    
+}
+
+.appBox {
+    @extend %box;
+    @media (min-width: $width-break) {
+        margin-top: 5em;
     }
     @media (max-width: $width-break) {
         margin-top: 1em;
     }
+}
+
+.aboutBox {
+    @extend %box;
+    text-align: right;
+    padding: 0.2em 1em;
+}
+
+.formBox {
+    width: 20em;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.textBox {
+    width: 100%;
 }
 
 nav {
