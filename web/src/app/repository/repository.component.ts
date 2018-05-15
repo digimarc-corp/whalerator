@@ -47,11 +47,19 @@ export class RepositoryComponent implements OnInit {
     this.catalog.getTags(this.name).subscribe(tags => {
       this.tags = tags.sort(VersionSort.sort);
       this.selectedTag = this.tags[0];
-      this.tags.forEach(t => this.getImage(t));
+      this.getFirstImage(this.selectedTag, () => {
+        tags.slice(1).forEach(t => this.getImage(t));
+      });
     });
   }
 
-  getImage(tag: String): void {
+  getFirstImage(tag: String, next: () => void) {
+    this.getImage(tag, () => {
+      if (next) { next(); }
+    });
+  }
+
+  getImage(tag: String, next?: () => void) {
     this.catalog.getImage(this.name, tag).subscribe(i => {
       const digest = i.setDigest.toString();
       if (!this.images[digest]) {
@@ -64,14 +72,19 @@ export class RepositoryComponent implements OnInit {
       this.tagMap[tag.toString()] = this.images[digest];
       if (tag === this.selectedTag) {
         this.selectedImageSet = this.images[digest];
-        this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0]);
+        this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
+      } else {
+        if (next) { next(); }
       }
     });
   }
 
-  getReadme(imageSet: ImageSet, platform: Platform) {
+  getReadme(imageSet: ImageSet, platform: Platform, next?: () => void) {
     this.readme = 'Searching for documentation.';
     const digest = this.getDigestFor(imageSet, platform);
-    this.catalog.getFile(this.name, digest, 'readme.md').subscribe(r => this.readme = r.toString());
+    this.catalog.getFile(this.name, digest, 'readme.md').subscribe(r => {
+      this.readme = r.toString();
+      if (next) { next(); }
+    });
   }
 }
