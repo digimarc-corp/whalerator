@@ -1,35 +1,47 @@
 <h1>{{Name}}</h1>
-<div class="repositoryPane">
-  <div class="tagList">
-    <div *ngFor="let tag of tags" (click)="onSelect(tag)" [class.selected]="tag === selectedTag">
-      <span class="tag label">{{tag}}</span>
+
+<div class="pure-g">
+  <div class="pure-u-1-6">
+    <img src="assets/if_canned_2799194.svg" class="image-icon" />
+  </div>
+  <div class="pure-u-5-6 image-title">
+    <h1 class="">{{name}}:{{selectedTag}}</h1>
+  </div>
+</div>
+<div class="pure-g">
+  <div class="pure-u-1-6">
+    <div class="tag-list">
+      <div *ngFor="let tag of tags" (click)="onSelect(tag)">
+        <span class="badge light-blue" [class.selected]="tag === selectedTag">{{tag}}</span>
+      </div>
     </div>
   </div>
-  <div class="details">
-    <div *ngIf="selectedTag; then tagBlock else promptBlock"></div>
-    <ng-template #tagBlock>
-      <h1 class="title">{{name}}:{{selectedTag}}</h1>
-      <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
-      <ng-template #detailBlock>
-        <div>Last update: {{selectedImageSet.date}}</div>
-        <div class="tags">Tags:
-          <span class="tag label" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
-        </div>
-        <div class="platforms">Platforms
-          <span class="platform label" *ngFor="let platform of selectedImageSet.platforms">
-            {{platform.os}}/{{platform.architecture}}
-          </span>
-        </div>
-        <div class="readme">
-          <markdown [data]=readme></markdown>
-        </div>
+  <div class="pure-u-5-6">
+    <div class="image-detail">
+      <div *ngIf="selectedTag; then tagBlock else promptBlock"></div>
+      <ng-template #tagBlock>
+        <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
+        <ng-template #detailBlock>
+          <div><b>Last update:</b> {{selectedImageSet.date | date : "medium" }}</div>
+          <div class=""><b>Tags:</b>
+            <span class="badge light-blue" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
+          </div>
+          <div class=""><b>Platforms:</b>
+            <span class="badge light-orange" *ngFor="let platform of selectedImageSet.platforms">
+              {{platform.os}}/{{platform.architecture}}
+            </span>
+          </div>
+          <div class="">
+            <markdown [data]=readme></markdown>
+          </div>
+        </ng-template>
+        <ng-template #loadingBlock>
+          <span>Loading image details</span>
+        </ng-template>
       </ng-template>
-      <ng-template #loadingBlock>
-        <span>Loading image details</span>
+      <ng-template #promptBlock>
+        <span>Choose a tag to view details.</span>
       </ng-template>
-    </ng-template>
-    <ng-template #promptBlock>
-      <span>Choose a tag to view details.</span>
-    </ng-template>
+    </div>
   </div>
 </div>

@@ -1,0 +1,96 @@
+@import "styles/markdown";
+@import "styles/colors";
+
+a {
+    margin: 0.3em;
+}
+
+.appBox {
+    border-top: 0.1em solid $blue-dark;
+    border-left: 0.1em solid $blue-dark;
+    border-right: 0.1em solid $blue-dark;
+    border-top-left-radius: 0.2em;
+    border-top-right-radius: 0.2em;
+    background-color: $appForeground;
+    margin-left: 5em;
+    margin-right: 5em;
+    margin-top: 2.5em;
+    padding: 1em;
+}
+
+nav {
+    text-align: right
+}
+
+.catalog {
+    width: 100%;
+}
+
+.image-icon {
+    width: 3em;
+    margin: 0.5em;
+    float: right;    
+}
+
+.image-detail {
+    padding: 0.5em;
+    border-left: 0.05em dotted #222;
+}
+
+.badge {
+    border-width: 0.05em;
+    border-style: solid;
+    border-radius: 0.2em;    
+    padding: 0.1em 0.3em;
+    margin: 0.1em;
+    display: inline-block;
+    word-break: break-all;
+}
+
+.tag-list > .badge {
+
+}
+
+.tag-list {
+    padding: 0.5em;
+    text-align: right;    
+}
+
+table tr:nth-child(2n) {
+    background-color: $blue-light;
+}
+
+table.catalog td {
+    border-style: none;
+}
+
+.badge.dark-blue {
+    background-color: $blue-dark;
+    border-color: $blue-dark;
+    color: $appForeground;
+}
+
+.badge.selected {
+    font-weight: bold;
+}
+
+.badge.light-blue {
+    background-color: $blue-light;
+    border-color: $blue-dark;
+    color: $blue-dark;
+}
+
+.badge.light-orange {
+    background-color: $orange-light;
+    border-color: $orange-dark;
+    color: $orange-dark;
+}
+
+td.right {
+    text-align: right;
+}
+
+.textured {
+    background-color: $appBackground;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3E%3Cpath fill='%23000000' fill-opacity='0.24' d='M14 16H9v-2h5V9.87a4 4 0 1 1 2 0V14h5v2h-5v15.95A10 10 0 0 0 23.66 27l-3.46-2 8.2-2.2-2.9 5a12 12 0 0 1-21 0l-2.89-5 8.2 2.2-3.47 2A10 10 0 0 0 14 31.95V16zm40 40h-5v-2h5v-4.13a4 4 0 1 1 2 0V54h5v2h-5v15.95A10 10 0 0 0 63.66 67l-3.47-2 8.2-2.2-2.88 5a12 12 0 0 1-21.02 0l-2.88-5 8.2 2.2-3.47 2A10 10 0 0 0 54 71.95V56zm-39 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm40-40a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM15 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm40 40a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'%3E%3C/path%3E%3C/svg%3E");
+}

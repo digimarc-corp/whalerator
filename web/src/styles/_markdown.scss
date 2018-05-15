@@ -1,0 +1,17 @@
+@import "colors";
+
+markdown pre {
+    border: 0.05em dotted $grey;
+    background: $grey-light;
+    padding: 0.25em;
+}
+
+markdown code {
+    background: $grey-light;
+    padding: 0em 0.1em;
+    margin: 0.05em;
+}
+
+markdown img {
+    width: 100%;
+}
