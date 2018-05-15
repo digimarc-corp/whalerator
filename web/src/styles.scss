@@ -1,6 +1,8 @@
 @import "styles/markdown";
 @import "styles/colors";
 
+$width-break: 50em;
+
 a {
     margin: 0.3em;
 }
@@ -12,10 +14,15 @@ a {
     border-top-left-radius: 0.2em;
     border-top-right-radius: 0.2em;
     background-color: $appForeground;
-    margin-left: 5em;
-    margin-right: 5em;
-    margin-top: 2.5em;
     padding: 1em;
+    @media (min-width: $width-break) {
+        margin-left: 5em;
+        margin-right: 5em;
+        margin-top: 2.5em;                
+    }
+    @media (max-width: $width-break) {
+        margin-top: 1em;
+    }
 }
 
 nav {
