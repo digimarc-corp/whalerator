@@ -36,14 +36,21 @@ namespace Whalerator.Client
             var list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
 
             // workaround for https://github.com/docker/distribution/issues/2434
-            list.Repositories = list.Repositories.AsParallel().Where(r => Try(() => GetTagsAsync(r).Wait()));
+            //list.Repositories = list.Repositories.AsParallel().Where(r => Try(() => GetTagsAsync(r).Wait()));
 
             return Task.FromResult(list);
         }
 
         public Task<TagList> GetTagsAsync(string repository)
         {
-            return Get<TagList>(new Uri(Registry.HostToEndpoint(Host, $"{repository}/tags/list")));
+            try
+            {
+                return Get<TagList>(new Uri(Registry.HostToEndpoint(Host, $"{repository}/tags/list")));
+            }
+            catch (NotFoundException)
+            {
+                return Task.FromResult(new TagList());
+            }
         }
 
         public Task<IEnumerable<Image>> GetImages(string repository, string tag)

@@ -31,7 +31,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var repos = registryApi.GetRepositories().OrderBy(r => r.Name);
+                var repos = registryApi.GetRepositories().Where(r => r.Tags > 0).OrderBy(r => r.Name);
 
                 return Ok(repos);
             }
@@ -39,6 +39,6 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }        
+        }
     }
 }
