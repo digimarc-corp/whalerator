@@ -34,7 +34,7 @@ namespace Whalerator.WebAPI.Controllers
         public IActionResult Post([FromBody]RegistryCredentials credentials)
         {
             // deny requests for foreign instances, if configured
-            if (!string.IsNullOrEmpty(Config.Catalog.Registry) && credentials.Registry.ToLowerInvariant() != Config.Catalog.Registry.ToLowerInvariant())
+            if (!string.IsNullOrEmpty(Config.Catalog?.Registry) && credentials.Registry.ToLowerInvariant() != Config.Catalog.Registry.ToLowerInvariant())
             {
                 return Unauthorized();
             }

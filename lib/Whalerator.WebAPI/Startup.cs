@@ -37,7 +37,8 @@ namespace Whalerator.WebAPI
             services.AddSingleton(config);
 
             RSA crypto;
-            if (File.Exists(config.Security.PrivateKey))
+            var keyFile = config.Security?.PrivateKey;
+            if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
                 Logger?.LogInformation($"Loading private key from {config.Security.PrivateKey}.");
                 crypto = new RSA(File.ReadAllText("key.pem"));
@@ -57,7 +58,7 @@ namespace Whalerator.WebAPI
             }).AddScheme<RegistryAuthenticationOptions, RegistryAuthenticationHandler>("Bearer", o =>
             {
                 o.Algorithm = crypto;
-                o.Registry = config.Catalog.Registry;
+                o.Registry = config.Catalog?.Registry;
             });
 
             services.AddCors();
@@ -89,10 +90,10 @@ namespace Whalerator.WebAPI
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
             Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
-            
+
             services.AddScoped<IRegistryFactory>(p =>
             {
-                var catalogHandler = string.IsNullOrEmpty(config.Catalog.User.Username) ? null : p.GetService<IAuthHandler>();
+                var catalogHandler = string.IsNullOrEmpty(config.Catalog?.User?.Username) ? null : p.GetService<IAuthHandler>();
                 catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
 
                 var settings = new RegistrySettings
@@ -100,9 +101,9 @@ namespace Whalerator.WebAPI
                     AuthHandler = p.GetService<IAuthHandler>(),
                     CacheFactory = p.GetService<ICacheFactory>(),
                     CatalogAuthHandler = catalogHandler,
-                    HiddenRepos = config.Catalog.Hidden,
+                    HiddenRepos = config.Catalog?.Hidden,
                     LayerCache = config.Cache.LayerCache,
-                    StaticRepos = config.Catalog.Repositories,
+                    StaticRepos = config.Catalog?.Repositories,
                     StaticTtl = staticTtl,
                     VolatileTtl = volatileTtl
                 };
