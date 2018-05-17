@@ -5,6 +5,7 @@ import { Repository } from './models/repository';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ImageSet } from './models/imageSet';
+import { environment } from '../environments/environment';
 
 
 @Injectable({
@@ -12,7 +13,7 @@ import { ImageSet } from './models/imageSet';
 })
 export class CatalogService {
 
-  private apiBase = 'http://localhost:16545/api';
+  private apiBase = environment.serviceBaseUri;
 
   constructor(private http: HttpClient,
     private sessionService: SessionService) { }
@@ -37,13 +38,23 @@ export class CatalogService {
     );
   }
 
-  getImage(repo: String, tag: String): Observable<ImageSet> {
+  getImageSet(repo: String, tag: String): Observable<ImageSet> {
     const imageUrl = this.apiBase + `/repository/${repo}/tag/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
       tap(repos => console.log('got image set')),
       catchError(this.handleError<ImageSet>('getImage'))
+    );
+  }
+
+  getImageSetDigest(repo: String, tag: String): Observable<String> {
+    const imageUrl = this.apiBase + `/repository/${repo}/digest/${tag}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get<String>(imageUrl, { headers: headers }).pipe(
+      tap(repos => console.log('got image set')),
+      catchError(this.handleError<String>('getImage'))
     );
   }
 

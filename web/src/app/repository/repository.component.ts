@@ -21,8 +21,8 @@ export class RepositoryComponent implements OnInit {
   public selectedImageSet: ImageSet;
   public readme: String;
 
-  public images: { [id: string]: ImageSet } = { };
-  public tagMap: { [tag: string]: ImageSet } = { };
+  public images: { [id: string]: ImageSet } = {};
+  public tagMap: { [tag: string]: ImageSet } = {};
 
   private objectKeys = Object.keys;
 
@@ -60,21 +60,24 @@ export class RepositoryComponent implements OnInit {
   }
 
   getImage(tag: String, next?: () => void) {
-    this.catalog.getImage(this.name, tag).subscribe(i => {
-      const digest = i.setDigest.toString();
-      if (!this.images[digest]) {
-        i.tags = [tag];
-        this.images[digest] = i;
-      } else {
-        this.images[digest].tags.push(tag);
-      }
-
-      this.tagMap[tag.toString()] = this.images[digest];
-      if (tag === this.selectedTag) {
-        this.selectedImageSet = this.images[digest];
-        this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
-      } else {
+    this.catalog.getImageSetDigest(this.name, tag).subscribe(digest => {
+      if (this.images[digest.toString()]) {
+        this.images[digest.toString()].tags.push(tag);
+        this.tagMap[tag.toString()] = this.images[digest.toString()];
         if (next) { next(); }
+      } else {
+        this.catalog.getImageSet(this.name, tag).subscribe(i => {
+          const setDigest = i.setDigest.toString();
+          i.tags = [tag];
+          this.images[setDigest] = i;
+          this.tagMap[tag.toString()] = this.images[setDigest];
+          if (tag === this.selectedTag) {
+            this.selectedImageSet = this.images[setDigest];
+            this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
+          } else {
+            if (next) { next(); }
+          }
+        });
       }
     });
   }

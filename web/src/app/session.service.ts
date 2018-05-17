@@ -4,6 +4,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { Token } from './token';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { TokenRequest } from './token-request';
+import { environment } from '../environments/environment.prod';
 
 
 const httpOptions = {
@@ -21,7 +22,7 @@ export class SessionService {
 
   sessionToken: String;
 
-  whaleratorUrl = 'http://localhost:16545/api';
+  whaleratorUrl = environment.serviceBaseUri;
 
   logout(): void {
     sessionStorage.removeItem(sessionKey);
