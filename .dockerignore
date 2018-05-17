@@ -1,0 +1,7 @@
+#ignore all by default
+*
+
+#include only lib & web folders
+!/lib
+!/web
+/web/node_modules
