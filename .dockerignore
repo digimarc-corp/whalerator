@@ -4,4 +4,5 @@
 #include only lib & web folders
 !/lib
 !/web
+!/*.md
 /web/node_modules
