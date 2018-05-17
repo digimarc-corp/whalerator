@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -130,6 +131,15 @@ namespace Whalerator.WebAPI
 
             app.UseAuthentication();
             app.UseMvc();
+
+            // serve angular SPA
+            var options = new RewriteOptions()
+                .AddRewrite("^login.*", "index.html", skipRemainingRules: true)
+                .AddRewrite("^catalog.*", "index.html", skipRemainingRules: true)
+                .AddRewrite("^repo.*", "index.html", skipRemainingRules: true);
+            app.UseRewriter(options);
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
         }
     }
 }
