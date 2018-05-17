@@ -97,35 +97,7 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }
-
-        /*
-        [HttpGet("find/{*repository}")]
-        public IActionResult Find(string repository, string image, string file)
-        {
-            var credentials = RegistryCredentials.FromClaimsPrincipal(User);
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
-            if (string.IsNullOrEmpty(image)) { return BadRequest("An image identifier (digest or single-platform tag) is required."); }
-
-            try
-            {
-                var registryApi = _RegFactory.GetRegistry(credentials.Registry, credentials.Username, credentials.Password);
-                var images = registryApi.GetImages(repository, image);
-                if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
-                var layer = registryApi.FindFile(repository, images.First(), file);
-
-                return layer == null ? NotFound() : (IActionResult)Ok(layer);
-            }
-            catch (Client.NotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Client.AuthenticationException)
-            {
-                return Unauthorized();
-            }
-        }*/
+        }        
 
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
@@ -167,6 +139,38 @@ namespace Whalerator.WebAPI.Controllers
                 var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
 
                 var result = new { Platforms = platforms, Date = date, Images = images, SetDigest = images.ToImageSetDigest() };
+
+                return Ok(result);
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
+        /// <summary>
+        /// Useful when trying to corellate multiple tags to a single image set, without resending the complete image set over the wire repeatedly.
+        /// </summary>
+        /// <param name="repository"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        [HttpGet("digest/{tag}/{*repository}")]
+        public IActionResult GetImagesDigest(string repository, string tag)
+        {
+            if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials);
+                var images = registryApi.GetImages(repository, tag);
+
+                var result = images.ToImageSetDigest();
 
                 return Ok(result);
             }
