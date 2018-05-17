@@ -27,7 +27,7 @@ RUN npm install @angular/cli
 RUN /web/node_modules/@angular/cli/bin/ng build --prod --output-path /dist
 
 FROM base AS final
-COPY lib/docker-readme.md /README.md
+COPY docker-readme.md /README.md
 WORKDIR /app
 COPY --from=publish /app .
 COPY --from=ngbuild /dist ./wwwroot
