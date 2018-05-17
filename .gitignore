@@ -12,6 +12,7 @@ web/elm-stuff
 
 lib/Whalerator.Test/testkey
 lib/Whalerator.WebAPI/Properties/launchSettings.json
+lib/Whalerator.WebAPI/wwwroot
 
 .vscode/
 
