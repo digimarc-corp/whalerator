@@ -131,7 +131,7 @@ namespace Whalerator.Client
                 {
                     result = client.SendAsync(message).Result;
                 }
-                catch (Exception ex)
+                catch
                 {
                     if (retries > 0) { result = Get(uri, accept, retries - 1); }
                     else { throw; }

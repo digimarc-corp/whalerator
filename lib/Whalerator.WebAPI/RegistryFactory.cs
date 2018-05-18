@@ -23,8 +23,6 @@ namespace Whalerator.WebAPI
             return new Registry(credentials, Settings);
         }
 
-        private ICacheFactory _CacheFactory;
-
         public RegistrySettings Settings { get; }
     }
 }
