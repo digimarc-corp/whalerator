@@ -25,7 +25,7 @@
         <ng-template #detailBlock>
           <div>
             <b>Last update:</b> {{selectedImageSet.date | date : "medium" }}</div>
-          <div [class.hidden]="selectedImageSet.tags.length === 1">
+          <div>
             <b>Tags:</b>
             <span class="badge light-blue" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
           </div>
