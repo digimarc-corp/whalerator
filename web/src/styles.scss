@@ -1,7 +1,9 @@
 @import "styles/markdown";
 @import "styles/colors";
 
-$width-break: 50em;
+// should match breaks from purecss
+$width-break-md: 48em;
+$width-break-sm: 35.5em;
 
 a {
     margin: 0.3em;
@@ -12,22 +14,22 @@ a {
     border-radius: 0.2em;
     background-color: $appForeground;
     padding: 1em;
-    @media (min-width: $width-break) {
+    @media (min-width: $width-break-md) {
         margin-left: 2.5em;                
         margin-right: 2.5em;                
         margin-bottom: 0.25em;                
     }
-    @media (max-width: $width-break) {
+    @media (max-width: $width-break-md) {
         margin-top: 1em;
     }    
 }
 
 .appBox {
     @extend %box;
-    @media (min-width: $width-break) {
+    @media (min-width: $width-break-md) {
         margin-top: 5em;
     }
-    @media (max-width: $width-break) {
+    @media (max-width: $width-break-md) {
         margin-top: 1em;
     }
 }
@@ -64,7 +66,9 @@ nav {
 
 .image-detail {
     padding: 0.5em;
-    border-left: 0.05em dotted #222;
+    @media (min-width: $width-break-sm) {
+        border-left: 0.05em dotted #222;
+    }
 }
 
 .badge {
@@ -81,13 +85,30 @@ nav {
     opacity: 0.2;
 }
 
-.tag-list > .badge {
-
-}
-
 .tag-list {
     padding: 0.5em;
-    text-align: right;    
+    display: flex;
+    @media (max-width: $width-break-sm) {
+        flex-flow: row wrap;
+        max-height: 10em;
+        overflow: auto;
+    }
+    @media (min-width: $width-break-sm) {
+        flex-direction: column;
+        text-align: right;
+    }
+}
+
+.repo-head-lg * {
+    @media (max-width: $width-break-sm) {
+        display: none;
+    }
+}
+
+.repo-head-sm * {
+    @media (min-width: $width-break-sm) {
+        display: none;
+    }    
 }
 
 table tr:nth-child(2n) {
