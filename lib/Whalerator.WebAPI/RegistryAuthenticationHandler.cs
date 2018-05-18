@@ -31,6 +31,12 @@ namespace Whalerator.WebAPI
                     var token = Jose.JWT.Decode<Token>(header.Parameter, Options.Algorithm.ToDotNetRSA());
                     var json = Options.Algorithm.Decrypt(token.Crd);
                     var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
+
+                    if (!string.IsNullOrEmpty(Options.Registry) && Options.Registry.ToLowerInvariant() != credentials.Registry.ToLowerInvariant())
+                    {
+                        return Task.FromResult(AuthenticateResult.Fail("{ error: \"The supplied token is for an unsupported registry.\" }"));
+                    }
+
                     var principal = new ClaimsPrincipal(credentials.ToClaimsIdentity());
                     var ticket = new AuthenticationTicket(principal, "token");
 
