@@ -6,7 +6,7 @@ By default, Whalerator looks for a `readme.md` in the root of a given image, and
 
 Whalerator requires no special access to your Docker registry, and does not store any user credentials for normal operations. If your login has access to your registry's catalog, Whalerator will figure out the rest.
 
-Planned or partially implemented features:
+Planned or partially implemented features, in no particular order:
 
 - Non fugly UI
 - Themeing/whiteboxing for private registries
@@ -17,5 +17,6 @@ Planned or partially implemented features:
 - Image build history browser
 - Image filesystem browser
 - Edit functions; delete tags, images, or whole repositories (with appropriate permissions)
-- Configured defaults and/or restrictions for remote registry
+- ~~Configured defaults and/or restrictions for remote registry~~
 - In-image linking; allow relative links in markdown to reference other content within an image
+- Error handling, esp. auth failures
