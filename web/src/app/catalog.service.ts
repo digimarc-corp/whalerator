@@ -7,18 +7,19 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { ImageSet } from './models/imageSet';
 import { environment } from '../environments/environment';
 import { Config } from './models/config';
+import { WebService } from './web-service';
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class CatalogService {
+export class CatalogService extends WebService {
 
   private apiBase = environment.serviceBaseUri;
 
   public config: Config;
 
-  constructor(private http: HttpClient, private sessionService: SessionService) { }
+  constructor(private http: HttpClient, private sessionService: SessionService) { super(); }
 
   getRepos(): Observable<Repository[]> {
     const listUrl = this.apiBase + '/repositories/list';
@@ -78,26 +79,6 @@ export class CatalogService {
         console.error(error);
         return of(result);
       }
-    };
-  }
-
-  /**
-   * Handle Http operation that failed.
-   * Let the app continue.
-   * @param operation - name of the operation that failed
-   * @param result - optional value to return as the observable result
-   */
-  private handleError<T>(operation = 'operation', result?: T) {
-    return (error: any): Observable<T> => {
-
-      // TODO: send the error to remote logging infrastructure
-      console.error(error); // log to console instead
-
-      // TODO: better job of transforming error for user consumption
-      // this.log(`${operation} failed: ${error.message}`);
-
-      // Let the app keep running by returning an empty result.
-      return of(result as T);
     };
   }
 }
