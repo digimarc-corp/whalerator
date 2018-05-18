@@ -1,10 +1,17 @@
 <div class="appBox">
-
-  <nav>
-    <a routerLink="/catalog">Catalog</a>
-    <a routerLink="/login">Login</a>
-  </nav>
-  <router-outlet></router-outlet>
+  <div *ngIf="configService.config; then appBlock else loadingBlock"></div>
+  
+  <ng-template #appBlock>
+    <nav>
+      <a routerLink="/catalog">Catalog</a>
+      <a routerLink="/login">Login</a>
+    </nav>
+    <router-outlet></router-outlet>
+  </ng-template>
+  
+  <ng-template #loadingBlock>
+    <span>Loading</span>
+  </ng-template>
 
 </div>
 <div class="aboutBox">

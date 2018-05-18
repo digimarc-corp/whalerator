@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnInit } from '@angular/core';
 import { SessionService } from './session.service';
 import { Observable, of } from 'rxjs';
 import { Repository } from './models/repository';
@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ImageSet } from './models/imageSet';
 import { environment } from '../environments/environment';
+import { Config } from './models/config';
 
 
 @Injectable({
@@ -15,8 +16,9 @@ export class CatalogService {
 
   private apiBase = environment.serviceBaseUri;
 
-  constructor(private http: HttpClient,
-    private sessionService: SessionService) { }
+  public config: Config;
+
+  constructor(private http: HttpClient, private sessionService: SessionService) { }
 
   getRepos(): Observable<Repository[]> {
     const listUrl = this.apiBase + '/repositories/list';
@@ -68,7 +70,7 @@ export class CatalogService {
     );
   }
 
-  private handleGetFileError (operation = 'operation', path: String, result?: Object) {
+  private handleGetFileError(operation = 'operation', path: String, result?: Object) {
     return (error: any): Observable<Object> => {
       if (error.status === 404) {
         return of(`Could not find a file at \`/${path}\`.`);
@@ -85,7 +87,7 @@ export class CatalogService {
    * @param operation - name of the operation that failed
    * @param result - optional value to return as the observable result
    */
-  private handleError<T> (operation = 'operation', result?: T) {
+  private handleError<T>(operation = 'operation', result?: T) {
     return (error: any): Observable<T> => {
 
       // TODO: send the error to remote logging infrastructure

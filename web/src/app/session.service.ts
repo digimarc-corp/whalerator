@@ -4,7 +4,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { Token } from './token';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { TokenRequest } from './token-request';
-import { environment } from '../environments/environment.prod';
+import { environment } from '../environments/environment';
 
 
 const httpOptions = {
