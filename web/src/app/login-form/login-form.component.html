@@ -11,9 +11,9 @@
 <ng-template #elseBlock>
   <div class="formBox">
     <form (ngSubmit)="submit()">
-      <input class="textBox" [(ngModel)]="username" name="username" placeholder="Username" />
-      <input class="textBox" [(ngModel)]="password" name="password" type="password" placeholder="Password" />
-      <input class="textBox" [(ngModel)]="registry" name="registry" placeholder="Registry" [readonly]="registryLocked" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="username" name="username" placeholder="Username" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="password" name="password" type="password" placeholder="Password" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="registry" name="registry" placeholder="Registry" [readonly]="registryLocked" />
       <span>Remember me:
         <input [(ngModel)]="remember" name="remember" type="checkbox" />
       </span>

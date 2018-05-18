@@ -9,5 +9,5 @@ import { ConfigService } from './config.service';
 export class AppComponent {
   title = 'whalerator';
 
-  constructor(private configService: ConfigService) { }
+  constructor(public configService: ConfigService) { }
 }

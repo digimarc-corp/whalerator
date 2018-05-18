@@ -19,6 +19,7 @@ RUN dotnet publish -c Release -o /app
 FROM node:carbon as ngbuild
 COPY web/src /web/src
 COPY web/package.json /web/
+COPY web/package-lock.json /web/
 COPY web/angular.json /web/
 COPY web/tsconfig.json /web/
 WORKDIR /web
