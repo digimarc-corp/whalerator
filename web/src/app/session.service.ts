@@ -6,6 +6,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { TokenRequest } from './token-request';
 import { environment } from '../environments/environment';
 import { WebService } from './web-service';
+import { ServiceError } from './service-error';
 
 
 const httpOptions = {
@@ -32,7 +33,7 @@ export class SessionService extends WebService {
     this.sessionToken = null;
   }
 
-  login(username: String, password: String, registry: String, remember: Boolean): Observable<Token> {
+  login(username: String, password: String, registry: String, remember: Boolean): Observable<Token | ServiceError> {
     const tokenRequest = new TokenRequest();
     tokenRequest.username = username;
     tokenRequest.password = password;

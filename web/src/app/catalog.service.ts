@@ -8,6 +8,7 @@ import { ImageSet } from './models/imageSet';
 import { environment } from '../environments/environment';
 import { Config } from './models/config';
 import { WebService } from './web-service';
+import { ServiceError } from './service-error';
 
 
 @Injectable({
@@ -21,7 +22,7 @@ export class CatalogService extends WebService {
 
   constructor(private http: HttpClient, private sessionService: SessionService) { super(); }
 
-  getRepos(): Observable<Repository[]> {
+  getRepos(): Observable<Repository[] | ServiceError> {
     const listUrl = this.apiBase + '/repositories/list';
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -31,7 +32,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  getTags(repo: String): Observable<String[]> {
+  getTags(repo: String): Observable<String[] | ServiceError> {
     const tagsUrl = this.apiBase + `/repository/${repo}/tags/list`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -41,7 +42,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  getImageSet(repo: String, tag: String): Observable<ImageSet> {
+  getImageSet(repo: String, tag: String): Observable<ImageSet | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/tag/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -51,7 +52,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  getImageSetDigest(repo: String, tag: String): Observable<String> {
+  getImageSetDigest(repo: String, tag: String): Observable<String | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/digest/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);

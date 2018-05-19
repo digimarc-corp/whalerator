@@ -4,7 +4,7 @@ import { Config } from './models/config';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { Observable, of } from 'rxjs';
-import { WebService } from './web-service';
+import { WebService, isError } from './web-service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +13,8 @@ export class ConfigService extends WebService {
 
   private apiBase: String;
   public config: Config;
+  public errorMessage: String;
+  public isErrored = false;
 
   constructor(private http: HttpClient) {
     super();
@@ -26,7 +28,12 @@ export class ConfigService extends WebService {
       tap(config => console.log('got service config')),
       catchError(this.handleError<Config>('getConfig'))
     ).subscribe(c => {
-      this.config = c;
+      if (isError<Config>(c)) {
+        this.isErrored = true;
+        this.errorMessage = c.message;
+      } else {
+        this.config = c;
+      }
     });
   }
 }

@@ -50,6 +50,13 @@ a {
     width: 100%;
 }
 
+.errorBox {
+    color: $errorForeground;
+    background-color: $errorBackground;
+    border: 0.05em solid $errorForeground;
+    padding: 0.25em 1em;
+}
+
 nav {
     text-align: right
 }

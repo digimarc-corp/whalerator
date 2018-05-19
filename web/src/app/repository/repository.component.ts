@@ -6,6 +6,8 @@ import { ImageSet } from '../models/imageSet';
 import { VersionSort } from '../version-sort';
 import { Platform } from '../models/platform';
 import { Image } from '../models/image';
+import { isError } from '../web-service';
+import { ServiceError } from '../service-error';
 
 @Component({
   selector: 'app-repository',
@@ -23,6 +25,8 @@ export class RepositoryComponent implements OnInit {
 
   public images: { [id: string]: ImageSet } = {};
   public tagMap: { [tag: string]: ImageSet } = {};
+
+  public errorMessage: String;
 
   private objectKeys = Object.keys;
 
@@ -45,11 +49,15 @@ export class RepositoryComponent implements OnInit {
   getRepo(): void {
     this.name = this.route.snapshot.children[0].url.join('/');
     this.catalog.getTags(this.name).subscribe(tags => {
-      this.tags = tags.sort(VersionSort.sort);
-      this.selectedTag = this.tags[0];
-      this.getFirstImage(this.selectedTag, () => {
-        tags.slice(1).forEach(t => this.getImage(t));
-      });
+      if (isError(tags)) {
+        this.showError(tags);
+      } else {
+        this.tags = tags.sort(VersionSort.sort);
+        this.selectedTag = this.tags[0];
+        this.getFirstImage(this.selectedTag, () => {
+          tags.slice(1).forEach(t => this.getImage(t));
+        });
+      }
     });
   }
 
@@ -59,25 +67,37 @@ export class RepositoryComponent implements OnInit {
     });
   }
 
+  showError(error: ServiceError) {
+    this.errorMessage = 'There was an error while fetching repository information: ' + error.message;
+  }
+
   getImage(tag: String, next?: () => void) {
     this.catalog.getImageSetDigest(this.name, tag).subscribe(digest => {
-      if (this.images[digest.toString()]) {
-        this.images[digest.toString()].tags.push(tag);
-        this.tagMap[tag.toString()] = this.images[digest.toString()];
-        if (next) { next(); }
+      if (isError(digest)) {
+        this.showError(digest);
       } else {
-        this.catalog.getImageSet(this.name, tag).subscribe(i => {
-          const setDigest = i.setDigest.toString();
-          i.tags = [tag];
-          this.images[setDigest] = i;
-          this.tagMap[tag.toString()] = this.images[setDigest];
-          if (tag === this.selectedTag) {
-            this.selectedImageSet = this.images[setDigest];
-            this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
-          } else {
-            if (next) { next(); }
-          }
-        });
+        if (this.images[digest.toString()]) {
+          this.images[digest.toString()].tags.push(tag);
+          this.tagMap[tag.toString()] = this.images[digest.toString()];
+          if (next) { next(); }
+        } else {
+          this.catalog.getImageSet(this.name, tag).subscribe(i => {
+            if (isError(i)) {
+              this.showError(i);
+            } else {
+              const setDigest = i.setDigest.toString();
+              i.tags = [tag];
+              this.images[setDigest] = i;
+              this.tagMap[tag.toString()] = this.images[setDigest];
+              if (tag === this.selectedTag) {
+                this.selectedImageSet = this.images[setDigest];
+                this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
+              } else {
+                if (next) { next(); }
+              }
+            }
+          });
+        }
       }
     });
   }

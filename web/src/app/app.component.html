@@ -1,6 +1,6 @@
 <div class="appBox">
   <div *ngIf="configService.config; then appBlock else loadingBlock"></div>
-  
+
   <ng-template #appBlock>
     <nav>
       <a routerLink="/catalog">Catalog</a>
@@ -8,9 +8,12 @@
     </nav>
     <router-outlet></router-outlet>
   </ng-template>
-  
+
   <ng-template #loadingBlock>
-    <span>Loading</span>
+    <div style="padding: 2em;">
+      <div [class.hidden]="(configService.isErrored)">Loading...</div>
+      <div [class.hidden]="!(configService.isErrored)" style="color: red;">{{configService.errorMessage}}</div>
+    </div>
   </ng-template>
 
 </div>

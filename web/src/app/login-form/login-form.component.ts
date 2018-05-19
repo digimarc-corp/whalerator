@@ -3,6 +3,7 @@ import { SessionService } from '../session.service';
 import { Router } from '@angular/router';
 import { CatalogService } from '../catalog.service';
 import { ConfigService } from '../config.service';
+import { isError } from '../web-service';
 
 @Component({
   selector: 'app-login-form',
@@ -23,6 +24,9 @@ export class LoginFormComponent implements OnInit {
   registryLocked = false;
   remember: Boolean;
 
+  errorMessage: String;
+  isErrored = false;
+
   ngOnInit() {
     if (this.configService.config.registry) {
       this.registry = this.configService.config.registry;
@@ -35,9 +39,15 @@ export class LoginFormComponent implements OnInit {
   }
 
   submit() {
+    this.isErrored = false;
     this.sessionService.login(this.username, this.password, this.registry, this.remember).subscribe(t => {
-      console.log(`Got ${t.token}`);
-      this.router.navigate(['']);
+      if (isError(t)) {
+        this.errorMessage = 'Login failed.';
+        this.isErrored = true;
+      } else {
+        console.log(`Got ${t.token}`);
+        this.router.navigate(['']);
+      }
     });
   }
 }

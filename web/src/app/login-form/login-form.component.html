@@ -11,13 +11,19 @@
 <ng-template #elseBlock>
   <div class="formBox">
     <form (ngSubmit)="submit()">
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="username" name="username" placeholder="Username" />
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="password" name="password" type="password" placeholder="Password" />
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="registry" name="registry" placeholder="Registry" [readonly]="registryLocked" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="username"
+        name="username" placeholder="Username" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="password"
+        name="password" type="password" placeholder="Password" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="registry"
+        name="registry" placeholder="Registry" [readonly]="registryLocked" />
       <span>Remember me:
         <input [(ngModel)]="remember" name="remember" type="checkbox" />
       </span>
-      <button (click)="submit()">Submit</button>
+      <div style="display: flex; align-items: center; justify-items: left;">
+        <button (click)="submit()">Submit</button>
+          <span [class.hidden]="!(isErrored)" class="errorBox">{{errorMessage}}</span>
+      </div>
     </form>
   </div>
 </ng-template>

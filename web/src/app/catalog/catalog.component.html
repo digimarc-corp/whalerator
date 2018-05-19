@@ -1,27 +1,27 @@
 <h2>Repositories</h2>
 
-    <table class="pure-table pure-table-horizontal catalog">
-      <thead>
-        <tr>
-          <td>Name</td>
-          <td class="right">Tags</td>
-          <!--<td class="col">Access</td>-->
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let repo of repos">
-          <td>
-            <img src="assets/if_canned_2799194.svg" style="height: 1em; margin-right: 0.75em;" />
-            <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
-          </td>
-          <td class="right">
-            <span class="badge dark-blue">{{repo.tags}}</span>
-          </td>
-          <!--<td class="col">
-        <span class="badge badge-info">pull</span>
-        <span *ngIf="repo.push" class="badge badge-info">push</span>
-        <span *ngIf="repo.delete" class="badge badge-info">delete</span>
-      </td>-->
-        </tr>
-      </tbody>
-    </table>
+<table class="pure-table pure-table-horizontal catalog">
+  <thead>
+    <tr>
+      <td>Name</td>
+      <td class="right">Tags</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngIf="(!repos) && (!errorMessage)">
+      <td colspan="2" style="text-align: center;">Loading...</td>
+    </tr>
+    <tr *ngIf="(errorMessage)">
+      <td colspan="2" style="text-align: center;"><span class="errorBox">{{errorMessage}}</span></td>
+    </tr>
+    <tr *ngFor="let repo of repos">
+      <td>
+        <img src="assets/if_canned_2799194.svg" style="height: 1em; margin-right: 0.75em;" />
+        <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
+      </td>
+      <td class="right">
+        <span class="badge dark-blue">{{repo.tags}}</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
