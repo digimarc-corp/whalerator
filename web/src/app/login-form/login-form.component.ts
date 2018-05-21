@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CatalogService } from '../catalog.service';
 import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
+import { Title } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-login-form',
@@ -16,6 +17,7 @@ export class LoginFormComponent implements OnInit {
     public sessionService: SessionService,
     private catalogService: CatalogService,
     private configService: ConfigService,
+    private titleService: Title,
     private router: Router) { }
 
   username: String;
@@ -32,6 +34,8 @@ export class LoginFormComponent implements OnInit {
       this.registry = this.configService.config.registry;
       this.registryLocked = true;
     }
+    const title = (this.registry || 'Whalerator') + ' Login';
+    this.titleService.setTitle(title);
   }
 
   logout() {

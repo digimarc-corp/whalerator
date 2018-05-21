@@ -7,6 +7,7 @@ import { TokenRequest } from './token-request';
 import { environment } from '../environments/environment';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
+import { JwtHelperService } from '@auth0/angular-jwt';
 
 
 const httpOptions = {
@@ -20,12 +21,23 @@ export class SessionService extends WebService {
 
   constructor(private http: HttpClient) {
     super();
-    this.sessionToken = localStorage.getItem(sessionKey) ? localStorage.getItem(sessionKey) : sessionStorage.getItem(sessionKey);
+    this.setSession(localStorage.getItem(sessionKey) ? localStorage.getItem(sessionKey) : sessionStorage.getItem(sessionKey));
   }
 
   sessionToken: String;
+  activeRegistry: String;
+  activeUser: String;
 
   whaleratorUrl = environment.serviceBaseUri;
+
+  private setSession(token: String) {
+    this.sessionToken = token;
+
+    const helper = new JwtHelperService();
+    const credential = helper.decodeToken(token.toString());
+    this.activeRegistry = credential.Reg || 'Unknown Registry';
+    this.activeUser = credential.Usr || 'Unknown User';
+  }
 
   logout(): void {
     sessionStorage.removeItem(sessionKey);
@@ -43,7 +55,7 @@ export class SessionService extends WebService {
 
     return this.http.post<Token>(endpoint, tokenRequest, httpOptions).pipe(
       tap((token: Token) => {
-        this.sessionToken = token.token;
+        this.setSession(token.token);
         sessionStorage.setItem(sessionKey, token.token.toString());
         if (remember) { localStorage.setItem(sessionKey, token.token.toString()); }
       }),

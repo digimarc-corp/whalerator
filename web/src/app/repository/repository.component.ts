@@ -8,6 +8,8 @@ import { Platform } from '../models/platform';
 import { Image } from '../models/image';
 import { isError } from '../web-service';
 import { ServiceError } from '../service-error';
+import { Title } from '@angular/platform-browser';
+import { SessionService } from '../session.service';
 
 @Component({
   selector: 'app-repository',
@@ -30,9 +32,14 @@ export class RepositoryComponent implements OnInit {
 
   private objectKeys = Object.keys;
 
-  constructor(private route: ActivatedRoute, private catalog: CatalogService) { }
+  constructor(private route: ActivatedRoute,
+    private catalog: CatalogService,
+    private sessionService: SessionService,
+    private titleService: Title) { }
 
   ngOnInit() {
+    this.name = this.route.snapshot.children[0].url.join('/');
+    this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name.toString());
     this.getRepo();
   }
 
@@ -47,7 +54,6 @@ export class RepositoryComponent implements OnInit {
   }
 
   getRepo(): void {
-    this.name = this.route.snapshot.children[0].url.join('/');
     this.catalog.getTags(this.name).subscribe(tags => {
       if (isError(tags)) {
         this.showError(tags);

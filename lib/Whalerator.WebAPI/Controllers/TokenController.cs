@@ -48,7 +48,7 @@ namespace Whalerator.WebAPI.Controllers
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = _Crypto.Encrypt(json);
 
-                var jwt = Jose.JWT.Encode(new Token { Crd = cipherText, Usr = credentials.Username }, _Crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256);
+                var jwt = Jose.JWT.Encode(new Token { Crd = cipherText, Usr = credentials.Username, Reg = credentials.Registry }, _Crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256);
                 return Ok(new { token = jwt });
             }
             catch (Exception ex)
