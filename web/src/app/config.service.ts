@@ -15,11 +15,27 @@ export class ConfigService extends WebService {
   public config: Config;
   public errorMessage: String;
   public isErrored = false;
+  public version: any;
 
   constructor(private http: HttpClient) {
     super();
     this.apiBase = environment.serviceBaseUri;
     this.getConfig();
+    this.getVersion();
+  }
+
+  getVersion() {
+    this.http.get<any>('/assets/v.json').pipe(
+      tap(v => console.log('got app version')),
+      catchError(this.handleError<any>('getVersion'))
+    ).subscribe(v => {
+      if (isError<any>(v)) {
+        this.isErrored = true;
+        this.errorMessage = v.message;
+      } else {
+        this.version = v;
+      }
+    });
   }
 
   getConfig() {

@@ -28,9 +28,13 @@ RUN npm install @angular/cli
 RUN /web/node_modules/@angular/cli/bin/ng build --prod --output-path /dist
 
 FROM base AS final
-COPY docker-readme.md /README.md
 WORKDIR /app
 COPY --from=publish /app .
 COPY --from=ngbuild /dist ./wwwroot
 COPY lib/Whalerator.WebAPI/config-docker.yaml config.yaml
+
+ARG SRC_HASH="Unknown"
+ARG RELEASE="0.0"
+RUN echo "{ hash: '$SRC_HASH', release: '$RELEASE' }" > ./wwwroot/assets/v.json
+COPY docker-readme.md /README.md
 ENTRYPOINT ["dotnet", "Whalerator.WebAPI.dll"]
