@@ -21,8 +21,7 @@ export class RepositoryComponent implements OnInit {
   public name: String;
 
   requestedTag: String;
-  loading = false;
-  loaded = false;
+  loadRequested = false;
 
   public tags: String[];
   public selectedTag: String;
@@ -63,8 +62,10 @@ export class RepositoryComponent implements OnInit {
   }
 
   getRepo(): void {
-    if (!this.loading && !this.loading) {
-      this.loading = true;
+    if (this.loadRequested) {
+      console.log('tag load already requested');
+    } else {
+      this.loadRequested = true;
       this.catalog.getTags(this.name).subscribe(tags => {
         if (isError(tags)) {
           this.showError(tags);
@@ -129,9 +130,6 @@ export class RepositoryComponent implements OnInit {
                 } else {
                   if (next) {
                     next();
-                  } else {
-                    this.loaded = true;
-                    this.loading = false;
                   }
                 }
               }
