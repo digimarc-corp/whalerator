@@ -1,5 +1,9 @@
 <div class="aboutBox">
-  <div>
+  <div *ngIf="configService.version; then version else loading"></div>
+  <ng-template #version>
     <span>Whalerator {{configService.version.release}} ({{configService.version.hash}})</span>
-  </div>
+  </ng-template>
+  <ng-template #loading>
+    <span>Whalerator</span>
+  </ng-template>
 </div>
