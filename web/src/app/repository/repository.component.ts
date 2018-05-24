@@ -89,8 +89,12 @@ export class RepositoryComponent implements OnInit {
   }
 
   showError(error: ServiceError, next?: () => void) {
-    this.errorMessage.push('There was an error while fetching repository information: ' + error.message);
-    if (next) { next(); }
+    if (error.resultCode === 401) {
+      this.router.navigate(['/login'], { queryParams: { requested: `repo/${this.name}` } });
+    } else {
+      this.errorMessage.push('There was an error while fetching repository information: ' + error.message);
+      if (next) { next(); }
+    }
   }
 
   showNotFound(tag: String, next?: () => void) {
