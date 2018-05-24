@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PathLocationStrategy, LocationStrategy } from '@angular/common';
+import { Location } from '@angular/common';
 import { CatalogService } from '../catalog.service';
 import { ImageSet } from '../models/imageSet';
 import { VersionSort } from '../version-sort';
@@ -37,6 +37,7 @@ export class RepositoryComponent implements OnInit {
 
   constructor(private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private catalog: CatalogService,
     private sessionService: SessionService,
     private titleService: Title) { }
@@ -90,7 +91,7 @@ export class RepositoryComponent implements OnInit {
 
   showError(error: ServiceError, next?: () => void) {
     if (error.resultCode === 401) {
-      this.router.navigate(['/login'], { queryParams: { requested: `repo/${this.name}` } });
+      this.router.navigate(['/login'], { queryParams: { requested: this.location.path() } });
     } else {
       this.errorMessage.push('There was an error while fetching repository information: ' + error.message);
       if (next) { next(); }

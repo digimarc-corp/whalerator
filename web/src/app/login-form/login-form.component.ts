@@ -57,7 +57,7 @@ export class LoginFormComponent implements OnInit {
         this.isErrored = true;
       } else {
         console.log(`Got ${t.token}`);
-        this.router.navigate([this.forwardingRoute || '']);
+        this.router.navigateByUrl(this.forwardingRoute.toString() || '');
       }
     });
   }

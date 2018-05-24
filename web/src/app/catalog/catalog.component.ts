@@ -5,6 +5,7 @@ import { Repository } from '../models/repository';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-catalog',
@@ -19,6 +20,7 @@ export class CatalogComponent implements OnInit {
 
   constructor(private sessionService: SessionService,
     private catalogService: CatalogService,
+    private location: Location,
     private router: Router,
     private titleService: Title) { }
 
@@ -28,7 +30,7 @@ export class CatalogComponent implements OnInit {
       if (isError(r)) {
         if (r.resultCode === 401) {
           this.sessionService.logout();
-          this.router.navigate(['/login'], { queryParams: { requested: 'catalog' } });
+          this.router.navigate(['/login'], { queryParams: { requested: this.location.path() } });
         } else {
           this.errorMessage = 'There was an error fetching the repository catalog.';
           console.log(r.message);
