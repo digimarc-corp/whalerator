@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SessionService } from '../session.service';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { CatalogService } from '../catalog.service';
 import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
@@ -18,6 +18,7 @@ export class LoginFormComponent implements OnInit {
     private catalogService: CatalogService,
     private configService: ConfigService,
     private titleService: Title,
+    private route: ActivatedRoute,
     private router: Router) { }
 
   username: String;
@@ -29,6 +30,8 @@ export class LoginFormComponent implements OnInit {
   errorMessage: String;
   isErrored = false;
 
+  forwardingRoute: String;
+
   ngOnInit() {
     if (this.configService.config.registry) {
       this.registry = this.configService.config.registry;
@@ -36,6 +39,10 @@ export class LoginFormComponent implements OnInit {
     }
     const title = (this.registry || 'Whalerator') + ' Login';
     this.titleService.setTitle(title);
+
+    this.route.queryParams.subscribe(p => {
+      this.forwardingRoute = p['requested'];
+    });
   }
 
   logout() {
@@ -50,7 +57,7 @@ export class LoginFormComponent implements OnInit {
         this.isErrored = true;
       } else {
         console.log(`Got ${t.token}`);
-        this.router.navigate(['']);
+        this.router.navigate([this.forwardingRoute || '']);
       }
     });
   }

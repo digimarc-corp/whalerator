@@ -26,6 +26,7 @@ namespace Whalerator.WebAPI
         public SecurityConfig Security { get; set; }
         public class SecurityConfig
         {
+            public long TokenLifetime { get; set; }
             public string PrivateKey { get; set; }
         }
 

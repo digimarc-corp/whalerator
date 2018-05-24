@@ -14,11 +14,13 @@ cache:
   # Cache lifetime for non-volatile data (hashed layers, manifests, etc). Default is null (keep indefinitely).
 
 search:
-  depth: 4
   filenames:
   - readme.md
   - about.md
   - setup.md
+
+security:
+  tokenLifetime: 604800 # 4 weeks
 
 logging:
   includeScopes: false

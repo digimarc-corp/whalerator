@@ -32,11 +32,15 @@ export class SessionService extends WebService {
 
   private setSession(token: String) {
     this.sessionToken = token;
-
-    const helper = new JwtHelperService();
-    const credential = helper.decodeToken(token.toString());
-    this.activeRegistry = credential.Reg || 'Unknown Registry';
-    this.activeUser = credential.Usr || 'Unknown User';
+    if (token) {
+      const helper = new JwtHelperService();
+      const credential = helper.decodeToken(token.toString());
+      this.activeRegistry = credential.Reg || 'Unknown Registry';
+      this.activeUser = credential.Usr || 'Unknown User';
+    } else {
+      this.activeRegistry = null;
+      this.activeUser = null;
+    }
   }
 
   logout(): void {

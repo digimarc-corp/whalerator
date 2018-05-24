@@ -20,7 +20,8 @@ export class CatalogService extends WebService {
 
   public config: Config;
 
-  constructor(private http: HttpClient, private sessionService: SessionService) { super(); }
+  constructor(private http: HttpClient,
+    private sessionService: SessionService) { super(); }
 
   getRepos(): Observable<Repository[] | ServiceError> {
     const listUrl = this.apiBase + '/repositories/list';

@@ -21,7 +21,7 @@ namespace Whalerator.WebAPI
         {
             if (string.IsNullOrEmpty(Request.Headers["Authorization"]))
             {
-                return Task.FromResult(AuthenticateResult.Fail("{ error: \"Authorization is required.\"}"));
+                return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"Authorization is required.\"}"));
             }
             else
             {
@@ -29,6 +29,12 @@ namespace Whalerator.WebAPI
                 {
                     var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
                     var token = Jose.JWT.Decode<Token>(header.Parameter, Options.Algorithm.ToDotNetRSA());
+
+                    if (token.Exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                    {
+                        return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The token has expired\" }"));
+                    }
+
                     var json = Options.Algorithm.Decrypt(token.Crd);
                     var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
 
@@ -44,21 +50,9 @@ namespace Whalerator.WebAPI
                 }
                 catch
                 {
-                    return Task.FromResult(AuthenticateResult.Fail("{ error: \"The supplied token is invalid.\" }"));
+                    return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The supplied token is invalid.\" }"));
                 }
             }
-        }
-
-        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
-        {
-            /*
-            var parts = new List<string>();
-            if (!string.IsNullOrEmpty(Options.Realm)) { parts.Add($"realm=\"{Options.Realm}\""); }
-            if (!string.IsNullOrEmpty(Options.Service)) { parts.Add($"service=\"{Options.Service}\""); }
-
-            Response.Headers["WWW-Authenticate"] = $"Bearer {string.Join(',', parts)}";
-            */
-            return base.HandleChallengeAsync(properties);
         }
     }
 }

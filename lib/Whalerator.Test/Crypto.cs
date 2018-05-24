@@ -47,7 +47,7 @@ namespace Whalerator.Test
             Assert.AreNotEqual(Sample, cipherText);
             Assert.AreEqual(Sample, crypto.Decrypt(cipherText));
         }
-
+        
         [TestMethod]
         public void CanEncryptTextWithSelfGeneratedKey()
         {
