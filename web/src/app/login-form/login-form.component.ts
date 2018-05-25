@@ -25,7 +25,7 @@ export class LoginFormComponent implements OnInit {
   password: String;
   registry: String;
   registryLocked = false;
-  remember: Boolean;
+  remember: Boolean = true;
 
   errorMessage: String;
   isErrored = false;
