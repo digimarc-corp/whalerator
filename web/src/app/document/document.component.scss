@@ -1,0 +1,67 @@
+@import "./src/styles/colors";
+
+.documentViewer {
+    margin-top: 1em;
+}
+
+span.tab {
+    padding: 0.2em 0.4em;
+    margin: 0em 0.1em;
+    border-style: solid; //solid none solid;
+    border-width: 0.01em; // 0.01em 0em 0.01em;
+}
+
+span.tab.selected {    
+    padding-top: 0.4em;
+    border-bottom-style: none;
+    font-weight: bold;
+}
+
+div.tab {
+    padding: 0.25em;
+    border-width: 0.01em;
+    border-style: solid;
+    margin-top: 0.1em;    
+}
+
+span.tab.loading {
+    border-color: $grey;
+    background-color: $grey-light;
+}
+
+.tab.document {
+    border-color: $green-dark;
+    background-color: $green-light;
+    color: $green-dark;
+}
+
+.tab.searching {
+    border-color: $grey-dark;
+    color: $grey-dark;
+    background-color: $grey-light;
+}
+
+.tab.error {
+    border-color: $errorForeground;
+    background-color: $errorBackground;
+    color: $errorForeground;
+}
+
+div.tab.searching {
+    text-align: center;
+    padding: 10em 0em;
+}
+
+div.frame {
+    background-color: $white;
+    color: $black;
+    border: 0.01em $grey solid;
+    padding: 0.4em;
+}
+
+span.tab.history {
+    border-color: $purple-dark;
+    background-color: $purple-light;
+    color: $purple-dark;
+}
+

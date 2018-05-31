@@ -12,6 +12,7 @@ import { TagSortPipe } from './tag-sort.pipe';
 
 import { MarkdownModule } from 'ngx-markdown';
 import { AboutComponent } from './about/about.component';
+import { DocumentComponent } from './document/document.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { AboutComponent } from './about/about.component';
     CatalogComponent,
     RepositoryComponent,
     TagSortPipe,
-    AboutComponent
+    AboutComponent,
+    DocumentComponent
   ],
   imports: [
     MarkdownModule.forRoot(),

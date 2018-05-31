@@ -10,6 +10,7 @@ import { isError } from '../web-service';
 import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
+import { ConfigService } from '../config.service';
 
 @Component({
   selector: 'app-repository',
@@ -40,6 +41,7 @@ export class RepositoryComponent implements OnInit {
     private location: Location,
     private catalog: CatalogService,
     private sessionService: SessionService,
+    private configService: ConfigService,
     private titleService: Title) { }
 
   ngOnInit() {
@@ -51,15 +53,11 @@ export class RepositoryComponent implements OnInit {
     });
   }
 
-  getDigestFor(imageSet: ImageSet, platform: Platform): String {
-    return imageSet.images.find(i => i.platform.architecture === platform.architecture && i.platform.os === platform.os).digest;
-  }
-
   onSelect(tag: String) {
     this.selectedTag = tag;
     this.selectedImageSet = this.tagMap[tag.toString()];
     this.router.navigate([], { relativeTo: this.route, queryParams: { tag: tag }, replaceUrl: true });
-    this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0]);
+    // this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], 'readme.md');
   }
 
   getRepo(): void {
@@ -103,7 +101,9 @@ export class RepositoryComponent implements OnInit {
     if (next) { next(); }
   }
 
+  // this is where the magic happens
   getImage(tag: String, next?: () => void) {
+    // request the digest associated with this tag
     this.catalog.getImageSetDigest(this.name, tag).subscribe(digest => {
       if (isError(digest)) {
         if (digest.resultCode = 404) {
@@ -112,10 +112,12 @@ export class RepositoryComponent implements OnInit {
           this.showError(digest, next);
         }
       } else {
+        // if we've already loaded an imageset with this digest, just make the map entry
         if (this.images[digest.toString()]) {
           this.mapTag(digest, tag);
           if (next) { next(); }
         } else {
+          // fetch the actual imageset
           this.catalog.getImageSet(this.name, tag).subscribe(i => {
             if (isError(i)) {
               this.showError(i, next);
@@ -129,13 +131,13 @@ export class RepositoryComponent implements OnInit {
                 i.tags = [tag];
                 this.images[setDigest] = i;
                 this.tagMap[tag.toString()] = this.images[setDigest];
+                // if this tag is currently selected, set the active image and start loading documents
                 if (tag === this.selectedTag) {
                   this.selectedImageSet = this.images[setDigest];
-                  this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
-                } else {
-                  if (next) {
-                    next();
-                  }
+                  // this.getDocuments(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
+                }
+                if (next) {
+                  next();
                 }
               }
             }
@@ -149,13 +151,17 @@ export class RepositoryComponent implements OnInit {
     this.images[digest.toString()].tags.push(tag);
     this.tagMap[tag.toString()] = this.images[digest.toString()];
   }
-
-  getReadme(imageSet: ImageSet, platform: Platform, next?: () => void) {
-    this.readme = 'Searching for documentation.';
-    const digest = this.getDigestFor(imageSet, platform);
-    this.catalog.getFile(this.name, digest, 'readme.md').subscribe(r => {
-      this.readme = r.toString();
-      if (next) { next(); }
-    });
-  }
+  /*
+    getDocuments(imageSet: ImageSet, platform: Platform, next?: () => void) {
+      const digest = this.getDigestFor(imageSet, platform);
+      const filename = 'readme.md';
+      this.catalog.getFile(this.name, digest, filename).subscribe(r => {
+        if (this.selectedImageSet === this.images[digest.toString()]) {
+          this.readme = r.toString();
+          if (next) { next(); }
+        } else {
+          console.log(`Discarded stale request for ${filename}`);
+        }
+      });
+    }*/
 }

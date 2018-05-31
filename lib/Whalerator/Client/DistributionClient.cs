@@ -73,6 +73,7 @@ namespace Whalerator.Client
                 var json = response.Content.ReadAsStringAsync().Result;
                 var manifest = JsonConvert.DeserializeObject<ManifestV2>(json);
                 var config = GetImageConfig(repository, manifest.Config.Digest);
+                if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
                 var image = new Image
                 {
                     History = config.History.Select(h => new Model.History { Command = new[] { h.Created_By }, Created = h.Created }),

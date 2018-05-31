@@ -36,9 +36,7 @@
               {{platform.os}}/{{platform.architecture}}
             </span>
           </div>
-          <div class="">
-            <markdown [data]=readme></markdown>
-          </div>
+          <app-document [repository]="name" [image]="selectedImageSet.images[0]"></app-document>
         </ng-template>
         <ng-template #loadingBlock>
           <span>Loading image details</span>
