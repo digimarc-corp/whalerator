@@ -30,7 +30,7 @@ namespace Whalerator.WebAPI.Controllers
             return Ok(new
             {
                 Registry = Config.Catalog?.Registry,
-                SearchPaths = Config.Search?.Filenames.ToArray() ?? new[] { "readme.md" }
+                SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
             });
         }
     }

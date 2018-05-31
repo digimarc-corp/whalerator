@@ -6,6 +6,7 @@ import { Image } from '../models/image';
 import { Document } from '../models/document';
 import { History } from '../models/history';
 import { isError } from '../web-service';
+import { ConfigService } from '../config.service';
 
 @Component({
   selector: 'app-document',
@@ -22,22 +23,23 @@ export class DocumentComponent implements OnInit {
     this._image = image;
     this.selected = null;
     if (image && !image.documents) {
-      this.getDocuments(image);
+      this.getDocuments();
     } else if (image && image.documents.length > 0) {
       this.selected = image.documents[0];
     }
   }
   get image(): Image { return this._image; }
 
-  selected: Document | History;
+  selected: Document | History[];
 
-  constructor(private catalog: CatalogService) { }
+  constructor(private catalog: CatalogService,
+    private config: ConfigService) { }
 
   ngOnInit() {
   }
 
   isHistory(obj: any): Boolean {
-    return obj instanceof History;
+    return obj && obj[0] instanceof History;
   }
 
   isDocument(obj: any): Boolean {
@@ -45,21 +47,58 @@ export class DocumentComponent implements OnInit {
   }
 
   selectHistory() {
-    this.selected = new History();
+    this.selected = this.image.history;
   }
 
   select(document: Document) {
     this.selected = document;
   }
 
-  getDocuments(image: Image, next?: () => void) {
-    const filename = 'readme.md';
-    this.catalog.getFile(this.repository, image.digest, filename).subscribe(r => {
+  getDocuments() {
+    const lists = this.config.config.searchLists.slice().reverse().map(l => l.slice().reverse());
+    if (lists.length > 0) {
+      this.getDocumentLists(lists);
+    } else {
+      this.image.documents = [];
+    }
+  }
+
+  getDocumentLists(lists: String[][]) {
+    if (lists.length > 0) {
+      this.getDocumentStack(lists.pop(), () => {
+        this.getDocumentLists(lists);
+      });
+    }
+  }
+
+  getDocumentStack(stack: String[], next?: () => void) {
+    // console.log(`Searching for hit from '${stack}'`);
+    if (stack.length > 0) {
+      this.getDocument(stack.pop(), (success) => {
+        if (!success) {
+          this.getDocumentStack(stack, next);
+        } else if (next) {
+          next();
+        }
+      });
+    } else {
+      if (next) {
+        next();
+      }
+    }
+  }
+
+  getDocument(filename: String, next?: (success: Boolean) => void) {
+    // console.log(`Searching for ${filename}`);
+    this.catalog.getFile(this.repository, this.image.digest, filename).subscribe(r => {
       if (isError(r)) {
-        this.image.documents = [];
-        console.log(`Could not find a file ${filename}`);
-        if (!this.selected) {
-          this.selectHistory();
+        if (next) {
+          next(false);
+        } else {
+          this.image.documents = [];
+          if (!this.selected) {
+            this.selectHistory();
+          }
         }
       } else {
         const document = new Document();
@@ -73,10 +112,7 @@ export class DocumentComponent implements OnInit {
         } else {
           this.image.documents.push(document);
         }
-        const stub = new Document();
-        stub.content = '## Fuck off';
-        stub.name = 'relnotes';
-        this.image.documents.push(stub);
+        next(true);
       }
     });
   }

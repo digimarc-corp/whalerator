@@ -18,7 +18,16 @@
       </div>
     </ng-template>
     <div class="tab history" *ngIf="isHistory(selected)">
-      Four score and seven minutes ago...
+      <div class="historyItem" *ngFor="let item of image.history">
+        <span class="type">{{item.type | uppercase}}</span>
+        <span class="date">{{item.created | date : "medium"}}</span>
+        <div class="command">
+          <div class="args" *ngIf="item.args">
+            <code>{{item.args}}</code>
+          </div>
+          <pre>{{item.command}}</pre>
+        </div>
+      </div>
     </div>
   </ng-template>
 </div>

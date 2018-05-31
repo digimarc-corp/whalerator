@@ -9,6 +9,7 @@ import { environment } from '../environments/environment';
 import { Config } from './models/config';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
+import { History } from './models/history';
 
 
 @Injectable({
@@ -48,7 +49,8 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
-      tap(repos => console.log('got image set')),
+      tap(img => console.log('got image set')),
+      tap(imgset => imgset.images.forEach(img => img.history = img.history.map(i => History.From(i)))),
       catchError(this.handleError<ImageSet>('getImage'))
     );
   }

@@ -31,6 +31,8 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
+
+                // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
                 var repos = registryApi.GetRepositories().Where(r => r.Tags > 0).OrderBy(r => r.Name);
 
                 return Ok(repos);

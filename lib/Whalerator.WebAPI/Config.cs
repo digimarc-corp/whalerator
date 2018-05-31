@@ -20,7 +20,7 @@ namespace Whalerator.WebAPI
         public class SearchConfig
         {
             public int? Depth { get; set; } = 4;
-            public List<string> Filenames { get; set; } = new List<string>() { "readme.md" };
+            public List<string> Filelists { get; set; }
         }
 
         public SecurityConfig Security { get; set; }

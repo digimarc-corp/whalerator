@@ -13,10 +13,10 @@ cache:
   #volatileTtl: 3600 # 1 hour
   # Cache lifetime for non-volatile data (hashed layers, manifests, etc). Default is null (keep indefinitely).
 
+# each list may have multiple filenames specified, separated by semicolons. Only the first hit from each list will be displayed. Names are case-insensitive
 search:
-  filenames:
-  - readme.md
-  - about.md
+  filelists:
+  - readme.md;about.md
   - setup.md
 
 security:

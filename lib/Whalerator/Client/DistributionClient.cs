@@ -35,9 +35,6 @@ namespace Whalerator.Client
         {
             var list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
 
-            // workaround for https://github.com/docker/distribution/issues/2434
-            //list.Repositories = list.Repositories.AsParallel().Where(r => Try(() => GetTagsAsync(r).Wait()));
-
             return Task.FromResult(list);
         }
 
@@ -76,7 +73,7 @@ namespace Whalerator.Client
                 if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
                 var image = new Image
                 {
-                    History = config.History.Select(h => new Model.History { Command = new[] { h.Created_By }, Created = h.Created }),
+                    History = config.History.Select(h => Model.History.From(h)),
                     Layers = manifest.Layers.Select(l => l.ToLayer()),
                     Digest = response.Headers.First(h => h.Key.ToLowerInvariant() == "docker-content-digest").Value.First(),
                     Platform = new Platform

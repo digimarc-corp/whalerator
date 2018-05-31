@@ -59,9 +59,47 @@ div.frame {
     padding: 0.4em;
 }
 
-span.tab.history {
+.tab.history {
     border-color: $purple-dark;
     background-color: $purple-light;
     color: $purple-dark;
 }
 
+div.tab.history {
+
+}
+
+.historyItem {
+    margin-top: 1em; 
+}
+
+.date {
+    float: right;
+    margin-right: 0.5em;
+    font-size: 75%;
+}
+
+.type {
+    margin-left: 0.5em;
+    font-size: 75%;
+    font-weight: bold;
+}
+
+.command {
+    margin: 0.1em;
+    padding: 0.2em;
+    background-color: $grey-light;
+    color: $grey-dark;
+    border: 0.01em $grey solid;
+}
+
+.command > pre {
+    margin: 0.2em;
+    white-space: pre-wrap;
+}
+
+div.args {    
+    border-bottom: 0.01em $grey solid;
+    color: $grey-dark;
+    padding: 0.2em;
+}
