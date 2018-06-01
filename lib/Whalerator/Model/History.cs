@@ -73,19 +73,16 @@ namespace Whalerator.Model
 
         private static (HistoryType type, string command) TryParse(string command)
         {
+            Match match;
             foreach (HistoryType h in Enum.GetValues(typeof(HistoryType)))
             {
                 if (h == HistoryType.Run)
                 {
-                    var match = new Regex(@"^/bin/sh -c\s+(?!#\(nop\))(.*)$", RegexOptions.Compiled).Match(command);
-                    if (match.Success)
-                    {
-                        return (h, match.Groups[1].Value);
-                    }
+                    continue; // must check for Run commands last
                 }
                 else
                 {
-                    var match = new Regex(@"^/bin/sh -c #\(nop\)\s+" + h.ToString().ToUpper() + @"\s+(.*)$").Match(command);
+                    match = new Regex(@"^/bin/sh -c #\(nop\)\s+" + h.ToString().ToUpper() + @"\s+(.*)$").Match(command);
                     if (match.Success)
                     {
                         return (h, match.Groups[1].Value);
@@ -93,7 +90,16 @@ namespace Whalerator.Model
                 }
             }
 
-            return (HistoryType.Other, command);
+            // nothing more specific matched, try Run
+            match = new Regex(@"^/bin/sh -c\s+(?!#\(nop\))(.*)$", RegexOptions.Compiled).Match(command);
+            if (match.Success)
+            {
+                return (HistoryType.Run, match.Groups[1].Value);
+            }
+            else
+            {
+                return (HistoryType.Other, command);
+            }
         }
 
         private static bool TryMatch(History history, Regex regex, int cmdGroup = 1)

@@ -15,6 +15,7 @@ namespace Whalerator.Model
         Workdir,
         Run,
         Arg,
-        Expose
+        Expose,
+        User
     }
 }
