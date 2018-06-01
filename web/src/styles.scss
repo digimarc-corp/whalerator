@@ -106,6 +106,10 @@ nav {
     }
 }
 
+.tag-list span {
+    cursor: default;
+}
+
 .repo-head-lg * {
     @media (max-width: $width-break-sm) {
         display: none;
