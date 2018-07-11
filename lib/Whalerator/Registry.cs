@@ -13,6 +13,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 namespace Whalerator
 {
@@ -30,19 +31,23 @@ namespace Whalerator
             "registry-1.docker.io"
         };
 
+        static Regex _HostWithScheme = new Regex(@"\w+:\/\/.+", RegexOptions.Compiled);
+        static Regex _HostWithPort = new Regex(@".+:\d+$", RegexOptions.Compiled);
+
         public static string HostToEndpoint(string host, string resource = null)
         {
             if (DockerHubAliases.Contains(host.ToLowerInvariant())) { host = DockerHub; }
 
             var sb = new StringBuilder();
-            if (host.Contains("://"))
+            // if the supplied hostname appears to include a scheme, preserve it and just add the resource path
+            if (!_HostWithScheme.IsMatch(host))
             {
-                sb.Append(host.TrimEnd('/') + "/v2/");
+                // if the hostname appears to include a port, assume plain http, otherwise assume https
+                if (_HostWithPort.IsMatch(host)) { sb.Append("http://"); }
+                else { sb.Append("https://"); }
             }
-            else
-            {
-                sb.Append($"https://{host.TrimEnd('/')}/v2/");
-            }
+            sb.Append(host.TrimEnd('/'));
+            sb.Append("/v2/");
             sb.Append(resource ?? string.Empty);
 
             return sb.ToString();
