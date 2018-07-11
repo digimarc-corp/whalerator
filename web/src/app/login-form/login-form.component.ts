@@ -26,6 +26,7 @@ export class LoginFormComponent implements OnInit {
   registry: String;
   registryLocked = false;
   remember: Boolean = true;
+  anonymous: Boolean = false;
 
   errorMessage: String;
   isErrored = false;
@@ -51,7 +52,9 @@ export class LoginFormComponent implements OnInit {
 
   submit() {
     this.isErrored = false;
-    this.sessionService.login(this.username, this.password, this.registry, this.remember).subscribe(t => {
+    const username = this.anonymous ? null : this.username;
+    const password = this.anonymous ? null : this.password;
+    this.sessionService.login(username, password, this.registry, this.remember).subscribe(t => {
       if (isError(t)) {
         this.errorMessage = 'Login failed.';
         this.isErrored = true;
