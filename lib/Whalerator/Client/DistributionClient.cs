@@ -28,7 +28,7 @@ namespace Whalerator.Client
 
         public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest)
         {
-            return Task.FromResult(Get(new Uri($"https://{Host}/v2/{repository}/blobs/{digest}")));
+            return Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
         }
 
         public Task<RepositoryList> GetRepositoriesAsync()
@@ -53,7 +53,7 @@ namespace Whalerator.Client
         public Task<IEnumerable<Image>> GetImages(string repository, string tag)
         {
             var images = new List<Image>();
-            var uri = new Uri($"https://{Host}/v2/{repository}/manifests/{tag}");
+            var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{tag}"));
             var response = Get(uri, "application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json");
 
             if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
