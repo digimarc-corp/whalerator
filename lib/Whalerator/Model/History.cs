@@ -17,7 +17,8 @@ namespace Whalerator.Model
 
         public static History From(Data.History rawHistory)
         {
-            var command = rawHistory.Created_By;
+            // null Created_By usually means the image was squashed
+            var command = rawHistory.Created_By ?? string.Empty;
             string args = null;
 
             var argsm = new Regex(@"^\|\d(.+)(/bin/sh.*)$", RegexOptions.Compiled).Match(command);
@@ -37,38 +38,6 @@ namespace Whalerator.Model
                 ShortCommand = parsed.command,
                 Type = parsed.type
             };
-
-            /*
-            if (TryMatch(command, HistoryType.Add, out var addCmd)) { command = addCmd; }
-            else if (TryMatch(command, HistoryType.Arg, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Cmd, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Copy, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Entrypoint, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Env, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Expose, out var argCmd)) { command = argCmd; }
-            else if (TryMatch(command, HistoryType.Other, out var argCmd)) { command = argCmd; }
-
-            var env = new Regex(@"^/bin/sh -c #\(nop\)\s+ENV\s+(.*)$", RegexOptions.Compiled);
-            var add = new Regex(@"^/bin/sh -c #\(nop\)\s+ADD\s+(.*)$", RegexOptions.Compiled);
-            var copy = new Regex(@"^/bin/sh -c #\(nop\)\s+COPY\s+(.*)$", RegexOptions.Compiled);
-            var cmd = new Regex(@"^/bin/sh -c #\(nop\)\s+CMD\s+(.*)$", RegexOptions.Compiled);
-            var workdir = new Regex(@"^/bin/sh -c #\(nop\)\s+WORKDIR\s+(.*)$", RegexOptions.Compiled);
-            var entrypoint = new Regex(@"^/bin/sh -c #\(nop\)\s+ENTRYPOINT\s+(.*)$", RegexOptions.Compiled);
-            var expose = new Regex(@"^/bin/sh -c #\(nop\)\s+EXPOSE\s+(.*)$", RegexOptions.Compiled);
-            var arg = new Regex(@"^/bin/sh -c #\(nop\)\s+ARG\s+(.*)$", RegexOptions.Compiled);
-            var run = new Regex(@"^/bin/sh -c\s+(?!#\(nop\))(.*)$", RegexOptions.Compiled);
-
-            if (TryMatch(history, env)) { history.Type = HistoryType.Env; }
-            else if (TryMatch(history, add)) { history.Type = HistoryType.Add; }
-            else if (TryMatch(history, copy)) { history.Type = HistoryType.Copy; }
-            else if (TryMatch(history, cmd)) { history.Type = HistoryType.Cmd; }
-            else if (TryMatch(history, workdir)) { history.Type = HistoryType.Workdir; }
-            else if (TryMatch(history, entrypoint)) { history.Type = HistoryType.Entrypoint; }
-            else if (TryMatch(history, expose)) { history.Type = HistoryType.Expose; }
-            else if (TryMatch(history, arg)) { history.Type = HistoryType.Arg; }
-            else if (TryMatch(history, run)) { history.Type = HistoryType.Run; }
-
-            return history;*/
         }
 
         private static (HistoryType type, string command) TryParse(string command)
