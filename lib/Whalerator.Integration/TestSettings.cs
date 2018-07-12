@@ -4,10 +4,10 @@ using System.Text;
 
 namespace Whalerator.Integration
 {
-    internal class RegistrySettings
+    internal class TestSettings
     {
-        public static RegistrySettings FromFile(string filename) =>
-            new YamlDotNet.Serialization.Deserializer().Deserialize<RegistrySettings>(System.IO.File.ReadAllText(filename));
+        public static TestSettings FromFile(string filename) =>
+            new YamlDotNet.Serialization.Deserializer().Deserialize<TestSettings>(System.IO.File.ReadAllText(filename));
 
         [YamlDotNet.Serialization.YamlMember(Alias = "registry")]
         public string Registry { get; set; }
