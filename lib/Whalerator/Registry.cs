@@ -98,7 +98,7 @@ namespace Whalerator
                 Name = r,
                 //Push = Settings.AuthHandler.Authorize($"repository:{r}:push"),
                 //Delete = Settings.AuthHandler.Authorize($"repository:{r}:*"),
-                Tags = GetTags(r).Count()
+                Tags = GetTags(r)?.Count() ?? 0
             });
         }
 
