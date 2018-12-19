@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # quick-n-dirty build script
-# buildDocker.sh digimarc/whalerator 0 1 2
+# buildDocker.sh 0 1 2 digimarc/whalerator
 
 major=$1
 release="$1.$2"
