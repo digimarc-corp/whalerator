@@ -1,9 +1,9 @@
 <div class="aboutBox">
   <div *ngIf="configService.version; then version else loading"></div>
   <ng-template #version>
-    <span>Whalerator {{configService.version.release}} ({{configService.version.hash}})</span>
+    <span>Whalerator {{configService.version.release}} ({{configService.version.hash}}) - Copyright © 2018, Digimarc, Inc</span>
   </ng-template>
   <ng-template #loading>
-    <span>Whalerator</span>
+    <span>Whalerator - Copyright © 2018, Digimarc, Inc</span>
   </ng-template>
 </div>
