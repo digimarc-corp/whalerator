@@ -22,25 +22,13 @@ Certificates should be PEM-encoded, and need not be signed. **This certificate i
 
 Docker uses a relatively "chatty" security protocol. Accessing each repository on a Docker Registry requires a fresh set of credentials, and most systems (including Docker Hub) do not support true OAuth with long-lived tokens and/or refreshes. That means every time you request something, you need to send a username and password, which means Whalerator needs to save your username and password as part of your session.
 
-In the default configuration, Whalerator generates an RSA keypair at startup (you should generate and configure your own key for a production deployment). When you log in, your credentials are forwarded to the remote Registry server for validation. If they are accepted, Whalerator encrypts and signs them with it's private key and sends them back to your browser as part of a token. That token then becomes your session handle; Whalerator caches grants, but your encrypted token is required to access them. The encrypted data is never stored on the server, and the encryption keys are never shared with the client.
+In the default configuration, Whalerator generates an RSA keypair at startup (you should generate and configure your own key for a production deployment). When you log in, your credentials are forwarded to the remote Registry server for validation. If they are accepted, Whalerator encrypts and signs them with it's private key and sends them back to your browser as part of a token. That token then becomes your session handle; Whalerator caches grants, but your encrypted token is required to access them. When no cached grant is available, the key in your token is decrypted and forwarded to the remote server again. The encrypted data is never stored on the server, and the encryption keys are never shared with the client.
 
-## Future
+## Attribution
 
-Planned or partially implemented features, in no particular order:
+Assets:
 
-- ~~Non fugly UI~~
-- Themeing/whiteboxing for private registries
-- ~~Options to handle users with no catalog access~~
-  - ~~Static image list, with permsissions verification at runtime~~
-  - ~~Specially configured catalog user~~
-- Prefetching of some data to speed UI
-- Image build history browser
-- Image filesystem browser
-- Edit functions; delete tags, images, or whole repositories (with appropriate permissions)
-- ~~Configured defaults and/or restrictions for remote registry~~
-- Deep linking; allow relative links in markdown to reference other content within an image
-- Format awareness; allow plaintext or other content types
-- Webhook receivers for push updates
-- Anon registry support (docker hub, vanilla registry, etc)
-- Improved multiarch handling
-- ~~Error handling, esp. auth failures~~
+- ["Anchors Away"](https://www.heropatterns.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- ["Bouy"](https://www.zondicons.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+Software:
