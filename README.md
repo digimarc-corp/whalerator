@@ -6,6 +6,14 @@ By default, Whalerator looks for a `readme.md` in the root of a given image, and
 
 Whalerator requires no special access to your Docker registry, and does not store any user credentials for normal operations. If your login has access to your registry's catalog, Whalerator will figure out the rest.
 
+## Build
+
+Official releases via Docker Hub coming soon, or build Whalerator directly from Github:
+
+```
+docker build http://git@github.com:digimarcgit/whalerator.git -t whalerator
+```
+
 ## Productionizing
 
 Our first design goal was for Whalerator to run and be useful out-of-the-box with zero configuration. Pull the latest image (or build your own), run it, and log in. 
