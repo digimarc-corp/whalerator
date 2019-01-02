@@ -39,4 +39,16 @@ Assets:
 - ["Anchors Away"](https://www.heropatterns.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - ["Bouy"](https://www.zondicons.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
-Software:
+.NET Core packages:
+- [vstest](https://github.com/microsoft/vstest/) - [MIT](https://opensource.org/licenses/MIT)
+- [jose-jwt](https://github.com/dvsekhvalnov/jose-jwt) - [MIT](https://opensource.org/licenses/MIT)
+- [ASP.net Extensions](https://github.com/aspnet/Extensions) - [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
+- [Newtonsoft.JSON](https://github.com/JamesNK/Newtonsoft.Json) - [MIT](https://opensource.org/licenses/MIT)
+- [BouncyCastle](https://github.com/onovotny/bc-csharp) - [BouncyCastle/MIT](https://www.bouncycastle.org/license.html)
+- [SharpZipLib](https://github.com/PingmanTools/SharpZipLib) - [MIT](https://opensource.org/licenses/MIT)
+- [YamlDotNet](https://github.com/aaubry/YamlDotNet) - [MIT](https://opensource.org/licenses/MIT)
+- [Netescapades.Configuration](https://github.com/andrewlock/NetEscapades.Configuration) - [MIT](https://opensource.org/licenses/MIT)
+- [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis/) - [MIT](https://opensource.org/licenses/MIT)
+
+
+Node packages: ["web/oss-attribution/attribution.txt"](web/oss-attribution/attribution.txt)
