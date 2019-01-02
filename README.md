@@ -51,4 +51,4 @@ Assets:
 - [StackExchange.Redis](https://github.com/StackExchange/StackExchange.Redis/) - [MIT](https://opensource.org/licenses/MIT)
 
 
-Node packages: ["web/oss-attribution/attribution.txt"](web/oss-attribution/attribution.txt)
+Node packages: [attribution.txt](web/oss-attribution/attribution.txt)
