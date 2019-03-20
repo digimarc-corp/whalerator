@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # quick-n-dirty build script
-# buildDocker.sh 0 1 2 digimarc/whalerator
+# buildDocker.sh 0 1 2 whalerator/whalerator
 
 major=$1
 release="$1.$2"
@@ -21,8 +21,8 @@ fi
 echo "Preparing to build and release version $revision ($hash)"
 
 # make sure build tools are up-to-date
-docker pull microsoft/aspnetcore:2.0
-docker pull microsoft/aspnetcore-build:2.0
+docker pull microsoft/dotnet:2.2-aspnetcore-runtime
+docker pull microsoft/dotnet:2.2-sdk
 
 # build
 docker build . -t $repo:$revision --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision
@@ -31,9 +31,9 @@ docker tag $repo:$revision $repo:$release
 docker tag $repo:$revision $repo:latest
 
 # push
-docker push $repo:$revision
-docker push $repo:$release
+#docker push $repo:$revision
+#docker push $repo:$release
 #docker push $repo:$major
-docker push $repo:latest
+#docker push $repo:latest
 
 echo -n "Done"; read

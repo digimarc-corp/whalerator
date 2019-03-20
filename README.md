@@ -11,7 +11,7 @@ Whalerator requires no special access to your Docker registry, and does not stor
 Official releases via Docker Hub coming soon, or build Whalerator directly from Github:
 
 ```
-docker build https://github.com/digimarcgit/whalerator.git -t whalerator
+docker build https://github.com/digimarc-corp/whalerator.git -t whalerator
 ```
 
 ## Productionizing

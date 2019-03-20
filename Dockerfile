@@ -1,10 +1,3 @@
-FROM microsoft/aspnetcore:2.0 AS base
-WORKDIR /app
-EXPOSE 80
-
-FROM microsoft/aspnetcore-build:2.0 AS build
-WORKDIR /src
-COPY lib/Whalerator.sln ./
 # Copyright 2018 Digimarc, Inc
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,10 +14,12 @@ COPY lib/Whalerator.sln ./
 #
 #  SPDX-License-Identifier: Apache-2.0
 
-COPY lib/Whalerator.WebAPI/Whalerator.WebAPI.csproj Whalerator.WebAPI/
-COPY lib/Whalerator/Whalerator.csproj Whalerator/
-COPY lib/Whalerator.Support/Whalerator.Support.csproj Whalerator.Support/
-RUN dotnet restore -nowarn:msb3202,nu1503
+FROM microsoft/dotnet:2.2-aspnetcore-runtime AS base
+WORKDIR /app
+EXPOSE 80
+
+FROM microsoft/dotnet:2.2-sdk AS build
+WORKDIR /src
 COPY lib .
 WORKDIR /src/Whalerator.WebAPI
 RUN dotnet build -c Release -o /app
