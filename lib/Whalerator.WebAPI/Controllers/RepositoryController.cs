@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Whalerator.Scanner;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -35,13 +36,22 @@ namespace Whalerator.WebAPI.Controllers
     {
         private IRegistryFactory _RegFactory;
         private ILogger<RepositoryController> _Logger;
+        private ISecurityScanner _Scanner;
 
-        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger)
+        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner scanner = null)
         {
             _RegFactory = regFactory;
-            this._Logger = logger;
+            _Logger = logger;
+            _Scanner = scanner;
         }
 
+        /// <summary>
+        /// Gets a file listing from a specific image manifest
+        /// </summary>
+        /// <param name="repository">Registry repo to search</param>
+        /// <param name="digest">Manifest digest</param>
+        /// <param name="maxDepth">Maximum number of layers to descend</param>
+        /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
         public IActionResult GetFiles(string repository, string digest, int maxDepth = 0)
         {
@@ -81,6 +91,52 @@ namespace Whalerator.WebAPI.Controllers
             return validated;
         }
 
+        /// <summary>
+        /// Check for security scan data for the given image. If no scan data is available, a scan will be queued to run later
+        /// </summary>
+        /// <param name="repository">Registry repo to search</param>
+        /// <param name="digest">Manifest digest</param>
+        /// <returns></returns>
+        [HttpGet("sec/{digest}/{*repository}")]
+        public IActionResult GetSecScan(string repository, string digest)
+        {
+            if (_Scanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
+
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            digest = Validate(digest);
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials);
+                var image = registryApi.GetImages(repository, digest);
+
+                if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
+
+                var scanResult = _Scanner.GetScan(image.First());
+
+                if (scanResult == null)
+                {
+                    _Scanner.RequestScan(registryApi, repository, digest);
+                    return StatusCode(202, "Scan pending.");
+                }
+                else
+                {
+                    return Ok(scanResult);
+                }
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
         [HttpGet("file/{digest}/{*repository}")]
         public IActionResult GetFile(string repository, string digest, string path, int maxDepth = 0)
         {
@@ -115,7 +171,7 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }        
+        }
 
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)

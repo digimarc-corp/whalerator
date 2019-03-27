@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI.Controllers
@@ -38,9 +39,9 @@ namespace Whalerator.WebAPI.Controllers
         private ICache<Authorization> _Cache;
 
         public ILogger<TokenController> Logger { get; }
-        public Config Config { get; }
+        public ConfigRoot Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, Config config)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ConfigRoot config)
         {
             _Crypto = crypto;
             _Cache = cache;

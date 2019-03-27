@@ -30,7 +30,8 @@ namespace Whalerator
         public IAuthHandler AuthHandler { get; set; }
 
         /// <summary>
-        /// Optional handler used only for fetching the initial catalog list
+        /// Optional handler used only for fetching the initial catalog list. Important for scenarios where users may not have full catalog access, but should
+        /// still be able to view specific repos that they have access too.
         /// </summary>
         public IAuthHandler CatalogAuthHandler { get; set; }
 

@@ -33,6 +33,8 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using Whalerator.Client;
+using Whalerator.Config;
+using Whalerator.Scanner;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI
@@ -51,9 +53,11 @@ namespace Whalerator.WebAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var config = new Config();
+            var config = new ConfigRoot();
             Configuration.Bind(config);
             services.AddSingleton(config);
+
+            services.AddSingleton(Logger);
 
             RSA crypto;
             var keyFile = config.Security?.PrivateKey;
@@ -109,6 +113,11 @@ namespace Whalerator.WebAPI
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
             Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
+
+            if (!string.IsNullOrEmpty(config.Clair?.ClairApi))
+            {
+                services.AddSingleton<ISecurityScanner, ClairScanner>();
+            }
 
             services.AddScoped<IRegistryFactory>(p =>
             {
