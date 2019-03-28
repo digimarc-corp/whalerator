@@ -22,6 +22,7 @@ using System.Text;
 
 namespace Whalerator.Scanner
 {
+    // see https://github.com/coreos/clair/blob/master/database/severity.go
     public enum Severity
     {
         Unknown,

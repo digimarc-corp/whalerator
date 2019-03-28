@@ -20,14 +20,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Config
+namespace Whalerator.Model
 {
-    public class CacheConfig
+    /// <summary>
+    /// Basic parameters needed by a third party (like Clair) to request a layer tarball from a remote registry
+    /// </summary>
+    public class LayerProxyInfo
     {
-        public string Redis { get; set; }
-        public int RedisDb { get; set; } = 13;
-        public string LayerCache { get; set; }
-        public int VolatileTtl { get; set; } = 900; // 15 minutes
-        public int StaticTtl { get; set; } = 0;
+        public string LayerUrl { get; set; }
+        public string LayerAuthorization { get; set; }
     }
 }

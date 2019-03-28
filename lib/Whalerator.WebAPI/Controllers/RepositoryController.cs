@@ -65,7 +65,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, digest);
+                var images = registryApi.GetImages(repository, digest, true);
                 if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
                 var files = registryApi.GetImageFiles(repository, images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
 
@@ -111,7 +111,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var image = registryApi.GetImages(repository, digest);
+                var image = registryApi.GetImages(repository, digest, true);
 
                 if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -119,7 +119,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (scanResult == null)
                 {
-                    _Scanner.RequestScan(registryApi, repository, digest);
+                    _Scanner.RequestScan(registryApi, repository, image.First());
                     return StatusCode(202, "Scan pending.");
                 }
                 else
@@ -149,7 +149,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var image = registryApi.GetImages(repository, digest);
+                var image = registryApi.GetImages(repository, digest, true);
 
                 if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -207,7 +207,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag);
+                var images = registryApi.GetImages(repository, tag, false);
 
                 var platforms = images.Select(i => i.Platform);
                 var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
@@ -242,7 +242,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag);
+                var images = registryApi.GetImages(repository, tag, false);
 
                 var result = images.ToImageSetDigest();
 

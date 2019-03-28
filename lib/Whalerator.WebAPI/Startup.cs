@@ -104,7 +104,7 @@ namespace Whalerator.WebAPI
             {
                 Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
                 var mux = ConnectionMultiplexer.Connect(config.Cache.Redis);
-                services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = volatileTtl });
+                services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = config.Cache.RedisDb, Ttl = volatileTtl });
             }
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
@@ -117,6 +117,7 @@ namespace Whalerator.WebAPI
             if (!string.IsNullOrEmpty(config.Clair?.ClairApi))
             {
                 services.AddSingleton<ISecurityScanner, ClairScanner>();
+                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.Clair.ClairApi));
             }
 
             services.AddScoped<IRegistryFactory>(p =>

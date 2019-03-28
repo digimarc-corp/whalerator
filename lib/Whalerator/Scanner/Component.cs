@@ -28,6 +28,6 @@ namespace Whalerator.Scanner
         public string Version { get; set; }        
         public string NamespaceName { get; set; }
         public string AddedBy { get; set; }
-        public List<Vulnerability> Vulnerabilities { get; set; }
+        public List<Vulnerability> Vulnerabilities { get; set; }        
     }
 }

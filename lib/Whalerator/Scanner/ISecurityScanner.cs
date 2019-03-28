@@ -23,7 +23,7 @@ namespace Whalerator.Scanner
 {
     public interface ISecurityScanner
     {
-        ScanResult GetScan(Image image);
-        void RequestScan(IRegistry registry, string repository, string digest);
+        ScanResult GetScan(Image image, bool hard = false);
+        void RequestScan(IRegistry registry, string repository, Image image);
     }
 }

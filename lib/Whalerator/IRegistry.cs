@@ -26,8 +26,9 @@ namespace Whalerator
     {
         IEnumerable<Repository> GetRepositories();
         IEnumerable<string> GetTags(string repository);
-        IEnumerable<Image> GetImages(string repository, string tag);
+        IEnumerable<Image> GetImages(string repository, string tag, bool isDigest);
         Stream GetLayer(string repository, Layer layer);
+        LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer);
         IEnumerable<string> GetFiles(string repository, Layer layer);
         byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true);
         Layer FindFile(string repository, Image image, string filename, int maxDepth = 0, bool ignoreCase = true);

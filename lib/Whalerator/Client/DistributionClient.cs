@@ -49,6 +49,21 @@ namespace Whalerator.Client
             return Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
         }
 
+        public Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
+        {
+            var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"));
+            var scope = _TokenSource.ParseScope(uri) + ":pull";
+            if (_TokenSource.UpdateAuthorization(scope))
+            {
+                var auth = _TokenSource.GetAuthorization(scope);
+                return Task.FromResult((uri, auth));
+            }
+            else
+            {
+                throw new Exception("Could not get authorization for the remote resource");
+            }
+        }
+
         public Task<RepositoryList> GetRepositoriesAsync()
         {
             var list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
@@ -194,24 +209,6 @@ namespace Whalerator.Client
                 {
                     throw new Exception($"The remote request failed with status {result.StatusCode}");
                 }
-            }
-        }
-
-        /// <summary>
-        /// Runs a throwaway action and returns true if it succeeded, false, if it threw an exception
-        /// </summary>
-        /// <param name="action"></param>
-        /// <returns></returns>
-        bool Try(Action action)
-        {
-            try
-            {
-                action();
-                return true;
-            }
-            catch
-            {
-                return false;
             }
         }
 

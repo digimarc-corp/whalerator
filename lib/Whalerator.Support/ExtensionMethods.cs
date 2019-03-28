@@ -18,16 +18,26 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Whalerator.Scanner;
 
-namespace Whalerator.Config
+namespace Whalerator.Support
 {
-    public class CacheConfig
+    public static class ExtensionMethods
     {
-        public string Redis { get; set; }
-        public int RedisDb { get; set; } = 13;
-        public string LayerCache { get; set; }
-        public int VolatileTtl { get; set; } = 900; // 15 minutes
-        public int StaticTtl { get; set; } = 0;
+        public static ScanResult ToScanResult(this ClairLayerResult result)
+        {
+            var vComponents = result.Layer.Features.Where(f => f.Vulnerabilities != null).ToList();
+            var vulns = vComponents.SelectMany(c => c.Vulnerabilities).ToList();
+
+            return new ScanResult
+            {
+                ScanSucceeded = true,
+                TotalComponents = result.Layer.Features.Count(),
+                VulnerableComponents = vComponents,
+            };
+        }
+
     }
 }

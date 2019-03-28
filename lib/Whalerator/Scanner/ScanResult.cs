@@ -28,34 +28,10 @@ namespace Whalerator.Scanner
 {
     public class ScanResult
     {
-        public static ScanResult FromClair(ClairLayerResult result)
-        {
-            var vComponents = result.Layer.Features.Where(f => f.Vulnerabilities != null).ToList();
-            var vulns = vComponents.SelectMany(c => c.Vulnerabilities).ToList();
-
-            return new ScanResult
-            {
-                HighSeverityCount = vulns.Where(v => v.Severity >= Severity.High).Count(),
-                MediumSeverityCount = vulns.Where(v => v.Severity == Severity.Medium).Count(),
-                LowSeverityCount = vulns.Where(v => v.Severity <= Severity.Low).Count(),
-                MaxSeverity = vulns.Max(v => v.Severity),
-                TotalComponentsCount = result.Layer.Features.Count(),
-                TotalVulnerabilitiesCount = vulns.Count(),
-                VulnerableComponentCount = vComponents.Count(),
-                VulnerableComponents = vComponents,
-            };
-        }
+        public bool ScanSucceeded { get; set; }
+        public string ScanMessage { get; set; }
 
         public List<Component> VulnerableComponents { get; set; }
-        public int VulnerableComponentCount { get; set; }
-        public int TotalVulnerabilitiesCount { get; set; }
-        public int TotalComponentsCount { get; set; }
-        [JsonConverter(typeof(StringEnumConverter))]
-        public Severity MaxSeverity { get; set; }
-
-        // We are simplifying, and anything lower than low or higher than high is just counted as low or high
-        public int LowSeverityCount { get; set; }
-        public int MediumSeverityCount { get; set; }
-        public int HighSeverityCount { get; set; }
+        public int TotalComponents { get; set; }
     }
 }
