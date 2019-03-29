@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -73,16 +74,14 @@ namespace Whalerator.WebAPI
             }
             services.AddSingleton<ICryptoAlgorithm>(crypto);
 
+            services.AddSingleton<RegistryAuthenticationDecoder>();
             services.AddAuthentication(o =>
             {
                 o.DefaultAuthenticateScheme = "Bearer";
                 o.DefaultChallengeScheme = "Bearer";
                 o.DefaultForbidScheme = "Bearer";
-            }).AddScheme<RegistryAuthenticationOptions, RegistryAuthenticationHandler>("Bearer", o =>
-            {
-                o.Algorithm = crypto;
-                o.Registry = config.Catalog?.Registry;
-            });
+            }).AddScheme<AuthenticationSchemeOptions, RegistryAuthenticationHandler>("Bearer", o => { });
+
 
             services.AddCors();
 
@@ -99,12 +98,15 @@ namespace Whalerator.WebAPI
                 Logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
                 services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), volatileTtl));
+                services.AddSingleton<IWorkQueue, MemQueue>();
             }
             else
             {
                 Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
-                var mux = ConnectionMultiplexer.Connect(config.Cache.Redis);
-                services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = config.Cache.RedisDb, Ttl = volatileTtl });
+                services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
+                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Db = config.Cache.RedisDb, Ttl = volatileTtl });
+                services.AddSingleton<IWorkQueue>(p => new RedQueue(p.GetService<IConnectionMultiplexer>(), config.Cache.RedisDb));
+
             }
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
@@ -138,6 +140,8 @@ namespace Whalerator.WebAPI
                 };
                 return new RegistryFactory(settings);
             });
+
+            services.AddHostedService<QueueWorker>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

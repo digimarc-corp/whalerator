@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Whalerator.Model;
 using Whalerator.Scanner;
 
 namespace Whalerator.WebAPI.Controllers
@@ -37,12 +38,14 @@ namespace Whalerator.WebAPI.Controllers
         private IRegistryFactory _RegFactory;
         private ILogger<RepositoryController> _Logger;
         private ISecurityScanner _Scanner;
+        private IWorkQueue _Queue;
 
-        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner scanner = null)
+        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, IWorkQueue queue, ISecurityScanner scanner = null)
         {
             _RegFactory = regFactory;
             _Logger = logger;
             _Scanner = scanner;
+            _Queue = queue;
         }
 
         /// <summary>
@@ -119,7 +122,15 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (scanResult == null)
                 {
-                    _Scanner.RequestScan(registryApi, repository, image.First());
+                    _Queue.Push(new Whaleration
+                    {
+                        Action = WhalerationType.SecurityScan,
+                        Authorization = Request.Headers["Authorization"],
+                        CreatedTime = DateTime.UtcNow,
+                        TargetRepo = repository,
+                        TargetDigest = digest
+                    });
+                    //_Scanner.RequestScan(registryApi, repository, image.First());
                     return StatusCode(202, "Scan pending.");
                 }
                 else

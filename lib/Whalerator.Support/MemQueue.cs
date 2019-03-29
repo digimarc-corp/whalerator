@@ -16,18 +16,30 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Whalerator.Support;
+using System.Text;
+using Whalerator.Model;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.Support
 {
-    public class RegistryAuthenticationOptions : AuthenticationSchemeOptions
+    public class MemQueue : IWorkQueue
     {
-        public ICryptoAlgorithm Algorithm { get; set; }
-        public string Registry { get; set; }
+        private ConcurrentQueue<Whaleration> _Queue;
+
+        public MemQueue()
+        {
+            _Queue = new ConcurrentQueue<Whaleration>();
+        }
+
+        public Whaleration Pop()
+        {
+            if (_Queue.TryDequeue(out var item)) { return item; }
+            else { return null; }
+        }
+
+        public void Push(Whaleration workItem) => _Queue.Enqueue(workItem);
     }
 }

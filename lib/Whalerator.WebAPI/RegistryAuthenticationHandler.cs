@@ -30,10 +30,15 @@ using System.Threading.Tasks;
 
 namespace Whalerator.WebAPI
 {
-    public class RegistryAuthenticationHandler : AuthenticationHandler<RegistryAuthenticationOptions>
+    public class RegistryAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        public RegistryAuthenticationHandler(IOptionsMonitor<RegistryAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
-            : base(options, logger, encoder, clock) { }
+        private RegistryAuthenticationDecoder _Decoder;
+
+        public RegistryAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, RegistryAuthenticationDecoder decoder)
+            : base(options, logger, encoder, clock)
+        {
+            _Decoder = decoder;
+        }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
@@ -43,34 +48,9 @@ namespace Whalerator.WebAPI
             }
             else
             {
-                try
-                {
-                    var header = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]);
-                    var token = Jose.JWT.Decode<Token>(header.Parameter, Options.Algorithm.ToDotNetRSA());
-
-                    if (token.Exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
-                    {
-                        return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The token has expired\" }"));
-                    }
-
-                    var json = Options.Algorithm.Decrypt(token.Crd);
-                    var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
-
-                    if (!string.IsNullOrEmpty(Options.Registry) && Options.Registry.ToLowerInvariant() != credentials.Registry.ToLowerInvariant())
-                    {
-                        return Task.FromResult(AuthenticateResult.Fail("{ error: \"The supplied token is for an unsupported registry.\" }"));
-                    }
-
-                    var principal = new ClaimsPrincipal(credentials.ToClaimsIdentity());
-                    var ticket = new AuthenticationTicket(principal, "token");
-
-                    return Task.FromResult(AuthenticateResult.Success(ticket));
-                }
-                catch
-                {
-                    return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The supplied token is invalid.\" }"));
-                }
+                return _Decoder.AuthenticateAsync(Request.Headers["Authorization"]);
             }
         }
+
     }
 }
