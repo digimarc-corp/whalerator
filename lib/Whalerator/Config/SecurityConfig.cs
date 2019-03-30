@@ -24,7 +24,8 @@ namespace Whalerator.Config
 {
     public class SecurityConfig
     {
-        public long TokenLifetime { get; set; }
+        // one day default
+        public long TokenLifetime { get; set; } = 86_400;
         public string PrivateKey { get; set; }
     }
 }
