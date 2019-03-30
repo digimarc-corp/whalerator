@@ -35,6 +35,7 @@ using Newtonsoft.Json;
 using StackExchange.Redis;
 using Whalerator.Client;
 using Whalerator.Config;
+using Whalerator.Queue;
 using Whalerator.Scanner;
 using Whalerator.Support;
 
@@ -93,21 +94,30 @@ namespace Whalerator.WebAPI
             var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
             var volatileTtl = new TimeSpan(0, 0, config.Cache.VolatileTtl);
 
+            bool scanningEnabled = false;
+            if (!string.IsNullOrEmpty(config.Scanner?.ClairApi))
+            {
+                scanningEnabled = true;
+                services.AddSingleton<ISecurityScanner, ClairScanner>();
+                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.Scanner.ClairApi));
+                services.AddHostedService<ScanQueueWorker>();
+            }
+
             if (string.IsNullOrEmpty(config.Cache.Redis))
             {
                 Logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
                 services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), volatileTtl));
-                services.AddSingleton<IWorkQueue, MemQueue>();
+                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>, MemQueue<ScanRequest>>(); }
             }
             else
             {
                 Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
                 services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
                 services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Db = config.Cache.RedisDb, Ttl = volatileTtl });
-                services.AddSingleton<IWorkQueue>(p => new RedQueue(p.GetService<IConnectionMultiplexer>(), config.Cache.RedisDb));
-
+                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>>(p => new RedQueue<ScanRequest>(p.GetService<IConnectionMultiplexer>(), config.Cache.RedisDb)); }
             }
+
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
             services.AddScoped<IDistributionClient, DistributionClient>();
@@ -115,12 +125,6 @@ namespace Whalerator.WebAPI
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
             Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
-
-            if (!string.IsNullOrEmpty(config.Clair?.ClairApi))
-            {
-                services.AddSingleton<ISecurityScanner, ClairScanner>();
-                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.Clair.ClairApi));
-            }
 
             services.AddScoped<IRegistryFactory>(p =>
             {
@@ -140,8 +144,6 @@ namespace Whalerator.WebAPI
                 };
                 return new RegistryFactory(settings);
             });
-
-            services.AddHostedService<QueueWorker>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

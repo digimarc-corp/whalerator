@@ -22,14 +22,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Whalerator.Model;
+using Whalerator.Queue;
 
 namespace Whalerator.Support
 {
-    public class RedQueue : IWorkQueue
+    public class RedQueue<T> : IWorkQueue<T> where T : WorkItem
     {
         private IConnectionMultiplexer _Mux;
         private int _Db;
-        const string _Key = "workitems";
+        const string _Key = "queues:scanner";
 
         public RedQueue(IConnectionMultiplexer redisMux, int db)
         {
@@ -37,13 +38,13 @@ namespace Whalerator.Support
             _Db = db;
         }
 
-        public Whaleration Pop()
+        public T Pop()
         {
             var json = _Mux.GetDatabase(_Db).ListRightPop(_Key);
-            return json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<Whaleration>(json);
+            return json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
         }
 
-        public void Push(Whaleration workItem) =>
+        public void Push(T workItem) =>
             _Mux.GetDatabase(_Db).ListLeftPush(_Key, JsonConvert.SerializeObject(workItem));
 
     }

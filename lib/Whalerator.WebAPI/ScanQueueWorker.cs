@@ -26,21 +26,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Whalerator.Config;
 using Whalerator.Model;
+using Whalerator.Queue;
 using Whalerator.Scanner;
 
 namespace Whalerator.WebAPI
 {
-    public class QueueWorker : IHostedService
+    public class ScanQueueWorker : IHostedService
     {
-        private ILogger<QueueWorker> _Logger;
+        private ILogger<ScanQueueWorker> _Logger;
         private ConfigRoot _Config;
-        private IWorkQueue _Queue;
+        private IWorkQueue<ScanRequest> _Queue;
         private ISecurityScanner _Scanner;
         private IRegistryFactory _RegistryFactory;
         private RegistryAuthenticationDecoder _AuthDecoder;
         private Timer _Timer;
 
-        public QueueWorker(ILogger<QueueWorker> logger, ConfigRoot config, IWorkQueue queue, ISecurityScanner scanner, IRegistryFactory regFactory,
+        public ScanQueueWorker(ILogger<ScanQueueWorker> logger, ConfigRoot config, IWorkQueue<ScanRequest> queue, ISecurityScanner scanner, IRegistryFactory regFactory,
             RegistryAuthenticationDecoder decoder)
         {
             _Logger = logger;
@@ -72,14 +73,7 @@ namespace Whalerator.WebAPI
                 var workItem = _Queue.Pop();
                 while (workItem != null)
                 {
-                    switch (workItem.Action)
-                    {
-                        case WhalerationType.SecurityScan:
-                            DoScan(workItem);
-                            break;
-                        default:
-                            throw new NotImplementedException($"Don't know how to do a {workItem.Action.ToString()}!");
-                    }
+                    DoScan(workItem);
 
                     workItem = _Queue.Pop();
                 }
@@ -91,11 +85,11 @@ namespace Whalerator.WebAPI
             StartTimer();
         }
 
-        private void DoScan(Whaleration item)
+        private void DoScan(ScanRequest request)
         {
             try
             {
-                var auth = _AuthDecoder.AuthenticateAsync(item.Authorization).Result;
+                var auth = _AuthDecoder.AuthenticateAsync(request.Authorization).Result;
                 if (!auth.Succeeded)
                 {
                     _Logger.LogError(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
@@ -104,16 +98,16 @@ namespace Whalerator.WebAPI
                 {
                     var registry = _RegistryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
 
-                    var image = registry.GetImages(item.TargetRepo, item.TargetDigest, true);
-                    if (image.Count() != 1) { throw new Exception($"Couldn't find a valid image for {item.TargetRepo}:{item.TargetDigest}"); }
+                    var image = registry.GetImages(request.TargetRepo, request.TargetDigest, true);
+                    if (image.Count() != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
-                    _Scanner.RequestScan(registry, item.TargetRepo, image.First());
-                    _Logger.LogInformation($"Completed submitting {item.TargetRepo}:{item.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
+                    _Scanner.RequestScan(registry, request.TargetRepo, image.First());
+                    _Logger.LogInformation($"Completed submitting {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
                 }
             }
             catch (Exception ex)
             {
-                _Logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(item)}");
+                _Logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(request)}");
             }
         }
 

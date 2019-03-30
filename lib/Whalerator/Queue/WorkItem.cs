@@ -20,18 +20,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Model
+namespace Whalerator.Queue
 {
-    /// <summary>
-    /// Represents a queueable workitem for background processing
-    /// </summary>
-    public class Whaleration
+    public abstract class WorkItem
     {
-        public WhalerationType Action { get; set; }
-        public string TargetRepo { get; set; }
-        public string TargetDigest { get; set; }
-        public string Authorization { get; set; }
         public DateTime CreatedTime { get; set; }
-        public string CreatedBy { get; set; }
     }
 }

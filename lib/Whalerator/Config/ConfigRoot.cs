@@ -33,7 +33,7 @@ namespace Whalerator.Config
         public SecurityConfig Security { get; set; } = new SecurityConfig();
 
 
-        public ClairConfig Clair { get; set; } = new ClairConfig();
+        public ScannerConfig Scanner { get; set; } = new ScannerConfig();
 
         public CatalogConfig Catalog { get; set; } = new CatalogConfig();
     }

@@ -19,11 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Model;
 
-namespace Whalerator.Config
+namespace Whalerator.Queue
 {
-    public class ClairConfig
+    public interface IWorkQueue<T> where T: WorkItem
     {
-        public string ClairApi { get; set; }
+        void Push(T workItem);
+        T Pop();
     }
 }

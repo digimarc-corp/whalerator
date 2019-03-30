@@ -22,24 +22,25 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using Whalerator.Model;
+using Whalerator.Queue;
 
 namespace Whalerator.Support
 {
-    public class MemQueue : IWorkQueue
+    public class MemQueue<T> : IWorkQueue<T> where T : WorkItem
     {
-        private ConcurrentQueue<Whaleration> _Queue;
+        private ConcurrentQueue<T> _Queue;
 
         public MemQueue()
         {
-            _Queue = new ConcurrentQueue<Whaleration>();
+            _Queue = new ConcurrentQueue<T>();
         }
 
-        public Whaleration Pop()
+        public T Pop()
         {
             if (_Queue.TryDequeue(out var item)) { return item; }
             else { return null; }
         }
 
-        public void Push(Whaleration workItem) => _Queue.Enqueue(workItem);
+        public void Push(T workItem) => _Queue.Enqueue(workItem);
     }
 }

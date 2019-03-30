@@ -49,7 +49,7 @@ namespace Whalerator.WebAPI.Controllers
             return Ok(new
             {
                 Registry = Config.Catalog?.Registry,
-                SecScanner = !string.IsNullOrEmpty(Config.Clair?.ClairApi),
+                SecScanner = !string.IsNullOrEmpty(Config.Scanner?.ClairApi),
                 SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
             });
         }

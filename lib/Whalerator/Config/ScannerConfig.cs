@@ -20,11 +20,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Model
+namespace Whalerator.Config
 {
-    public enum WhalerationType
+    public class ScannerConfig
     {
-        ImageIndex,
-        SecurityScan,
+        public string ClairApi { get; set; }
     }
 }

@@ -19,13 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Model;
 
-namespace Whalerator
+namespace Whalerator.Queue
 {
-    public interface IWorkQueue
+    public class ScanRequest : WorkItem
     {
-        void Push(Whaleration workItem);
-        Whaleration Pop();
+        public string TargetRepo { get; set; }
+        public string TargetDigest { get; set; }
+        public string Authorization { get; set; }
     }
 }
