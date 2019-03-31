@@ -33,7 +33,7 @@ namespace Whalerator.Support
 
             return new ScanResult
             {
-                ScanSucceeded = true,
+                Status = ScanStatus.Succeeded,
                 TotalComponents = result.Layer.Features.Count(),
                 VulnerableComponents = vComponents,
             };

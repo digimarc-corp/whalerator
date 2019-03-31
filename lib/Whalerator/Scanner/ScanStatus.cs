@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +16,12 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Whalerator.Client;
-
 namespace Whalerator.Scanner
 {
-    public class ScanResult
+    public enum ScanStatus
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public ScanStatus Status { get; set; }
-        public string Message { get; set; }
-
-        public List<Component> VulnerableComponents { get; set; }
-        public int TotalComponents { get; set; }
+        Succeeded,
+        Pending,
+        Failed,
     }
 }

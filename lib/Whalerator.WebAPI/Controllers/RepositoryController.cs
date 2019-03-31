@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -130,12 +131,16 @@ namespace Whalerator.WebAPI.Controllers
                         TargetRepo = repository,
                         TargetDigest = digest
                     });
-                    return StatusCode(202, "Scan pending.");
+                    return StatusCode(202, new ScanResult { Status = ScanStatus.Pending });
                 }
                 else
                 {
                     return Ok(scanResult);
                 }
+            }
+            catch (HttpRequestException) 
+            {
+                return StatusCode(503, "Scanner API is not available.");
             }
             catch (Client.NotFoundException)
             {

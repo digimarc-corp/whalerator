@@ -73,7 +73,7 @@ namespace Whalerator.Support
                 }
                 catch (AggregateException ex)
                 {
-                    if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound) { return null; }
+                    if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound) { return null; }                    
                     else
                     {
                         throw;
@@ -134,8 +134,8 @@ namespace Whalerator.Support
                                 // https://github.com/coreos/clair/issues/543
                                 cache.Set(GetKey(image), new ScanResult
                                 {
-                                    ScanSucceeded = false,
-                                    ScanMessage = "Image cannot be scanned - it uses an unsupported OS or image format."
+                                    Status = ScanStatus.Failed,
+                                    Message = "Image cannot be scanned - it uses an unsupported OS or image format."
                                 });
                             }
                             else { throw; }
