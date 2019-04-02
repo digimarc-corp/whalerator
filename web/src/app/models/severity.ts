@@ -16,8 +16,12 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-export class Config {
-    public registry: String;
-    public searchLists: String[][];
-    public secScanner: boolean;
+export enum Severity {
+    Unknown,
+    Negligible,
+    Low,
+    Medium,
+    High,
+    Critical,
+    Defcon1
 }

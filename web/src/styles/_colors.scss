@@ -2,6 +2,14 @@ $orange-light: #FD4;
 $orange: #D81;
 $orange-dark: #930;
 
+$yellow-light: #FF8;
+$yellow: #DD1;
+$yellow-dark: #870;
+
+$red-light: #FDD;
+$red: #D00;
+$red-dark: #700;
+
 $blue-light: #EEF;
 $blue: #66F;
 $blue-dark: #22A;
@@ -20,6 +28,11 @@ $purple-dark: #407;
 
 $white: #FFF;
 $black: #000;
+
+$vuln-high: $red;
+$vuln-medium: $orange;
+$vuln-low: $yellow-light;
+$vuln-unknown: $grey;
 
 $appBackground: $blue;
 $appForeground: $white;

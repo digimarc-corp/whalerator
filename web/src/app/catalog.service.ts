@@ -28,6 +28,8 @@ import { Config } from './models/config';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
 import { History } from './models/history';
+import { TestBed } from '@angular/core/testing';
+import { ScanResult } from './models/scanResult';
 
 
 @Injectable({
@@ -90,6 +92,18 @@ export class CatalogService extends WebService {
     return this.http.get(fileUrl, { headers: headers, responseType: 'text' }).pipe(
       tap(repos => console.log('got file contents')),
       catchError(this.handleError('getFile', 'No embedded documentation found'))
+    );
+  }
+
+  getScan(repo: String, digest: String): Observable<ScanResult | ServiceError> {
+    const scanUrl = this.apiBase + `/repository/${repo}/sec/${digest}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get<ScanResult>(scanUrl, { headers: headers }).pipe(
+      tap(scan => scan.digest = digest),
+      tap(scan => console.log('got scan results')),
+      map(r=>new ScanResult(r)),
+      catchError(this.handleError<ScanResult>('getScan'))
     );
   }
 

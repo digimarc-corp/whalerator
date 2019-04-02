@@ -1,0 +1,85 @@
+@import "./src/styles/colors";
+
+div.frame {
+    background-color: $white;
+    color: $black;
+    padding: 0.4em;
+}
+
+.scanComponent {
+    margin: 0.5em;
+}
+
+.componentName {
+    margin-left: 0.5em;
+    //font-size: 75%;
+    font-weight: bold;
+}
+
+.componentVersion {
+    //float: right;
+    margin-left: 0.5em;
+    //font-size: 75%;
+}
+
+.label {
+    font-weight: bold;
+    margin-right: 0.5em;
+}
+
+.tick {
+    margin: -0.1em;
+}
+
+.tick.Defcon1,
+.tick.Critical,
+.tick.High {
+    font-weight: bold
+}
+
+.tick.Medium{
+    font-weight: normal
+}
+
+.tick.Low {
+    font-weight: lighter
+}
+
+.tick.Unknown,
+.tick.Negligible {
+    font-weight: lighter;
+    font-style: italic;
+}
+
+.detail {
+    padding-left: 0.5em;
+    margin: 0.2em;
+    margin-left: 1em;
+}
+
+.detail .frame {
+    padding: 1em;
+}
+
+.frame div {
+    margin-top: 0.5em;
+}
+
+.detail.Defcon1,
+.detail.Critical,
+.detail.High {
+    background-color: $vuln-high;
+}
+
+.detail.Medium{
+    background-color: $vuln-medium;
+}
+
+.detail.Low {
+    background-color: $vuln-low;
+}
+
+.detail.Unknown,
+.detail.Negligible {
+    background-color: $vuln-unknown;
+}

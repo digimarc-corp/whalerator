@@ -24,6 +24,12 @@ span.tab.loading {
     background-color: $grey-light;
 }
 
+.tab.scanning {
+    border-color: $errorForeground;
+    background-color: $errorBackground;
+    color: $errorForeground;
+}
+
 .tab.document {
     border-color: $green-dark;
     background-color: $green-light;

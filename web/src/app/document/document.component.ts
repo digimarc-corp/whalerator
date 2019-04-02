@@ -25,6 +25,7 @@ import { Document } from '../models/document';
 import { History } from '../models/history';
 import { isError } from '../web-service';
 import { ConfigService } from '../config.service';
+import { ScanResult } from '../models/scanResult';
 
 @Component({
   selector: 'app-document',
@@ -42,18 +43,42 @@ export class DocumentComponent implements OnInit {
     this.selected = null;
     if (image && !image.documents) {
       this.getDocuments();
+      this.getScan();
     } else if (image && image.documents.length > 0) {
       this.selected = image.documents[0];
     }
   }
   get image(): Image { return this._image; }
 
-  selected: Document | History[];
+  selected: Document | History[] | ScanResult;
 
   constructor(private catalog: CatalogService,
+    private configService: ConfigService,
     private config: ConfigService) { }
 
   ngOnInit() {
+  }
+
+  getScan() {
+    this.catalog.getScan(this.repository, this.image.digest).subscribe(r => {
+      if (isError(r)) {
+          console.error("Failed to get scan result.");
+      } else {
+        if (r.digest == this.image.digest) {
+          this.image.scanResult = r;
+        }
+      }
+    })
+  }
+
+  getScanHeadline(): String {
+    let components = this.image.scanResult.vulnerableComponents == null ? 
+      0 : this.image.scanResult.vulnerableComponents.length;
+    return components == 0 ? "No known issues" : components==1? "1 known issue" : `${components} known issues`;
+  }
+
+  scanningEnabled(): Boolean {
+    return this.configService.config.secScanner;
   }
 
   isHistory(obj: any): Boolean {
@@ -64,8 +89,16 @@ export class DocumentComponent implements OnInit {
     return obj instanceof Document;
   }
 
+  isScan(obj: any): Boolean {
+    return obj instanceof ScanResult;
+  }
+
   selectHistory() {
     this.selected = this.image.history;
+  }
+
+  selectScan() {
+    this.selected = this.image.scanResult;
   }
 
   select(document: Document) {

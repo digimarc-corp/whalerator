@@ -1,0 +1,48 @@
+<div>
+  <div *ngIf="scan.hasVulnerabilities; then vulns else novulns"></div>
+  <ng-template #novulns>
+    <div class="frame">
+      <div style="padding: 1em;">
+        The security scanning service identified {{scan.totalComponents}} components within this image, and found no known vulnerabilities. This does not mean the image is
+        free of vulnerabilities, and future updates of the scanning database may include newly identified issues.
+      </div>
+    </div>
+  </ng-template>
+  <ng-template #vulns>
+    <div class="scanComponent" *ngFor="let component of scan.vulnerableComponents">
+      <span class="componentName" (click)="component.showDetail=!component.showDetail">{{component.name}}</span>
+      <span class="componentVersion">{{component.version}}</span>
+      <div *ngIf="component.showDetail; then detail else summary"></div>
+      <ng-template #summary>
+        <div style="display: inline-block; margin-left: 1em;">
+          <span *ngFor="let item of component.vulnerabilities" class="tick {{severityType[item.severity]}}">+</span>
+        </div>
+      </ng-template>
+      <ng-template #detail>
+        <div *ngFor="let item of component.vulnerabilities">
+          <div class="detail {{severityType[item.severity]}}">
+            <div class="frame">
+              <div>
+                <span class="label">Name:</span>
+                <span>{{item.name}}</span>
+              </div>
+              <div>
+                <span class="label">Severity:</span>
+                <span>{{severityType[item.severity]}}</span>
+              </div>
+              <div>
+                <span class="label">Description:</span>
+                <span>{{item.description}}</span>
+              </div>
+              <div>
+                <span class="label">Link:</span>
+                <a href="{{item.link}}">{{item.link}}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+    <sub>{{scan.digest}}</sub>
+  </ng-template>
+</div>

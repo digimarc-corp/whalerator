@@ -16,15 +16,22 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Platform } from './platform';
-import { Document } from './document';
-import { History } from './history';
-import { ScanResult } from './scanResult';
+import { Vulnerability } from "./vulnerability";
+import { ScanComponent } from "./scanComponent";
 
-export class Image {
+export class ScanResult {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+        this.vulnerableComponents = this.vulnerableComponents.map(c => new ScanComponent(c)).sort((a, b) => b.maxSeverity - a.maxSeverity);
+    }
+
     public digest: String;
-    public platform: Platform;
-    public history: History[];
-    public documents: Document[];
-    public scanResult: ScanResult;
+    public status: String;
+    public message: String;
+    public totalComponents: number;
+    public vulnerableComponents: ScanComponent[];
+
+    public get hasVulnerabilities(): Boolean {
+        return this.vulnerableComponents != null && this.vulnerableComponents.length > 0;
+    }
 }

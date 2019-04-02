@@ -3,20 +3,28 @@
   <ng-template #imageLoading>Loading image</ng-template>
   <ng-template #imageDocs>
     <span class="tab history" (click)="selectHistory()" [class.selected]="isHistory(selected)">History</span>
-    <div *ngIf="!image.documents; then docsLoading else docs"></div>
+    <span *ngIf="scanningEnabled()" class="tab scanning" (click)="selectScan()" [class.selected]="isScan(selected)">
+      <span *ngIf="image.scanResult">{{getScanHeadline()}}</span>
+      <span *ngIf="!image.scanResult">Scan pending</span>
+    </span>
+    <div *ngIf="!image.documents; then docsLoading else docsLoaded"></div>
     <ng-template #docsLoading>
       <span class="tab searching" [class.selected]="!selected">Searching</span>
       <div class="tab searching" *ngIf="!selected">Searching for documentation.</div>
     </ng-template>
-    <ng-template #docs>
+    <ng-template #docsLoaded>
       <span class="tab error" *ngIf="image.documents.length === 0">No docs found.</span>
-      <span class="tab document" *ngFor="let document of image.documents" (click)="select(document)" [class.selected]="selected === document">{{document.name}}</span>
+      <span class="tab document" *ngFor="let document of image.documents" (click)="select(document)"
+        [class.selected]="selected === document">{{document.name}}</span>
       <div class="tab document" *ngIf="isDocument(selected)">
         <div class="frame">
           <markdown [data]="selected.content"></markdown>
         </div>
       </div>
     </ng-template>
+    <div class="tab scanning" *ngIf="isScan(selected)">
+        <app-scan-result [scan]="selected"></app-scan-result>
+    </div>  
     <div class="tab history" *ngIf="isHistory(selected)">
       <div class="historyItem" *ngFor="let item of image.history">
         <span class="type">{{item.type | uppercase}}</span>
