@@ -83,8 +83,12 @@ namespace Whalerator.WebAPI
                 o.DefaultForbidScheme = "Bearer";
             }).AddScheme<AuthenticationSchemeOptions, RegistryAuthenticationHandler>("Bearer", o => { });
 
-
-            services.AddCors();
+#if DEBUG
+            services.AddCors(o =>
+            {
+                o.AddPolicy("Allow dev ng", builder => builder.WithOrigins("http://localhost:4200"));
+            });
+#endif
 
             services.AddMvc().AddJsonOptions(options =>
             {

@@ -102,7 +102,6 @@ export class CatalogService extends WebService {
     return this.http.get<ScanResult>(scanUrl, { headers: headers }).pipe(
       tap(scan => scan.digest = digest),
       tap(scan => console.log('got scan results')),
-      map(r=>new ScanResult(r)),
       catchError(this.handleError<ScanResult>('getScan'))
     );
   }

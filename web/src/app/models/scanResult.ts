@@ -22,7 +22,7 @@ import { ScanComponent } from "./scanComponent";
 export class ScanResult {
     constructor(obj?: any) {
         Object.assign(this, obj);
-        this.vulnerableComponents = this.vulnerableComponents.map(c => new ScanComponent(c)).sort((a, b) => b.maxSeverity - a.maxSeverity);
+        this.vulnerableComponents = (this.vulnerableComponents || []).map(c => new ScanComponent(c)).sort((a, b) => b.maxSeverity - a.maxSeverity);
     }
 
     public digest: String;

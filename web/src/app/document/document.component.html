@@ -5,7 +5,7 @@
     <span class="tab history" (click)="selectHistory()" [class.selected]="isHistory(selected)">History</span>
     <span *ngIf="scanningEnabled()" class="tab scanning" (click)="selectScan()" [class.selected]="isScan(selected)">
       <span *ngIf="image.scanResult">{{getScanHeadline()}}</span>
-      <span *ngIf="!image.scanResult">Scan pending</span>
+      <span *ngIf="!image.scanResult">Requesting scan</span>
     </span>
     <div *ngIf="!image.documents; then docsLoading else docsLoaded"></div>
     <ng-template #docsLoading>
