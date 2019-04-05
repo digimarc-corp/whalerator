@@ -28,13 +28,13 @@ namespace Whalerator.Support
     {
         public static ScanResult ToScanResult(this ClairLayerResult result)
         {
-            var vComponents = result.Layer.Features.Where(f => f.Vulnerabilities != null).ToList();
+            var vComponents = result.Layer.Features == null ? new List<Component>() : result.Layer.Features.Where(f => f.Vulnerabilities != null).ToList();
             var vulns = vComponents.SelectMany(c => c.Vulnerabilities).ToList();
 
             return new ScanResult
             {
                 Status = ScanStatus.Succeeded,
-                TotalComponents = result.Layer.Features.Count(),
+                TotalComponents = result.Layer.Features?.Count() ?? 0,
                 VulnerableComponents = vComponents,
             };
         }
