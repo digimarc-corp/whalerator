@@ -122,7 +122,7 @@ namespace Whalerator
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var key = $"volatile:{DistributionClient.Host}:tags:{repository}";
+            var key = $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, true, () => DistributionClient.GetTagsAsync(repository).Result.Tags);
@@ -130,7 +130,7 @@ namespace Whalerator
 
         public IEnumerable<Image> GetImages(string repository, string tag, bool isDigest)
         {
-            var key = isDigest ? $"static:{tag}:images" : $"volatile{DistributionClient.Host}:repos:{repository}:{tag}:images";
+            var key = isDigest ? $"static:image:{tag}" : $"volatile:{DistributionClient.Host}:repos:{repository}:tags:{tag}:images";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, !isDigest, () => DistributionClient.GetImages(repository, tag).Result);
@@ -139,7 +139,7 @@ namespace Whalerator
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
         {
             var key = $"static:image:{image.Digest}:files:{maxDepth}";
-            var lockKey = $"lock:static:image:{image.Digest}:files:{maxDepth}";
+            var lockKey = $"static:image:{image.Digest}:files:lock";
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, false, () =>
@@ -347,7 +347,7 @@ namespace Whalerator
             var proxyInfo = DistributionClient.GetBlobPathAndAuthorizationAsync(repository, layer.Digest).Result;
             return new LayerProxyInfo
             {
-                LayerAuthorization = $"{proxyInfo.auth.Scheme} {proxyInfo.auth.Parameter}",
+                LayerAuthorization = $"{proxyInfo.auth?.Scheme} {proxyInfo.auth?.Parameter}",
                 LayerUrl = proxyInfo.path.ToString()
             };
         }
