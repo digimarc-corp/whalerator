@@ -19,8 +19,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Queue;
 
-namespace Whalerator.Queue
+namespace Whalerator.Scanner
 {
     public class ScanRequest : WorkItem
     {

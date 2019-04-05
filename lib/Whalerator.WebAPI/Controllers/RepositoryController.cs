@@ -97,7 +97,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Check for security scan data for the given image. If no scan data is available, a scan will be queued to run later
+        /// Check for security scan data for the given image. If no scan data is available, a scan will be queued to run later.
         /// </summary>
         /// <param name="repository">Registry repo to search</param>
         /// <param name="digest">Manifest digest</param>

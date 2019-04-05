@@ -17,6 +17,7 @@
 */
 
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Refit;
 using System;
 using System.Collections.Generic;
@@ -73,7 +74,7 @@ namespace Whalerator.Support
                 }
                 catch (AggregateException ex)
                 {
-                    if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound) { return null; }                    
+                    if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound) { return null; }
                     else
                     {
                         throw;
@@ -95,53 +96,72 @@ namespace Whalerator.Support
             var cache = _CacheFactory.Get<ScanResult>();
             var lockTime = new TimeSpan(0, 5, 0);
 
-            using (var scanlock = cache.TakeLock($"scan:{image.Digest}", lockTime, lockTime))
+            // if this image is already in cache, skip it entirely
+            if (!cache.Exists(GetKey(image)))
             {
-                Layer previousLayer = null;
-                foreach (var layer in image.Layers.Reverse())
+                bool layerErrors = false;
+                string lastError = string.Empty;
+                using (var scanlock = cache.TakeLock($"scan:{image.Digest}", lockTime, lockTime))
                 {
-                    if (!CheckLayerScanned(layer))
+                    Layer previousLayer = null;
+                    foreach (var layer in image.Layers.Reverse())
                     {
-                        var proxy = registry.GetLayerProxyInfo(repository, layer);
-                        var request = new ClairLayerRequest
+                        if (!CheckLayerScanned(layer))
                         {
-                            Layer = new ClairLayerRequest.LayerRequest
+                            var proxy = registry.GetLayerProxyInfo(repository, layer);
+                            var request = new ClairLayerRequest
                             {
-                                Name = layer.Digest,
-                                ParentName = previousLayer?.Digest,
-                                Headers = new ClairLayerRequest.LayerRequest.LayerRequestHeaders
+                                Layer = new ClairLayerRequest.LayerRequest
                                 {
-                                    Authorization = proxy.LayerAuthorization
-                                },
-                                Path = proxy.LayerUrl
-                            }
-                        };
+                                    Name = layer.Digest,
+                                    ParentName = previousLayer?.Digest,
+                                    Path = proxy.LayerUrl
+                                }
+                            };
 
-                        try
-                        {
-                            var tokenSource = new CancellationTokenSource();
-                            tokenSource.CancelAfter(60000);
-                            _Clair.SubmitLayer(request, tokenSource.Token).Wait();
-                        }
-                        catch (AggregateException ex)
-                        {
-                            // if this image is unscannable, set a cache entry so we avoid retrying it for a while. A future Clair update
-                            // may be able to handle it, so use standard volatile expiration logic
-                            if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == (System.Net.HttpStatusCode)422)
+                            if (!string.IsNullOrWhiteSpace(proxy.LayerAuthorization))
                             {
-                                continue;
-                                // Clair seems to be having problems scanning some very standard images, so ignore 422's for now
-                                // https://github.com/coreos/clair/issues/543
-                                cache.Set(GetKey(image), new ScanResult
-                                {
-                                    Status = ScanStatus.Failed,
-                                    Message = "Image cannot be scanned - it uses an unsupported OS or image format."
-                                });
+                                request.Layer.Headers = new ClairLayerRequest.LayerRequest.LayerRequestHeaders { Authorization = proxy.LayerAuthorization };
                             }
-                            else { throw; }
+
+                            try
+                            {
+                                var tokenSource = new CancellationTokenSource();
+                                tokenSource.CancelAfter(60000);
+                                _Clair.SubmitLayer(request, tokenSource.Token).Wait();
+                            }
+                            catch (AggregateException ex)
+                            {
+                                if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == (System.Net.HttpStatusCode)422)
+                                {
+                                    // at least one layer had issues, which may or may not have invalidated the scan
+                                    // this can be transient, it can be a false error, or it can genuinely mean the image is currently unscannable
+                                    // https://github.com/coreos/clair/issues/543
+                                    layerErrors = true;
+                                    var errorContent = (ex.InnerException as ApiException).Content;
+                                    try
+                                    {
+                                        var json = JObject.Parse(errorContent);
+                                        lastError = (string)json["Error"]["Message"];
+                                    }
+                                    catch { _Log.LogError($"Could not parse Clair error response '{errorContent}'", ex); }
+                                    continue;
+                                }
+                                else { throw; }
+                            }
                         }
+                        previousLayer = layer;
                     }
-                    previousLayer = layer;
+
+                    // if any layers failed above, check that we can get a valid result, and if not set an error entry so we can avoid further attempts for now
+                    if (layerErrors && !CheckLayerScanned(image.Layers.First()))
+                    {
+                        cache.Set(GetKey(image), new ScanResult
+                        {
+                            Status = ScanStatus.Failed,
+                            Message = lastError ?? "At least one layer of the image could not be scanned."
+                        });
+                    }
                 }
             }
         }
