@@ -45,5 +45,5 @@ export class WebService {
 }
 
 export function isError<T>(obj: T | ServiceError): obj is ServiceError {
-    return ((<ServiceError>obj).message !== undefined);
+    return obj instanceof ServiceError;
 }
