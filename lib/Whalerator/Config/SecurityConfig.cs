@@ -16,18 +16,16 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Microsoft.AspNetCore.Authentication;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Whalerator.Support;
+using System.Text;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.Config
 {
-    public class RegistryAuthenticationOptions : AuthenticationSchemeOptions
+    public class SecurityConfig
     {
-        public ICryptoAlgorithm Algorithm { get; set; }
-        public string Registry { get; set; }
+        // one day default
+        public long TokenLifetime { get; set; } = 86_400;
+        public string PrivateKey { get; set; }
     }
 }

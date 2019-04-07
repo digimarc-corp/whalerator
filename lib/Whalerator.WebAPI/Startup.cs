@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -33,6 +34,9 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using Whalerator.Client;
+using Whalerator.Config;
+using Whalerator.Queue;
+using Whalerator.Scanner;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI
@@ -51,9 +55,11 @@ namespace Whalerator.WebAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var config = new Config();
+            var config = new ConfigRoot();
             Configuration.Bind(config);
             services.AddSingleton(config);
+
+            services.AddSingleton(Logger);
 
             RSA crypto;
             var keyFile = config.Security?.PrivateKey;
@@ -69,18 +75,20 @@ namespace Whalerator.WebAPI
             }
             services.AddSingleton<ICryptoAlgorithm>(crypto);
 
+            services.AddSingleton<RegistryAuthenticationDecoder>();
             services.AddAuthentication(o =>
             {
                 o.DefaultAuthenticateScheme = "Bearer";
                 o.DefaultChallengeScheme = "Bearer";
                 o.DefaultForbidScheme = "Bearer";
-            }).AddScheme<RegistryAuthenticationOptions, RegistryAuthenticationHandler>("Bearer", o =>
-            {
-                o.Algorithm = crypto;
-                o.Registry = config.Catalog?.Registry;
-            });
+            }).AddScheme<AuthenticationSchemeOptions, RegistryAuthenticationHandler>("Bearer", o => { });
 
-            services.AddCors();
+#if DEBUG
+            services.AddCors(o =>
+            {
+                o.AddPolicy("Allow dev ng", builder => builder.WithOrigins("http://localhost:4200"));
+            });
+#endif
 
             services.AddMvc().AddJsonOptions(options =>
             {
@@ -90,18 +98,30 @@ namespace Whalerator.WebAPI
             var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
             var volatileTtl = new TimeSpan(0, 0, config.Cache.VolatileTtl);
 
+            bool scanningEnabled = false;
+            if (!string.IsNullOrEmpty(config.Scanner?.ClairApi))
+            {
+                scanningEnabled = true;
+                services.AddSingleton<ISecurityScanner, ClairScanner>();
+                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.Scanner.ClairApi));
+                services.AddHostedService<ScanQueueWorker>();
+            }
+
             if (string.IsNullOrEmpty(config.Cache.Redis))
             {
                 Logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
                 services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), volatileTtl));
+                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>, MemQueue<ScanRequest>>(); }
             }
             else
             {
                 Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
-                var mux = ConnectionMultiplexer.Connect(config.Cache.Redis);
-                services.AddScoped<ICacheFactory>(provider => new RedCacheFactory { Mux = mux, Db = 13, Ttl = volatileTtl });
+                services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
+                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Db = config.Cache.RedisDb, Ttl = volatileTtl });
+                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>>(p => new RedQueue<ScanRequest>(p.GetService<IConnectionMultiplexer>(), config.Cache.RedisDb)); }
             }
+
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
             services.AddScoped<IDistributionClient, DistributionClient>();

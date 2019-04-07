@@ -25,6 +25,9 @@ import { Document } from '../models/document';
 import { History } from '../models/history';
 import { isError } from '../web-service';
 import { ConfigService } from '../config.service';
+import { ScanResult } from '../models/scanResult';
+import { Observable, config } from 'rxjs';
+import { delay } from 'q';
 
 @Component({
   selector: 'app-document',
@@ -40,6 +43,9 @@ export class DocumentComponent implements OnInit {
   set image(image: Image) {
     this._image = image;
     this.selected = null;
+    if (image && !image.scanResult && this.config.config.secScanner) {
+      this.getScan();
+    }
     if (image && !image.documents) {
       this.getDocuments();
     } else if (image && image.documents.length > 0) {
@@ -48,12 +54,45 @@ export class DocumentComponent implements OnInit {
   }
   get image(): Image { return this._image; }
 
-  selected: Document | History[];
+  selected: Document | History[] | ScanResult;
 
   constructor(private catalog: CatalogService,
     private config: ConfigService) { }
 
   ngOnInit() {
+  }
+
+  getScan() {
+    this.catalog.getScan(this.repository, this.image.digest).subscribe(r => {
+      if (isError(r)) {
+        console.error("Failed to get scan result.");
+      } else {
+        if (r.digest == this.image.digest) {
+          this.image.scanResult = new ScanResult(r);
+          if (r.status == "Pending") {
+            delay(5000).then(()=>{
+              this.getScan();
+            });
+          }
+        } 
+      }
+    })
+  }
+
+  getScanHeadline(): String {
+    if (this.image.scanResult.status == "Succeeded") {
+      let components = this.image.scanResult.vulnerableComponents == null ?
+        0 : this.image.scanResult.vulnerableComponents.length;
+      return components == 0 ? "No known issues" : components == 1 ? "1 known issue" : `${components} known issues`;
+    } else if (this.image.scanResult.status == "Pending") {
+      return "Scan pending";
+    } else {
+      return "Scan failed";
+    }
+  }
+
+  scanningEnabled(): Boolean {
+    return this.config.config.secScanner;
   }
 
   isHistory(obj: any): Boolean {
@@ -64,8 +103,16 @@ export class DocumentComponent implements OnInit {
     return obj instanceof Document;
   }
 
+  isScan(obj: any): Boolean {
+    return obj instanceof ScanResult;
+  }
+
   selectHistory() {
     this.selected = this.image.history;
+  }
+
+  selectScan() {
+    this.selected = this.image.scanResult;
   }
 
   select(document: Document) {
@@ -73,12 +120,15 @@ export class DocumentComponent implements OnInit {
   }
 
   getDocuments() {
-    const lists = this.config.config.searchLists.slice().reverse().map(l => l.slice().reverse());
-    if (lists.length > 0) {
-      this.getDocumentLists(lists);
-    } else {
-      this.image.documents = [];
-    }
+    new Observable<any>((subscriber) => {
+      const lists = this.config.config.searchLists.slice().reverse().map(l => l.slice().reverse());
+      if (lists.length > 0) {
+        this.getDocumentLists(lists);
+      } else {
+        this.image.documents = [];
+      }
+      subscriber.complete();
+    }).subscribe();
   }
 
   getDocumentLists(lists: String[][]) {

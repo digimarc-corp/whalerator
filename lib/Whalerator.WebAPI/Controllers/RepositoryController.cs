@@ -20,11 +20,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Whalerator.Model;
+using Whalerator.Queue;
+using Whalerator.Scanner;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -35,13 +39,24 @@ namespace Whalerator.WebAPI.Controllers
     {
         private IRegistryFactory _RegFactory;
         private ILogger<RepositoryController> _Logger;
+        private ISecurityScanner _Scanner;
+        private IWorkQueue<ScanRequest> _Queue;
 
-        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger)
+        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, IWorkQueue<ScanRequest> queue = null, ISecurityScanner scanner = null)
         {
             _RegFactory = regFactory;
-            this._Logger = logger;
+            _Logger = logger;
+            _Scanner = scanner;
+            _Queue = queue;
         }
 
+        /// <summary>
+        /// Gets a file listing from a specific image manifest
+        /// </summary>
+        /// <param name="repository">Registry repo to search</param>
+        /// <param name="digest">Manifest digest</param>
+        /// <param name="maxDepth">Maximum number of layers to descend</param>
+        /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
         public IActionResult GetFiles(string repository, string digest, int maxDepth = 0)
         {
@@ -55,7 +70,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, digest);
+                var images = registryApi.GetImages(repository, digest, true);
                 if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
                 var files = registryApi.GetImageFiles(repository, images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
 
@@ -81,6 +96,62 @@ namespace Whalerator.WebAPI.Controllers
             return validated;
         }
 
+        /// <summary>
+        /// Check for security scan data for the given image. If no scan data is available, a scan will be queued to run later.
+        /// </summary>
+        /// <param name="repository">Registry repo to search</param>
+        /// <param name="digest">Manifest digest</param>
+        /// <returns></returns>
+        [HttpGet("sec/{digest}/{*repository}")]
+        public IActionResult GetSecScan(string repository, string digest)
+        {
+            if (_Scanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
+
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            digest = Validate(digest);
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials);
+                var image = registryApi.GetImages(repository, digest, true);
+
+                if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
+
+                var scanResult = _Scanner.GetScan(image.First());
+
+                if (scanResult == null)
+                {
+                    _Queue.Push(new ScanRequest
+                    {
+                        Authorization = Request.Headers["Authorization"],
+                        CreatedTime = DateTime.UtcNow,
+                        TargetRepo = repository,
+                        TargetDigest = digest
+                    });
+                    return StatusCode(202, new ScanResult { Status = ScanStatus.Pending });
+                }
+                else
+                {
+                    return Ok(scanResult);
+                }
+            }
+            catch (HttpRequestException) 
+            {
+                return StatusCode(503, "Scanner API is not available.");
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
         [HttpGet("file/{digest}/{*repository}")]
         public IActionResult GetFile(string repository, string digest, string path, int maxDepth = 0)
         {
@@ -93,7 +164,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var image = registryApi.GetImages(repository, digest);
+                var image = registryApi.GetImages(repository, digest, true);
 
                 if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -115,7 +186,7 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-        }        
+        }
 
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
@@ -151,7 +222,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag);
+                var images = registryApi.GetImages(repository, tag, false);
 
                 var platforms = images.Select(i => i.Platform);
                 var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
@@ -186,7 +257,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag);
+                var images = registryApi.GetImages(repository, tag, false);
 
                 var result = images.ToImageSetDigest();
 

@@ -41,12 +41,16 @@ namespace Whalerator.WebAPI
                     var env = hostingContext.HostingEnvironment;
 
                     var configPath = Environment.GetEnvironmentVariable("CONFIGPATH");
-                    if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath))
+                    if (string.IsNullOrEmpty(configPath))
                     {
                         configPath = Path.Combine(Environment.CurrentDirectory, "config.yaml");
                     }
+                    else if (!File.Exists(configPath))
+                    {
+                        throw new ArgumentException($"The specified config file '{configPath}' couuld not be found.");
+                    }
 
-                    if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
+                    if (File.Exists(configPath))
                     {
                         try
                         {
@@ -56,6 +60,10 @@ namespace Whalerator.WebAPI
                         {
                             throw new ArgumentException($"Could not load yaml-formatted configuration from the supplied file ({configPath}). Check the format of the file.\n{ex.Message}");
                         }
+                    }
+                    else
+                    {
+                        Console.WriteLine("No configuration found, attempting to start with built-in defaults.");
                     }
 
                     config.AddEnvironmentVariables();

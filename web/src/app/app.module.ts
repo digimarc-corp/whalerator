@@ -31,6 +31,7 @@ import { TagSortPipe } from './tag-sort.pipe';
 import { MarkdownModule } from 'ngx-markdown';
 import { AboutComponent } from './about/about.component';
 import { DocumentComponent } from './document/document.component';
+import { ScanResultComponent } from './scan-result/scan-result.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { DocumentComponent } from './document/document.component';
     RepositoryComponent,
     TagSortPipe,
     AboutComponent,
-    DocumentComponent
+    DocumentComponent,
+    ScanResultComponent,
   ],
   imports: [
     MarkdownModule.forRoot(),

@@ -45,14 +45,14 @@ namespace Whalerator.Integration
             var x = dmrcIo.GetRepositories();
             Assert.IsTrue(x.Count() > 1);
 
-            var y = dmrcIo.GetImages("bdi", "latest");
+            var y = dmrcIo.GetImages("bdi", "latest", false);
             var z = dmrcIo.GetFiles("bdi", y.First().Layers.Last());
         }
 
         [TestMethod]
         public void CanGetWindowsImageSet()
         {
-            var images = dockerHub.GetImages("microsoft/nanoserver", "1709");
+            var images = dockerHub.GetImages("microsoft/nanoserver", "1709", false);
             Assert.AreEqual(1, images.Count());
             Assert.AreEqual(Platform.Windows.OS, images.First().Platform.OS);
         }
@@ -60,7 +60,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanGetMixedImageSet()
         {
-            var images = dockerHub.GetImages("microsoft/dotnet", "2.0-runtime");
+            var images = dockerHub.GetImages("microsoft/dotnet", "2.0-runtime", false);
             Assert.IsTrue(images.Count() >= 4);
             Assert.IsTrue(images.Any(i => i.Platform.OS == Platform.Windows.OS));
             Assert.IsTrue(images.Any(i => i.Platform.OS == Platform.Linux.OS));
@@ -76,7 +76,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanGetForeignLayerFiles()
         {
-            var image = dockerHub.GetImages("microsoft/nanoserver", "1709").Where(i => i.Platform.OS == Platform.Windows.OS).First();
+            var image = dockerHub.GetImages("microsoft/nanoserver", "1709", false).Where(i => i.Platform.OS == Platform.Windows.OS).First();
             var layer = image.Layers.First();
             var files = dockerHub.GetFiles("microsoft/nanoserver", layer);
             Assert.IsTrue(files.Count() > 1000);
@@ -89,7 +89,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanGetLayerData()
         {
-            var image = dockerHub.GetImages("library/ubuntu", "16.04").Where(i => i.Platform.OS == Platform.Linux.OS).First();
+            var image = dockerHub.GetImages("library/ubuntu", "16.04", false).Where(i => i.Platform.OS == Platform.Linux.OS).First();
             var stream = dockerHub.GetLayer("library/ubuntu", image.Layers.Last());
             Assert.IsTrue(stream.Length > 1);
         }
@@ -97,7 +97,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanGetLayerFiles()
         {
-            var image = dockerHub.GetImages("library/alpine", "3.4").Where(i => i.Platform.OS == Platform.Linux.OS).First();
+            var image = dockerHub.GetImages("library/alpine", "3.4", false).Where(i => i.Platform.OS == Platform.Linux.OS).First();
             var x = dockerHub.GetFiles("library/alpine", image.Layers.Last());
             Assert.IsTrue(x.Count() > 1);
         }
@@ -105,7 +105,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanGetLayerFile()
         {
-            var manifest = dockerHub.GetImages("library/redis", "4.0-alpine").First();
+            var manifest = dockerHub.GetImages("library/redis", "4.0-alpine", false).First();
             var file = dockerHub.GetFile("library/redis", manifest.Layers.ToList()[0], "etc/motd");
             var copyright = Encoding.UTF8.GetString(file);
             Assert.IsTrue(copyright.Contains(@"Welcome to Alpine!"));
@@ -114,7 +114,7 @@ namespace Whalerator.Integration
         [TestMethod]
         public void CanFindFile()
         {
-            var image = dockerHub.GetImages("library/ubuntu", "16.04").First();
+            var image = dockerHub.GetImages("library/ubuntu", "16.04", false).First();
             var layer = dockerHub.FindFile("library/ubuntu", image, "/bin/bash");
             var data = dockerHub.GetFile("library/ubuntu", layer, "bin/bash");
             var hash = BitConverter.ToString(System.Security.Cryptography.SHA256.Create().ComputeHash(data)).ToLower().Replace("-", string.Empty);

@@ -20,7 +20,7 @@ search:
   - setup.md
 
 security:
-  tokenLifetime: 604800 # 4 weeks
+  tokenLifetime: 2419200 # 4 weeks
 
 logging:
   includeScopes: false

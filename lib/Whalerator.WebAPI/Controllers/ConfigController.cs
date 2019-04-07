@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Whalerator.Config;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -30,14 +31,14 @@ namespace Whalerator.WebAPI.Controllers
     [Route("api/config")]
     public class ConfigController : Controller
     {
-        public ConfigController(ILogger<ConfigController> logger, Config config)
+        public ConfigController(ILogger<ConfigController> logger, ConfigRoot config)
         {
             Logger = logger;
             Config = config;
         }
 
         public ILogger<ConfigController> Logger { get; }
-        public Config Config { get; }
+        public ConfigRoot Config { get; }
 
         /// <summary>
         /// Returns configuration options for the Whalerator UI SPA
@@ -48,6 +49,7 @@ namespace Whalerator.WebAPI.Controllers
             return Ok(new
             {
                 Registry = Config.Catalog?.Registry,
+                SecScanner = !string.IsNullOrEmpty(Config.Scanner?.ClairApi),
                 SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
             });
         }

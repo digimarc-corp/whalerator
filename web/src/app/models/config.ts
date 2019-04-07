@@ -19,4 +19,5 @@
 export class Config {
     public registry: String;
     public searchLists: String[][];
+    public secScanner: boolean;
 }
