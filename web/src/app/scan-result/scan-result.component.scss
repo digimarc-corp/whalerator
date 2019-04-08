@@ -10,6 +10,19 @@ div.message {
     padding: 0.5em;
 }
 
+div.message sub {
+    word-wrap: break-word;
+}
+
+span.scanSummary {
+    display: inline-block; 
+    margin-left: 1em;
+}
+
+span.scanSummary span {
+    word-wrap: break-word;
+}
+
 .scanComponent {
     margin: 0.5em;
 }
