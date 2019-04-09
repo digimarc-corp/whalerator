@@ -26,13 +26,11 @@
         <ng-template #detailBlock>
           <div>
             <b>Last update:</b> {{selectedImageSet.date | date : "medium" }}
+            <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon" (click)="delete(selectedImageSet)" />
           </div>
           <div>
             <b>Tags:</b>
             <span class="badge light-blue" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
-          </div>
-          <div>
-            <b>Access:</b> {{ permissionsType[permissions] }}
           </div>
           <div>
             <b>Platforms:</b>

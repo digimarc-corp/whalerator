@@ -78,6 +78,15 @@ export class CatalogService extends WebService {
     );
   }
 
+  deleteImageSet(repo: String, digest: String): Observable<Object | ServiceError> {
+    const imageUrl = this.apiBase + `/repository/${repo}/digest/${digest}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.delete(imageUrl, { headers: headers }).pipe(
+      catchError(this.handleError('deleteImage'))
+    );
+  }
+
   getImageSetDigest(repo: String, tag: String): Observable<String | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/digest/${tag}`;
     let headers = new HttpHeaders();

@@ -48,5 +48,12 @@ namespace Whalerator
         /// <param name="timeout"></param>
         /// <returns></returns>
         Lock TakeLock(string key, TimeSpan lockTime, TimeSpan timeout);
+
+        /// <summary>
+        /// Returns true if a key could be found and deleted, otherwise false
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        bool TryDelete(string key);
     }
 }

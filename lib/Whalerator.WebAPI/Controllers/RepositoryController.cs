@@ -243,6 +243,38 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Delete an image and all corresponding tags.
+        /// </summary>
+        /// <param name="repository"></param>
+        /// <param name="digest"></param>
+        /// <returns></returns>
+        [HttpDelete("digest/{digest}/{*repository}")]
+        public IActionResult DeleteImageSet(string repository, string digest)
+        {
+            _Logger.LogInformation($"Preparing to delete {repository}/{digest}");
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials);
+                var permissions = registryApi.GetPermissions(repository);
+                if (permissions != Permissions.Admin) { return Unauthorized(); }
+
+                registryApi.DeleteImage(repository, digest);
+                return Ok();
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
+        /// <summary>
         /// Useful when trying to corellate multiple tags to a single image set, without resending the complete image set over the wire repeatedly.
         /// </summary>
         /// <param name="repository"></param>

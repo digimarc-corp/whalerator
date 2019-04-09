@@ -134,6 +134,31 @@ namespace Whalerator
             return GetCached(scope, key, !isDigest, () => DistributionClient.GetImages(repository, tag).Result);
         }
 
+        /// <summary>
+        /// Deletes an image from the repository. The digest must correspond to either a manifest list, or a "regular" v2 manifest - not a tag or submanifest or v1 manifest.
+        /// </summary>
+        /// <param name="digest"></param>
+        public void DeleteImage(string repository, string digest)
+        {
+            var scope = $"repository:{repository}:*";
+
+            if (Settings.AuthHandler.Authorize(scope))
+            {
+                // on delete, we leave the static image data in cache, just in case another repo is using this image
+                // we do clear the tags list for the repo, since there is no good way to know which tags this delete will effect
+                var tagsKey = $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
+                var cache = Settings.CacheFactory?.Get<string>();
+
+                DistributionClient.DeleteImage(repository, digest).Wait();
+                cache.TryDelete(tagsKey);                
+            }
+            else
+            {
+                throw new UnauthorizedAccessException();
+            }
+        }
+
+
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
         {
             var key = $"static:image:{image.Digest}:files:{maxDepth}";

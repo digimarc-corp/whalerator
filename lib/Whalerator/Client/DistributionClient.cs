@@ -130,6 +130,8 @@ namespace Whalerator.Client
 
         #endregion
 
+        #region http method wrappers
+
         private Task<T> Get<T>(Uri uri, string accept = null)
         {
             var result = Get(uri, accept);
@@ -212,11 +214,93 @@ namespace Whalerator.Client
             }
         }
 
+        private HttpResponseMessage Delete(Uri uri) => Delete(uri, retries: 3);
+
+        private HttpResponseMessage Delete(Uri uri, int retries)
+        {
+            //work out the basic scope + action we'd need to perform this GET
+            string scope = null;
+            if (_TokenSource.TryParseScope(uri, out var scopePath))
+            {
+                scope = $"{scopePath}:*";
+            }
+
+            using (var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }))
+            {
+                client.Timeout = Timeout;
+                HttpResponseMessage result;
+                var message = new HttpRequestMessage { RequestUri = uri, Method = HttpMethod.Delete };
+                message.Headers.Authorization = _TokenSource.GetAuthorization(scope);
+
+                try
+                {
+                    result = client.SendAsync(message).Result;
+                }
+                catch
+                {
+                    if (retries > 0) { result = Delete(uri, retries - 1); }
+                    else { throw; }
+                }
+
+                if (result.IsSuccessStatusCode)
+                {
+                    return result;
+                }
+                else if (retries > 0)
+                {
+                    if (result.StatusCode == HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(scope))
+                    {
+                        var authRequest = _TokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
+                        if (authRequest.scope != scope) { throw new ArgumentException($"The scope requested by the server ({authRequest.scope}) does not match that expected by the auth engine ({scope})"); }
+
+                        if (_TokenSource.UpdateAuthorization(authRequest.scope))
+                        {
+                            return Delete(uri, retries - 1);
+                        }
+                        else
+                        {
+                            throw new Exception($"Access was denied to the remote resource, and authorization could not be obtained.");
+                        }
+                    }
+                    else if (result.StatusCode == HttpStatusCode.Redirect || result.StatusCode == HttpStatusCode.RedirectKeepVerb)
+                    {
+                        //decriment retries even though nothing failed, to ensure we don't get caught in a redirect loop
+                        return Delete(result.Headers.Location, retries - 1);
+                    }
+                    else if (result.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        throw new NotFoundException();
+                    }
+                    else
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                        return Delete(uri, retries - 1);
+                    }
+                }
+                else
+                {
+                    throw new Exception($"The remote request failed with status {result.StatusCode}");
+                }
+            }
+
+        }
+
+        #endregion
+
         private ImageConfig GetImageConfig(string repository, string digest)
         {
             var result = GetBlobAsync(repository, digest).Result;
             var json = result.Content.ReadAsStringAsync().Result;
             return JsonConvert.DeserializeObject<ImageConfig>(json);
+        }
+
+        public Task DeleteImage(string repository, string digest)
+        {
+            var images = new List<Image>();
+            var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{digest}"));
+            var response = Delete(uri);
+
+            return Task.CompletedTask;
         }
     }
 }

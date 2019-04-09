@@ -64,6 +64,8 @@ namespace Whalerator.Support
             );
         }
 
+        public bool TryDelete(string key) => _Mux.GetDatabase(_Db).KeyDelete(key);
+
         public bool TryGet(string key, out T value)
         {
             try

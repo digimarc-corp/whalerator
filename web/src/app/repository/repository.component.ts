@@ -30,11 +30,12 @@ import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
 import { ConfigService } from '../config.service';
+import { Message } from '@angular/compiler/src/i18n/i18n_ast';
 
 @Component({
   selector: 'app-repository',
   templateUrl: './repository.component.html',
-  styleUrls: ['./repository.component.css']
+  styleUrls: ['./repository.component.scss']
 })
 export class RepositoryComponent implements OnInit {
 
@@ -62,10 +63,11 @@ export class RepositoryComponent implements OnInit {
   public tagMap: { [tag: string]: ImageSet } = {};
 
   public permissions: Permissions;
+  public get canDelete(): Boolean {
+    return this.permissions >= Permissions.Admin;
+  }
 
   public errorMessage: String[] = [];
-
-  private objectKeys = Object.keys;
 
   // provide lookup for enum strings
   public permissionsType: typeof Permissions = Permissions;
@@ -77,6 +79,31 @@ export class RepositoryComponent implements OnInit {
       this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name.toString());
       this.getRepo();
     });
+  }
+
+  delete(imageSet: ImageSet) {
+    if (confirm('Delete this image and all related tags?')) {
+      this.catalog.deleteImageSet(this.name, this.selectedImageSet.setDigest).subscribe(e => {
+        if (isError(e)) {
+          this.showError(e);
+        } else {
+          const nextImage = Object.values(this.images).find(i => i.setDigest !== imageSet.setDigest);
+          if (nextImage) {
+            /* this should work without forcing a reload, but for now we're being lazy about it
+            imageSet.tags.forEach(t => {
+              delete this.tagMap[t as string];
+              delete this.tags[t as string];
+            });
+            delete this.images[imageSet.setDigest as string];
+            this.selectTag(nextImage.tags[0]); */
+            this.router.navigate([], { relativeTo: this.route, queryParams: { tag: nextImage.tags[0] }, replaceUrl: true})
+              .then(() => location.reload());
+          } else {
+            this.router.navigate(['/']);
+          }
+        }
+      });
+    }
   }
 
   selectPlatform(platform: Platform) {

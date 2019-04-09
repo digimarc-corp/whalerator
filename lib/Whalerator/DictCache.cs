@@ -36,6 +36,19 @@ namespace Whalerator
 
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan timeout) => throw new NotImplementedException();
 
+        public bool TryDelete(string key)
+        {
+            if (Exists(key))
+            {
+                Cache.Remove(key);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public bool TryGet(string key, out T value)
         {
             var exists = Exists(key);

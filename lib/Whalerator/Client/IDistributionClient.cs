@@ -34,5 +34,6 @@ namespace Whalerator.Client
         Task<HttpResponseMessage> GetBlobAsync(string repository, string digest);
         Task<(Uri path, AuthenticationHeaderValue auth)> GetBlobPathAndAuthorizationAsync(string repository, string digest);
         Task<IEnumerable<Image>> GetImages(string repository, string tag);
+        Task DeleteImage(string repository, string digest);
     }
 }

@@ -109,5 +109,18 @@ namespace Whalerator.Support
             if (ttl == null) { _MemCache.Set(key, json); }
             else { _MemCache.Set(key, json, (TimeSpan)ttl); }
         }
+
+        public bool TryDelete(string key)
+        {
+            if (Exists(key))
+            {
+                _MemCache.Remove(key);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 }
