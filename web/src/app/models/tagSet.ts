@@ -16,7 +16,15 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-export class Repository {
-    public name: String;
-    public tags: number;
+import { Tag } from './tag';
+import { Permissions } from './permissions';
+
+export class TagSet {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+        this.permissions = Permissions[obj.permissions as keyof typeof Permissions];
+    }
+
+    public tags: String[];
+    public permissions: Permissions;
 }

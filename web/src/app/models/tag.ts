@@ -19,6 +19,10 @@
 import { ImageSet } from './imageSet';
 
 export class Tag {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
+
     public name: String;
     public image: ImageSet;
 }

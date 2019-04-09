@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,18 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-export class Repository {
-    public name: String;
-    public tags: number;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Whalerator.Model
+{
+    public class TagSet
+    {
+        public IEnumerable<string> Tags { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public Permissions Permissions { get; set; }
+    }
 }

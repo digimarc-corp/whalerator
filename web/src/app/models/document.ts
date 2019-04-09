@@ -17,6 +17,10 @@
 */
 
 export class Document {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
+
     public name: String;
     public content: String;
 }

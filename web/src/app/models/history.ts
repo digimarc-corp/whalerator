@@ -17,6 +17,10 @@
 */
 
 export class History {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
+
     public command: String;
     public created: String;
     public type: String;

@@ -25,6 +25,7 @@ import { VersionSort } from '../version-sort';
 import { Platform } from '../models/platform';
 import { Image } from '../models/image';
 import { isError } from '../web-service';
+import { Permissions } from '../models/permissions';
 import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
@@ -37,6 +38,14 @@ import { ConfigService } from '../config.service';
 })
 export class RepositoryComponent implements OnInit {
 
+  constructor(private route: ActivatedRoute,
+    private router: Router,
+    private location: Location,
+    private catalog: CatalogService,
+    private sessionService: SessionService,
+    private configService: ConfigService,
+    private titleService: Title) { }
+
   public name: String;
 
   requestedTag: String;
@@ -45,22 +54,21 @@ export class RepositoryComponent implements OnInit {
   public tags: String[];
   public selectedTag: String;
   public selectedImageSet: ImageSet;
+  public selectedPlatform: Platform;
+  public selectedImage: Image;
   public readme: String;
 
   public images: { [id: string]: ImageSet } = {};
   public tagMap: { [tag: string]: ImageSet } = {};
 
+  public permissions: Permissions;
+
   public errorMessage: String[] = [];
 
   private objectKeys = Object.keys;
 
-  constructor(private route: ActivatedRoute,
-    private router: Router,
-    private location: Location,
-    private catalog: CatalogService,
-    private sessionService: SessionService,
-    private configService: ConfigService,
-    private titleService: Title) { }
+  // provide lookup for enum strings
+  public permissionsType: typeof Permissions = Permissions;
 
   ngOnInit() {
     this.route.queryParams.subscribe(p => {
@@ -71,11 +79,22 @@ export class RepositoryComponent implements OnInit {
     });
   }
 
-  onSelect(tag: String) {
+  selectPlatform(platform: Platform) {
+    this.selectedPlatform = platform;
+    this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === platform.label);
+  }
+
+
+  selectTag(tag: String) {
     this.selectedTag = tag;
     this.selectedImageSet = this.tagMap[tag.toString()];
+    if (!this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
+      this.selectedPlatform = this.selectedImageSet.images[0].platform;
+      console.log('Setting platform ' + this.selectedPlatform.label);
+    }
+    this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === this.selectedPlatform.label);
+
     this.router.navigate([], { relativeTo: this.route, queryParams: { tag: tag }, replaceUrl: true });
-    // this.getReadme(this.selectedImageSet, this.selectedImageSet.platforms[0], 'readme.md');
   }
 
   getRepo(): void {
@@ -83,16 +102,15 @@ export class RepositoryComponent implements OnInit {
       console.log('tag load already requested');
     } else {
       this.loadRequested = true;
-      this.catalog.getTags(this.name).subscribe(tags => {
-        if (isError(tags)) {
-          this.showError(tags);
+      this.catalog.getTags(this.name).subscribe(tagset => {
+        if (isError(tagset)) {
+          this.showError(tagset);
         } else {
-          this.tags = tags.sort(VersionSort.sort);
+          this.permissions = tagset.permissions;
+          this.tags = tagset.tags.sort(VersionSort.sort);
           this.selectedTag = this.requestedTag || this.tags[0];
           this.getFirstImage(this.selectedTag, () => {
-            tags.filter(t => t !== this.selectedTag)
-              // .sort((a, b) => Math.floor(Math.random() * 2) - 1)
-              .forEach(t => this.getImage(t));
+            this.tags.filter(t => t !== this.selectedTag).forEach(t => this.getImage(t));
           });
         }
       });
@@ -152,6 +170,8 @@ export class RepositoryComponent implements OnInit {
                 // if this tag is currently selected, set the active image and start loading documents
                 if (tag === this.selectedTag) {
                   this.selectedImageSet = this.images[setDigest];
+                  this.selectedImage = this.images[setDigest].images[0];
+                  this.selectedPlatform = this.images[setDigest].images[0].platform;
                   // this.getDocuments(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
                 }
                 if (next) {

@@ -16,7 +16,9 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-export class Repository {
-    public name: String;
-    public tags: number;
+export enum Permissions {
+    None,
+    Pull,
+    Push,
+    Admin
 }

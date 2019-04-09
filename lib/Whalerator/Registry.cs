@@ -114,8 +114,6 @@ namespace Whalerator
             return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository
             {
                 Name = r,
-                //Push = Settings.AuthHandler.Authorize($"repository:{r}:push"),
-                //Delete = Settings.AuthHandler.Authorize($"repository:{r}:*"),
                 Tags = GetTags(r)?.Count() ?? 0
             });
         }
@@ -447,6 +445,14 @@ namespace Whalerator
         {
             var result = DistributionClient.GetBlobAsync(repository, layer.Digest).Result;
             result.Content.CopyToAsync(buffer).Wait();
+        }
+
+        public Permissions GetPermissions(string repository)
+        {
+            if (Settings.AuthHandler.Authorize($"repository:{repository}:*")) { return Permissions.Admin; }
+            else if (Settings.AuthHandler.Authorize($"repository:{repository}:push")) { return Permissions.Push; }
+            else if (Settings.AuthHandler.Authorize($"repository:{repository}:pull")) { return Permissions.Pull; }
+            else { return Permissions.None; }
         }
     }
 }

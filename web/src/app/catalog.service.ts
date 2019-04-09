@@ -30,6 +30,7 @@ import { ServiceError } from './service-error';
 import { History } from './models/history';
 import { TestBed } from '@angular/core/testing';
 import { ScanResult } from './models/scanResult';
+import { TagSet } from './models/tagSet';
 
 
 @Injectable({
@@ -54,13 +55,14 @@ export class CatalogService extends WebService {
     );
   }
 
-  getTags(repo: String): Observable<String[] | ServiceError> {
+  getTags(repo: String): Observable<TagSet | ServiceError> {
     const tagsUrl = this.apiBase + `/repository/${repo}/tags/list`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get<String[]>(tagsUrl, { headers: headers }).pipe(
-      tap(repos => console.log('got tag list')),
-      catchError(this.handleError<String[]>('getTags'))
+    return this.http.get<TagSet>(tagsUrl, { headers: headers }).pipe(
+      tap(tags => console.log('got tag list')),
+      map(tags => new TagSet(tags)),
+      catchError(this.handleError<TagSet>('getTags'))
     );
   }
 
@@ -71,6 +73,7 @@ export class CatalogService extends WebService {
     return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
       tap(img => console.log('got image set')),
       tap(imgset => imgset.images.forEach(img => img.history = img.history.map(i => History.From(i)))),
+      map(i => new ImageSet(i)),
       catchError(this.handleError<ImageSet>('getImage'))
     );
   }

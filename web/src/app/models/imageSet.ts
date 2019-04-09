@@ -20,6 +20,12 @@ import { Platform } from './platform';
 import { Image } from './image';
 
 export class ImageSet {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+        this.images = (this.images || []).map(o => new Image(o));
+        this.platforms = (this.platforms || []).map(o => new Platform(o));
+    }
+
     public platforms: Platform[];
     public date: Date;
     public setDigest: String;

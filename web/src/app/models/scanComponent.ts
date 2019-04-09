@@ -34,28 +34,4 @@ export class ScanComponent {
     public get maxSeverity(): number {
         return this.vulnerabilities.length == 0 ? 0 : Math.max.apply(Math, this.vulnerabilities.map(v => v.severity));
     }
-
-    public get pctHigh(): number {
-        let n = this.vulnerabilities.filter(v => v.severity >= Severity.High).length;
-        if (this.vulnerabilities.length == 0 || n == 0) { return 0; }
-        else {
-            return (n / this.vulnerabilities.length) * 100;
-        }
-    }
-
-    public get pctMedium(): number {
-        let n = this.vulnerabilities.filter(v => v.severity == Severity.Medium).length;
-        if (this.vulnerabilities.length == 0 || n == 0) { return 0; }
-        else {
-            return (n / this.vulnerabilities.length) * 100;
-        }
-    }
-
-    public get pctLow(): number {
-        let n = this.vulnerabilities.filter(v => v.severity == Severity.Low).length;
-        if (this.vulnerabilities.length == 0 || n == 0) { return 0; }
-        else {
-            return (n / this.vulnerabilities.length) * 100;
-        }
-    }
 }

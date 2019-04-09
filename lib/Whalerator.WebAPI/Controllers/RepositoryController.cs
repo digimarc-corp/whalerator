@@ -138,7 +138,7 @@ namespace Whalerator.WebAPI.Controllers
                     return Ok(scanResult);
                 }
             }
-            catch (HttpRequestException) 
+            catch (HttpRequestException)
             {
                 return StatusCode(503, "Scanner API is not available.");
             }
@@ -199,8 +199,9 @@ namespace Whalerator.WebAPI.Controllers
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
                 var tags = registryApi.GetTags(repository);
+                var permissions = registryApi.GetPermissions(repository);
 
-                return Ok(tags);
+                return Ok(new TagSet { Tags = tags, Permissions = permissions });
             }
             catch (Client.NotFoundException)
             {

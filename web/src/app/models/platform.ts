@@ -17,6 +17,14 @@
 */
 
 export class Platform {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
+
     public architecture: String;
     public os: String;
+
+    public get label(): String {
+        return this.os + '/' + this.architecture;
+    }
 }

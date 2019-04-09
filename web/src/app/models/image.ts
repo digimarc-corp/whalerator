@@ -22,6 +22,14 @@ import { History } from './history';
 import { ScanResult } from './scanResult';
 
 export class Image {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+        this.history = (this.history || []).map(o => new History(o));
+        this.documents = this.documents ? this.documents.map(o => new Document(o)) : null;
+        this.platform = new Platform(this.platform);
+        this.scanResult = this.scanResult ? new ScanResult(this.scanResult) : null;
+    }
+
     public digest: String;
     public platform: Platform;
     public history: History[];
