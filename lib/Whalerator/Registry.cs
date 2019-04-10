@@ -135,12 +135,13 @@ namespace Whalerator
             if (!empties && Settings.StaticRepos != null) { repoNames.AddRange(Settings.StaticRepos); }
             if (!empties && Settings.HiddenRepos != null) { repoNames.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
 
+            // must check and filter permissions before trying to count tags
             var repositories = repoNames.Distinct().Select(n => new Repository
             {
                 Name = n,
-                Permissions = Settings.AuthHandler.GetPermissions(n),
-                Tags = GetTags(n)?.Count() ?? 0
-            }).Where(r => r.Permissions >= Permissions.Pull);
+                Permissions = Settings.AuthHandler.GetPermissions(n)                
+            }).Where(r => r.Permissions >= Permissions.Pull).ToList();
+            repositories.ForEach(r => r.Tags = GetTags(r.Name)?.Count() ?? 0);
 
             return empties ? repositories.Where(r => r.Tags == 0) : repositories.Where(r => r.Tags > 0);            
         }
