@@ -205,7 +205,9 @@ namespace Whalerator
                 var key = RepoTagsKey(repository);
                 var cache = Settings.CacheFactory?.Get<string>();
 
-                var imageDigests = GetTags(repository).Select(t => GetImageSet(repository, t, false).SetDigest);
+                // coerce to list before deleting to avoid deleting a tag out from under ourselves                
+                var imageDigests = GetTags(repository).Select(t => GetImageSet(repository, t, false).SetDigest).Distinct().ToList();
+
                 foreach (var digest in imageDigests)
                 {
                     DeleteImage(repository, digest);
