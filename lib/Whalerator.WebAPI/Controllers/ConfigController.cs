@@ -44,6 +44,7 @@ namespace Whalerator.WebAPI.Controllers
         /// Returns configuration options for the Whalerator UI SPA
         /// </summary>
         /// <returns></returns>
+        [HttpGet]
         public IActionResult Get()
         {
             return Ok(new

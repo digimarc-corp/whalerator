@@ -33,6 +33,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using StackExchange.Redis;
+using Swashbuckle.AspNetCore.Swagger;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Queue;
@@ -87,6 +88,10 @@ namespace Whalerator.WebAPI
             services.AddCors(o =>
             {
                 o.AddPolicy("Allow dev ng", builder => builder.WithOrigins("http://localhost:4200"));
+            });
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v0", new Info { Title = "Whalerator", Version = "v0" });
             });
 #endif
 
@@ -166,6 +171,14 @@ namespace Whalerator.WebAPI
                 .AllowAnyMethod()
                 .AllowAnyHeader()
             );
+
+#if DEBUG
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v0/swagger.json", "Whalerator v0");
+            });
+#endif
 
             app.UseAuthentication();
             app.UseMvc();
