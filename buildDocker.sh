@@ -9,7 +9,7 @@ revision="$1.$2.$3"
 
 repo=$4
 
-hash=`git rev-parse HEAD | cut -c 1-5`
+hash=`git rev-parse HEAD | cut -c 1-7`
 
 if [ -z "$(git status --porcelain)" ]; then 
   echo "Working directory clean, HEAD $hash"
