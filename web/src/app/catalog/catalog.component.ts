@@ -34,6 +34,7 @@ export class CatalogComponent implements OnInit {
 
   public repos: Repository[];
   public repoError: { [repo: string]: string } = {};
+  public repoWorking: { [repo: string]: string } = {};
   public errorMessage: String;
 
   constructor(private sessionService: SessionService,
@@ -60,15 +61,19 @@ export class CatalogComponent implements OnInit {
   }
 
   delete(repo: Repository) {
-    if (confirm(`Delete all images and tags in repository ${repo.name}?`)) {
-      // fire and forget delete request
-      this.catalogService.deleteRepo(repo.name).subscribe((e) => {
-        if (isError(e)) {
-          this.repoError[repo.name.toString()] = e.message.toString();
-        } else {
-          this.repos = this.repos.filter(r => r.name !== repo.name);
-        }
-      });
+    const name = repo.name.toString();
+    if (!this.repoWorking[name]) {
+      if (confirm(`Delete all images and tags in repository ${repo.name}?`)) {
+        this.repoWorking[name] = 'Deleting';
+        this.catalogService.deleteRepo(name).subscribe((e) => {
+          if (isError(e)) {
+            this.repoError[name] = e.message.toString();
+          } else {
+            this.repos = this.repos.filter(r => r.name !== repo.name);
+            delete this.repoWorking[name];
+          }
+        });
+      }
     }
   }
 }
