@@ -25,7 +25,6 @@ namespace Whalerator.Config
     public class CacheConfig
     {
         public string Redis { get; set; }
-        public int RedisDb { get; set; } = 13;
         public string LayerCache { get; set; }
         public int VolatileTtl { get; set; } = 900; // 15 minutes
         public int StaticTtl { get; set; } = 0;

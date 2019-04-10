@@ -118,8 +118,8 @@ namespace Whalerator.WebAPI
             {
                 Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
                 services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
-                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Db = config.Cache.RedisDb, Ttl = volatileTtl });
-                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>>(p => new RedQueue<ScanRequest>(p.GetService<IConnectionMultiplexer>(), config.Cache.RedisDb)); }
+                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Ttl = volatileTtl });
+                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>>(p => new RedQueue<ScanRequest>(p.GetService<IConnectionMultiplexer>())); }
             }
 
             services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());

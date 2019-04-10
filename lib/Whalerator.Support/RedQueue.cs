@@ -29,23 +29,21 @@ namespace Whalerator.Support
     public class RedQueue<T> : IWorkQueue<T> where T : WorkItem
     {
         private IConnectionMultiplexer _Mux;
-        private int _Db;
         const string _Key = "queues:scanner";
 
-        public RedQueue(IConnectionMultiplexer redisMux, int db)
+        public RedQueue(IConnectionMultiplexer redisMux)
         {
             _Mux = redisMux;
-            _Db = db;
         }
 
         public T Pop()
         {
-            var json = _Mux.GetDatabase(_Db).ListRightPop(_Key);
+            var json = _Mux.GetDatabase().ListRightPop(_Key);
             return json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
         }
 
         public void Push(T workItem) =>
-            _Mux.GetDatabase(_Db).ListLeftPush(_Key, JsonConvert.SerializeObject(workItem));
+            _Mux.GetDatabase().ListLeftPush(_Key, JsonConvert.SerializeObject(workItem));
 
     }
 }
