@@ -67,7 +67,11 @@ export class CatalogComponent implements OnInit {
         this.repoWorking[name] = 'Deleting';
         this.catalogService.deleteRepo(name).subscribe((e) => {
           if (isError(e)) {
-            this.repoError[name] = e.message.toString();
+            if (e.resultCode === 405) {
+              this.repoError[name] = e.error.toString();
+            } else {
+              this.repoError[name] = e.message.toString();
+            }
           } else {
             this.repos = this.repos.filter(r => r.name !== repo.name);
             delete this.repoWorking[name];

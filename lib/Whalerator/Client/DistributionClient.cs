@@ -285,6 +285,10 @@ namespace Whalerator.Client
                     {
                         throw new NotFoundException();
                     }
+                    else if (result.StatusCode == HttpStatusCode.MethodNotAllowed)
+                    {
+                        throw new RegistryException("Registry is not configured to allow DELETE access.");
+                    }
                     else
                     {
                         System.Threading.Thread.Sleep(1000);

@@ -18,5 +18,6 @@
 
 export class ServiceError {
     public message: String;
+    public error: String;
     public resultCode: Number;
 }

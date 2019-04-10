@@ -29,12 +29,12 @@ export class WebService {
     */
     protected handleError<T>(operation = 'operation', result?: T) {
         return (error: any): Observable<T | ServiceError> => {
-
             console.error(error);
             const svcError = new ServiceError();
             if ((<HttpErrorResponse>error).status !== undefined) {
                 svcError.resultCode = (<HttpErrorResponse>error).status;
                 svcError.message = (<HttpErrorResponse>error).message;
+                svcError.error = (<HttpErrorResponse>error).error;
             } else {
                 svcError.resultCode = 0;
                 svcError.message = 'An unexpected error occurred.';

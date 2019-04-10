@@ -153,6 +153,8 @@ export class RepositoryComponent implements OnInit {
   showError(error: ServiceError, next?: () => void) {
     if (error.resultCode === 401) {
       this.router.navigate(['/login'], { queryParams: { requested: this.location.path() } });
+    } else if (error.resultCode === 405) {
+      this.errorMessage.push(error.error);
     } else {
       this.errorMessage.push('There was an error while fetching repository information: ' + error.message);
       if (next) { next(); }

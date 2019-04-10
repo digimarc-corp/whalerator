@@ -77,6 +77,10 @@ namespace Whalerator.WebAPI.Controllers
                 registryApi.DeleteRepository(repository);
                 return Ok();
             }
+            catch (RegistryException ex)
+            {
+                return StatusCode(405, ex.Message);
+            }
             catch (NotFoundException)
             {
                 return NotFound();
