@@ -18,6 +18,7 @@
 
 using System;
 using System.Net.Http.Headers;
+using Whalerator.Model;
 
 namespace Whalerator.Client
 {
@@ -31,6 +32,6 @@ namespace Whalerator.Client
         string ParseScope(Uri uri);
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);
         bool TryParseScope(Uri uri, out string scope);
-        bool UpdateAuthorization(string scope);
+        bool UpdateAuthorization(string scope, bool force = false);
     }
 }

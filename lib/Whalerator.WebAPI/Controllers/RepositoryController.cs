@@ -70,9 +70,9 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, digest, true);
-                if (images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
-                var files = registryApi.GetImageFiles(repository, images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
+                var imageSet = registryApi.GetImageSet(repository, digest, true);
+                if (imageSet.Images.Count() > 1) { return BadRequest("Returned too many results; ensure image parameter is set to the digest of a specific image, not a tag."); }
+                var files = registryApi.GetImageFiles(repository, imageSet.Images.First(), maxDepth == 0 ? int.MaxValue : maxDepth);
 
                 return Ok(files);
             }
@@ -100,7 +100,7 @@ namespace Whalerator.WebAPI.Controllers
         /// Check for security scan data for the given image. If no scan data is available, a scan will be queued to run later.
         /// </summary>
         /// <param name="repository">Registry repo to search</param>
-        /// <param name="digest">Manifest digest</param>
+        /// <param name="digest">Manifest digest. Must be for a discrete image, not a multiplatform image.</param>
         /// <returns></returns>
         [HttpGet("sec/{digest}/{*repository}")]
         public IActionResult GetSecScan(string repository, string digest)
@@ -116,11 +116,11 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var image = registryApi.GetImages(repository, digest, true);
+                var imageSet = registryApi.GetImageSet(repository, digest, true);
 
-                if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
+                if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
-                var scanResult = _Scanner.GetScan(image.First());
+                var scanResult = _Scanner.GetScan(imageSet.Images.First());
 
                 if (scanResult == null)
                 {
@@ -164,12 +164,12 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var image = registryApi.GetImages(repository, digest, true);
+                var imageSet = registryApi.GetImageSet(repository, digest, true);
 
-                if (image.Count() != 1) { return NotFound("No image was found with the given digest."); }
+                if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
                 // find a the actual layer first - this lets us work from cached file lists during the search (or build them if they're missing), and avoid expensive gunzipping until we have a hit
-                var layer = registryApi.FindFile(repository, image.First(), path, maxDepth);
+                var layer = registryApi.FindFile(repository, imageSet.Images.First(), path, maxDepth);
                 if (layer == null) { return NotFound(); }
 
                 var data = registryApi.GetFile(repository, layer, path);
@@ -223,14 +223,9 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag, false);
-
-                var platforms = images.Select(i => i.Platform);
-                var date = images.SelectMany(i => i.History.Select(h => h.Created)).Max();
-
-                var result = new { Platforms = platforms, Date = date, Images = images, SetDigest = images.ToImageSetDigest() };
-
-                return Ok(result);
+                var imageSet = registryApi.GetImageSet(repository, tag, false);
+                                
+                return Ok(imageSet);
             }
             catch (Client.NotFoundException)
             {
@@ -290,11 +285,9 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var registryApi = _RegFactory.GetRegistry(credentials);
-                var images = registryApi.GetImages(repository, tag, false);
-
-                var result = images.ToImageSetDigest();
-
-                return Ok(result);
+                var imageSet = registryApi.GetImageSet(repository, tag, false);
+                
+                return Ok(imageSet.SetDigest);
             }
             catch (Client.NotFoundException)
             {

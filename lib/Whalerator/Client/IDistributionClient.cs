@@ -33,7 +33,7 @@ namespace Whalerator.Client
         Task<TagList> GetTagsAsync(string repository);
         Task<HttpResponseMessage> GetBlobAsync(string repository, string digest);
         Task<(Uri path, AuthenticationHeaderValue auth)> GetBlobPathAndAuthorizationAsync(string repository, string digest);
-        Task<IEnumerable<Image>> GetImages(string repository, string tag);
+        Task<ImageSet> GetImageSet(string repository, string tag);
         Task DeleteImage(string repository, string digest);
     }
 }

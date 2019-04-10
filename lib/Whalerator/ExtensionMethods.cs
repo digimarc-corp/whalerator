@@ -21,11 +21,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using Whalerator.Client;
+using Whalerator.Model;
 
 namespace Whalerator
 {
     public static class ExtensionMethods
     {
+        public static Permissions GetPermissions(this IAuthHandler handler, string repository)
+        {
+            return handler.Authorize($"repository:{repository}:*") ? Permissions.Admin :
+                   handler.Authorize($"repository:{repository}:push") ? Permissions.Push :
+                   handler.Authorize($"repository:{repository}:pull") ? Permissions.Pull :
+                   Permissions.None;
+        }
+
         public static string ToImageSetDigest(this IEnumerable<Model.Image> images) {
             return string.Join(":", images.Select(i => i.Digest));
         }

@@ -16,11 +16,13 @@
     </tr>
     <tr *ngFor="let repo of repos">
       <td>
-        <img src="assets/buoy.svg" style="height: 1em; margin-right: 0.75em;" />
+        <img src="assets/buoy.svg" class="action-icon" />
         <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
       </td>
       <td class="right">
+        <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>
         <span class="badge dark-blue">{{repo.tags}}</span>
+        <img *ngIf="repo.canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon" (click)="delete(repo)"/>
       </td>
     </tr>
   </tbody>

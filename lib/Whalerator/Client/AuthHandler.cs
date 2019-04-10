@@ -65,7 +65,7 @@ namespace Whalerator.Client
             Password = password ?? string.Empty;
             RegistryEndpoint = Registry.HostToEndpoint(registryHost);
 
-            var key = GetKey(null);
+            var key = GetKey(null, granted: true);
 
             if (_AuthCache.TryGet(key, out var authorization))
             {
@@ -125,7 +125,7 @@ namespace Whalerator.Client
         public AuthenticationHeaderValue GetAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return _AuthCache.TryGet(GetKey(scope), out var authorization) ? new AuthenticationHeaderValue("Bearer", authorization.JWT) : null;
+            return _AuthCache.TryGet(GetKey(scope, granted: true), out var authorization) ? new AuthenticationHeaderValue("Bearer", authorization.JWT) : null;
         }
 
         public bool Authorize(string scope)
@@ -136,10 +136,10 @@ namespace Whalerator.Client
         public bool HasAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return _AuthCache.Exists(GetKey(scope));
+            return _AuthCache.Exists(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope, granted);
 
         public string ParseScope(Uri uri)
         {
@@ -189,10 +189,19 @@ namespace Whalerator.Client
             return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Username}:{Password}"));
         }
 
-        public bool UpdateAuthorization(string scope)
+        /// <summary>
+        /// Tries to get a new authorization for the requested scope.
+        /// </summary>
+        /// <param name="scope"></param>
+        /// <param name="force">If true, ignore any cached denials and try the request again.</param>
+        /// <returns></returns>
+        public bool UpdateAuthorization(string scope, bool force = false)
         {
             // registry is fully anonymous, so authorization is moot
             if (AnonymousMode) { return true; }
+
+            // if this user was recently denied for the same scope, don't waste a roundtrip on it
+            if (!force && _AuthCache.Exists(GetKey(scope, granted: false))) { return false; }
 
             scope = scope ?? string.Empty;
             var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
@@ -214,12 +223,17 @@ namespace Whalerator.Client
                 {
                     var token = JsonConvert.DeserializeAnonymousType(response.Content.ReadAsStringAsync().Result, new { token = "" }).token;
                     var payload = Jose.JWT.Payload(token);
-                    var access = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>() }).access;
+                    var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
 
-                    if (string.IsNullOrEmpty(scope) || access.Any(a => a.Actions.Contains(action)))
+                    var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
+                    if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
                     {
-                        _AuthCache.Set(GetKey(scope), new Authorization { JWT = token, Realm = Realm, Service = Service }, AuthTtl);
+                        _AuthCache.Set(GetKey(scope, granted: true), authorization, AuthTtl);
                         return true;
+                    }
+                    else
+                    {
+                        _AuthCache.Set(GetKey(scope, granted: false), authorization, AuthTtl);
                     }
                 }
                 return false;

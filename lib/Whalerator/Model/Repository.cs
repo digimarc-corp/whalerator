@@ -16,6 +16,8 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,5 +28,9 @@ namespace Whalerator.Model
     {
         public string Name { get; set; }
         public int Tags { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public Permissions Permissions { get; set; }
+
+        public override string ToString() => Name;
     }
 }

@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Whalerator.Client;
+using Whalerator.Model;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI.Controllers
@@ -41,7 +42,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public IActionResult Get()
+        public IActionResult Get(bool empties = false)
         {
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
@@ -51,11 +52,36 @@ namespace Whalerator.WebAPI.Controllers
                 var registryApi = _RegFactory.GetRegistry(credentials);
 
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
-                var repos = registryApi.GetRepositories().Where(r => r.Tags > 0).OrderBy(r => r.Name);
+                var repos = registryApi.GetRepositories(empties).OrderBy(r => r.Name);
 
                 return Ok(repos);
             }
-            catch (Client.AuthenticationException)
+            catch (AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
+
+        [HttpDelete("{*repository}")]
+        public IActionResult Delete(string repository)
+        {
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+            try
+            {
+                var registryApi = _RegFactory.GetRegistry(credentials);
+                var permissions = registryApi.GetPermissions(repository);
+                if (permissions != Permissions.Admin) { return Unauthorized(); }
+
+                registryApi.DeleteRepository(repository);
+                return Ok();
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (AuthenticationException)
             {
                 return Unauthorized();
             }

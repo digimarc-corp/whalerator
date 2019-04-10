@@ -24,9 +24,9 @@ namespace Whalerator
 {
     public interface IRegistry
     {
-        IEnumerable<Repository> GetRepositories();
+        IEnumerable<Repository> GetRepositories(bool empties = false);
         IEnumerable<string> GetTags(string repository);
-        IEnumerable<Image> GetImages(string repository, string tag, bool isDigest);
+        ImageSet GetImageSet(string repository, string tag, bool isDigest);
         Stream GetLayer(string repository, Layer layer);
         LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer);
         IEnumerable<string> GetFiles(string repository, Layer layer);
@@ -35,5 +35,6 @@ namespace Whalerator
         IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth);
         Permissions GetPermissions(string repository);
         void DeleteImage(string repository, string digest);
+        void DeleteRepository(string repository);
     }
 }

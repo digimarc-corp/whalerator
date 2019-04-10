@@ -28,11 +28,11 @@ namespace Whalerator.Client
         public string Realm { get; set; }
         public string Service { get; set; }
 
-        public static string CacheKey(string registry, string username, string password, string scope)
+        public static string CacheKey(string registry, string username, string password, string scope, bool grant = true)
         {
             var rawKey = $"{registry}:{username}:{password}:{scope}";
             var hash = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(rawKey));
-            return $"auth:{Convert.ToBase64String(hash)}";
+            return $"auth:{(grant ? "grant" : "denial")}:{Convert.ToBase64String(hash)}";
         }
     }
 }

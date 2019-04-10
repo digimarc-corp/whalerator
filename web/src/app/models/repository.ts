@@ -1,3 +1,5 @@
+import { Permissions } from "./permissions";
+
 /*
    Copyright 2018 Digimarc, Inc
 
@@ -17,6 +19,16 @@
 */
 
 export class Repository {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+        this.permissions = Permissions[obj.permissions as keyof typeof Permissions];
+    }
+
     public name: String;
     public tags: number;
+    public permissions: Permissions;
+
+    public get canDelete(): Boolean {
+        return this.permissions >= Permissions.Admin;
+    }
 }

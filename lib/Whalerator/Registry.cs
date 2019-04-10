@@ -90,48 +90,82 @@ namespace Whalerator
 
         #endregion
 
+        #region scope keys
+        string CatalogScope() => "registry:catalog:*";
+        string RepoPullScope(string repository) => $"repository:{repository}:pull";
+        string RepoPushScope(string repository) => $"repository:{repository}:push";
+        string RepoAdminScope(string repository) => $"repository:{repository}:*";
+        #endregion
+
+        #region cache keys
+        string RepoListKey() => $"volatile:{CatalogClient.Host}:repos";
+        string RepoTagsKey(string repository) => $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
+        string ImageDigestKey(string digest) => $"static:image:{digest}";
+        string ImageTagKey(string repository, string tag) => $"volatile:{DistributionClient.Host}:repos:{repository}:tags:{tag}:images";
+        string ImageFilesKey(Image image, int maxDepth) => $"static:image:{image.Digest}:files:{maxDepth}";
+        string ImageLockKey(Image image) => $"static:image:{image.Digest}:lock";
+        string LayerFilesKey(Layer layer) => $"static:layer:{layer.Digest}:files";
+        string LayerFileKey(Layer layer, string path) => $"static:layer:{layer.Digest}:file:{path}";
+        string ImageSearchKey(Image image, string search, int maxDepth) => $"static:image:{image.Digest}:find:{maxDepth}:{search}";
+        #endregion
+
         #region cached methods
 
-        public IEnumerable<Repository> GetRepositories()
+        /// <summary>
+        /// Gets a list of pullable repositories from the registry.
+        /// </summary>
+        /// <param name="empties">If set, will return empty repositories only. Permissions checks still apply, but hidden/static repos are ignored.</param>
+        /// <returns></returns>
+        public IEnumerable<Repository> GetRepositories(bool empties = false)
         {
-            var key = $"volatile:{CatalogClient.Host}:repos";
-            var scope = "registry:catalog:*";
+            var key = RepoListKey();
+            var scope = CatalogScope();
 
-            List<string> repositories;
+            List<string> repoNames;
             try
             {
-                repositories = GetCached(scope, key, true, Settings.CatalogAuthHandler ?? Settings.AuthHandler, () => CatalogClient.GetRepositoriesAsync().Result.Repositories).ToList();
+                repoNames = GetCached(scope, key, true, Settings.CatalogAuthHandler ?? Settings.AuthHandler, () => CatalogClient.GetRepositoriesAsync().Result.Repositories).ToList();
             }
             catch
             {
-                repositories = new List<string>();
+                repoNames = new List<string>();
             }
 
             // add statics, and remove hidden
-            if (Settings.StaticRepos != null) { repositories.AddRange(Settings.StaticRepos); }
-            if (Settings.HiddenRepos != null) { repositories.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
+            if (!empties && Settings.StaticRepos != null) { repoNames.AddRange(Settings.StaticRepos); }
+            if (!empties && Settings.HiddenRepos != null) { repoNames.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
 
-            return repositories.Where(r => Settings.AuthHandler.Authorize($"repository:{r}:pull")).Select(r => new Repository
+            var repositories = repoNames.Distinct().Select(n => new Repository
             {
-                Name = r,
-                Tags = GetTags(r)?.Count() ?? 0
-            });
+                Name = n,
+                Permissions = Settings.AuthHandler.GetPermissions(n),
+                Tags = GetTags(n)?.Count() ?? 0
+            }).Where(r => r.Permissions >= Permissions.Pull);
+
+            return empties ? repositories.Where(r => r.Tags == 0) : repositories.Where(r => r.Tags > 0);            
         }
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var key = $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
+            string key = RepoTagsKey(repository);
             var scope = $"repository:{repository}:pull";
 
             return GetCached(scope, key, true, () => DistributionClient.GetTagsAsync(repository).Result.Tags);
         }
 
-        public IEnumerable<Image> GetImages(string repository, string tag, bool isDigest)
+        /*
+         * The whole image vs image set thing is very confusing and probably needs to be broken up further to make it clear what is happening.
+         * For now, if this method is called with the digest of a "regular" single-platform image, it will return an ImageSet with a single image
+         * and a SetDigest copied from that image.
+         * If it is called with the digest of a "fat" manifest list, it will return an ImageSet with multiple images with valid single-image digests
+         * and a unique manifest list digest.
+         */
+        public ImageSet GetImageSet(string repository, string tag, bool isDigest)
         {
-            var key = isDigest ? $"static:image:{tag}" : $"volatile:{DistributionClient.Host}:repos:{repository}:tags:{tag}:images";
-            var scope = $"repository:{repository}:pull";
+            var key = isDigest ? ImageDigestKey(tag) : ImageTagKey(repository, tag);
+            string scope = RepoPullScope(repository);
 
-            return GetCached(scope, key, !isDigest, () => DistributionClient.GetImages(repository, tag).Result);
+            return GetCached(scope, key, !isDigest, () => DistributionClient.GetImageSet(repository, tag).Result);
         }
 
         /// <summary>
@@ -140,17 +174,17 @@ namespace Whalerator
         /// <param name="digest"></param>
         public void DeleteImage(string repository, string digest)
         {
-            var scope = $"repository:{repository}:*";
+            var scope = RepoAdminScope(repository);
 
             if (Settings.AuthHandler.Authorize(scope))
             {
                 // on delete, we leave the static image data in cache, just in case another repo is using this image
                 // we do clear the tags list for the repo, since there is no good way to know which tags this delete will effect
-                var tagsKey = $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
+                var key = RepoTagsKey(repository);
                 var cache = Settings.CacheFactory?.Get<string>();
 
                 DistributionClient.DeleteImage(repository, digest).Wait();
-                cache.TryDelete(tagsKey);                
+                cache.TryDelete(key);
             }
             else
             {
@@ -158,12 +192,38 @@ namespace Whalerator
             }
         }
 
+        /// <summary>
+        /// Deletes all images and tags within a repository. Final cleanup of the actual repo folder on the registry server must currently be done manually.
+        /// </summary>
+        /// <param name="repository"></param>
+        public void DeleteRepository(string repository)
+        {
+            var scope = RepoAdminScope(repository);
+
+            if (Settings.AuthHandler.Authorize(scope))
+            {
+                var key = RepoTagsKey(repository);
+                var cache = Settings.CacheFactory?.Get<string>();
+
+                var imageDigests = GetTags(repository).Select(t => GetImageSet(repository, t, false).SetDigest);
+                foreach (var digest in imageDigests)
+                {
+                    DeleteImage(repository, digest);
+                }
+
+                cache.Set(key, null);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException();
+            }
+        }
 
         public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
         {
-            var key = $"static:image:{image.Digest}:files:{maxDepth}";
-            var lockKey = $"static:image:{image.Digest}:files:lock";
-            var scope = $"repository:{repository}:pull";
+            string key = ImageFilesKey(image, maxDepth);
+            string lockKey = ImageLockKey(image);
+            var scope = RepoPullScope(repository);
 
             return GetCached(scope, key, false, () =>
             {
@@ -193,8 +253,8 @@ namespace Whalerator
 
         public IEnumerable<string> GetFiles(string repository, Layer layer)
         {
-            var key = $"static:layer:{layer.Digest}:files";
-            var scope = $"repository:{repository}:pull";
+            string key = LayerFilesKey(layer);
+            var scope = RepoPullScope(repository);
 
             return GetCached(scope, key, false, () =>
             {
@@ -234,8 +294,8 @@ namespace Whalerator
 
         public byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true)
         {
-            var key = $"static:layer:{layer.Digest}:file:{path}";
-            var scope = $"repository:{repository}:pull";
+            string key = LayerFileKey(layer, path);
+            var scope = RepoPullScope(repository);
 
             return GetCached(scope, key, false, () =>
             {
@@ -287,8 +347,8 @@ namespace Whalerator
 
         public Layer FindFile(string repository, Image image, string search, int maxDepth, bool ignoreCase = true)
         {
-            var key = $"static:image:{image.Digest}:find:{maxDepth}:{search}";
-            var scope = $"repository:{repository}:pull";
+            string key = ImageSearchKey(image, search, maxDepth);
+            var scope = RepoPullScope(repository);
             return GetCached(scope, key, false, () =>
             {
 
@@ -474,9 +534,9 @@ namespace Whalerator
 
         public Permissions GetPermissions(string repository)
         {
-            if (Settings.AuthHandler.Authorize($"repository:{repository}:*")) { return Permissions.Admin; }
-            else if (Settings.AuthHandler.Authorize($"repository:{repository}:push")) { return Permissions.Push; }
-            else if (Settings.AuthHandler.Authorize($"repository:{repository}:pull")) { return Permissions.Pull; }
+            if (Settings.AuthHandler.Authorize(RepoAdminScope(repository))) { return Permissions.Admin; }
+            else if (Settings.AuthHandler.Authorize(RepoPushScope(repository))) { return Permissions.Push; }
+            else if (Settings.AuthHandler.Authorize(RepoPullScope(repository))) { return Permissions.Pull; }
             else { return Permissions.None; }
         }
     }

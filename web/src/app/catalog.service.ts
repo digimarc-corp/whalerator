@@ -51,9 +51,21 @@ export class CatalogService extends WebService {
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<Repository[]>(listUrl, { headers: headers }).pipe(
       tap(repos => console.log('got repo list')),
+      map(repos => repos.map(r => new Repository(r))),
       catchError(this.handleError<Repository[]>('getRepos'))
     );
   }
+
+  deleteRepo(repo: String): Observable<Object | ServiceError> {
+    const imageUrl = this.apiBase + `/repositories/${repo}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.delete(imageUrl, { headers: headers }).pipe(
+      catchError(this.handleError('deleteImage'))
+    );
+  }
+
+
 
   getTags(repo: String): Observable<TagSet | ServiceError> {
     const tagsUrl = this.apiBase + `/repository/${repo}/tags/list`;

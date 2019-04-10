@@ -83,20 +83,30 @@ namespace Whalerator.Client
             }
         }
 
-        public Task<IEnumerable<Image>> GetImages(string repository, string tag)
+        public Task<ImageSet> GetImageSet(string repository, string tag)
         {
-            var images = new List<Image>();
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{tag}"));
             var response = Get(uri, "application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json");
 
+            // In docker-land, a fat manifest is just a bunch of regular manifests bundled together under a single digest
+            // In whalerator-land, there are no non-fat manifests, just fat manifests with a single image
             if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
             {
+                var images = new List<Image>();
                 var json = response.Content.ReadAsStringAsync().Result;
                 var fatManifest = JsonConvert.DeserializeObject<FatManifest>(json);
                 foreach (var subManifest in fatManifest.Manifests)
                 {
-                    images.AddRange(GetImages(repository, subManifest.Digest).Result);
+                    images.Add(GetImageSet(repository, subManifest.Digest).Result.Images.First());
                 }
+
+                return Task.FromResult(new ImageSet
+                {
+                    Date = images.SelectMany(i => i.History.Select(h => h.Created)).Max(),
+                    Images = images,
+                    Platforms = images.Select(i => i.Platform),
+                    SetDigest = response.Headers.First(h => h.Key.ToLowerInvariant() == "docker-content-digest").Value.First(),
+                });
             }
             else if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
             {
@@ -118,14 +128,18 @@ namespace Whalerator.Client
                 };
                 image.Layers = manifest.Layers.Select(l => l.ToLayer());
 
-                images.Add(image);
+                return Task.FromResult(new ImageSet
+                {
+                    Date = image.History.Max(h => h.Created),
+                    Images = new[] { image },
+                    Platforms = new[] { image.Platform },
+                    SetDigest = image.Digest
+                });
             }
             else
             {
                 throw new Exception($"Cannot build image set from mediatype '{response.Content.Headers.ContentType.MediaType}'");
             }
-
-            return Task.FromResult((IEnumerable<Image>)images);
         }
 
         #endregion

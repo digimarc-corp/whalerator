@@ -98,10 +98,10 @@ namespace Whalerator.WebAPI
                 {
                     var registry = _RegistryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
 
-                    var image = registry.GetImages(request.TargetRepo, request.TargetDigest, true);
-                    if (image.Count() != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
+                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
+                    if (imageSet.Images.Count() != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
-                    _Scanner.RequestScan(registry, request.TargetRepo, image.First());
+                    _Scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
                     _Logger.LogInformation($"Completed submitting {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
                 }
             }

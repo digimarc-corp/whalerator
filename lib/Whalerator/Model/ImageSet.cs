@@ -24,8 +24,9 @@ namespace Whalerator.Model
 {
     public class ImageSet
     {
-        public string Name { get; set; }
-        public string Tag { get; set; }
+        public IEnumerable<Platform> Platforms { get; set; }
+        public string SetDigest { get; set; }
+        public DateTime Date { get; set; }
         public IEnumerable<Image> Images { get; set; }
     }
 }
