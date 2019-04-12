@@ -62,6 +62,7 @@ namespace Whalerator.WebAPI.Controllers
             }
             try
             {
+                credentials.DeAliasRegistry();
                 var handler = new AuthHandler(_Cache);
                 handler.Login(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);

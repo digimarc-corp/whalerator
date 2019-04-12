@@ -63,7 +63,9 @@ export class LoginFormComponent implements OnInit {
 
     if (this.configService.config.autoLogin) {
       this.anonymous = true;
-      this.submit();
+      if (!this.sessionService.sessionToken) {
+        this.submit();
+      }
     }
   }
 

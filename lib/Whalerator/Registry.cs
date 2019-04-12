@@ -49,12 +49,16 @@ namespace Whalerator
             "registry-1.docker.io"
         };
 
+        // If this is a Docker hub alias, replace it with the canonical registry name.
+        public static string DeAliasDockerHub(string host) => 
+            DockerHubAliases.Contains(host.ToLowerInvariant()) ? DockerHub : host;
+
         static Regex _HostWithScheme = new Regex(@"\w+:\/\/.+", RegexOptions.Compiled);
         static Regex _HostWithPort = new Regex(@".+:\d+$", RegexOptions.Compiled);
 
         public static string HostToEndpoint(string host, string resource = null)
         {
-            if (DockerHubAliases.Contains(host.ToLowerInvariant())) { host = DockerHub; }
+            host = DeAliasDockerHub(host);
 
             var sb = new StringBuilder();
             // if the supplied hostname appears to include a scheme, preserve it and just add the resource path
