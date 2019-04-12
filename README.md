@@ -43,7 +43,7 @@ In the default configuration, Whalerator generates an RSA keypair at startup (yo
 Assets:
 
 - ["Anchors Away"](https://www.heropatterns.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-- ["Bouy, Trash"](https://www.zondicons.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- ["Bouy, etc"](https://www.zondicons.com/) - [Steve Schoger](https://dribbble.com/steveschoger) - [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 .NET Core packages:
 
