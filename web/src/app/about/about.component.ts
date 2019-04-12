@@ -18,6 +18,7 @@
 
 import { Component, OnInit } from '@angular/core';
 import { ConfigService } from '../config.service';
+import { SessionService } from '../session.service';
 
 @Component({
   selector: 'app-about',
@@ -26,7 +27,7 @@ import { ConfigService } from '../config.service';
 })
 export class AboutComponent implements OnInit {
 
-  constructor(public configService: ConfigService) { }
+  constructor(public configService: ConfigService, public sessionService: SessionService) { }
 
   ngOnInit() {
   }

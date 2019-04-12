@@ -45,8 +45,30 @@ export class SessionService extends WebService {
   sessionToken: String;
   activeRegistry: String;
   activeUser: String;
+  sessionExpiry: any;
+  sessionStart: any;
 
   whaleratorUrl = environment.serviceBaseUri;
+
+  get registryLabel(): String {
+    if (this.activeRegistry === 'registry-1.docker.io') {
+      return 'Docker Hub';
+    } else {
+      return this.activeRegistry;
+    }
+  }
+
+  get registryPath(): String {
+    if (this.activeRegistry === 'registry-1.docker.io') {
+      return '';
+    } else {
+      return this.activeRegistry + '/';
+    }
+  }
+
+  public get userLabel(): String {
+    return this.sessionToken ? (this.activeUser || "anonymous") : "Login";
+  }
 
   private setSession(token: String) {
     this.sessionToken = token;
@@ -54,10 +76,14 @@ export class SessionService extends WebService {
       const helper = new JwtHelperService();
       const credential = helper.decodeToken(token.toString());
       this.activeRegistry = credential.Reg || 'Unknown Registry';
-      this.activeUser = credential.Usr || 'Unknown User';
+      this.activeUser = credential.Usr;
+      this.sessionExpiry = new Date(credential.Exp * 1000).toLocaleString();
+      this.sessionStart = new Date(credential.Iat * 1000).toLocaleString();
     } else {
       this.activeRegistry = null;
       this.activeUser = null;
+      this.sessionExpiry = null;
+      this.sessionStart = null;
     }
   }
 

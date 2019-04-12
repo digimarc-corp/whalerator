@@ -19,3 +19,10 @@ form > * {
     word-break: break-all;
     margin: 3em;
 }
+
+.token-button {
+    color: #999;
+    padding: 0.4em;
+    text-align: center;
+    cursor: pointer;
+}

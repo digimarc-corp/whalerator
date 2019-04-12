@@ -36,8 +36,8 @@ a {
 
 .aboutBox {
     @extend %box;
-    text-align: right;
     padding: 0.2em 1em;
+    overflow: auto;
 }
 
 .formBox {
@@ -82,7 +82,13 @@ nav {
 .image-icon {
     width: 3em;
     margin: 1.5em;
-    float: right;    
+    float: right;
+}
+
+.repohead {
+    font-size: 2em;
+    font-weight: bold;
+    margin-top: 0.5em;
 }
 
 .image-detail {

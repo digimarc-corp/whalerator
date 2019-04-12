@@ -50,6 +50,7 @@ namespace Whalerator.WebAPI.Controllers
             return Ok(new
             {
                 Registry = Config.Catalog?.Registry,
+                AutoLogin = Config.Catalog?.AutoLogin ?? false,
                 SecScanner = !string.IsNullOrEmpty(Config.Scanner?.ClairApi),
                 SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
             });

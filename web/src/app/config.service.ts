@@ -66,7 +66,7 @@ export class ConfigService extends WebService {
         this.isErrored = true;
         this.errorMessage = c.message;
       } else {
-        this.config = c;
+        this.config = new Config(c);
       }
     });
   }

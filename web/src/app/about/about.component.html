@@ -1,9 +1,7 @@
 <div class="aboutBox">
-  <div *ngIf="configService.version; then version else loading"></div>
-  <ng-template #version>
-    <span>Whalerator {{configService.version.release}} ({{configService.version.hash}}) - Copyright © 2018, Digimarc, Inc</span>
-  </ng-template>
-  <ng-template #loading>
-    <span>Whalerator - Copyright © 2018, Digimarc, Inc</span>
-  </ng-template>
+  <span *ngIf="sessionService.sessionToken" style="float: left">
+    Ahoy,<a routerLink="/login">{{sessionService.userLabel}}!</a>
+  </span>
+    <span *ngIf="configService.version" class="version">Whalerator {{configService.version.release}} ({{configService.version.hash}}) - Copyright © 2018, Digimarc, Inc</span>
+    <span *ngIf="!configService.version">Whalerator - Copyright © 2018, Digimarc, Inc</span>
 </div>

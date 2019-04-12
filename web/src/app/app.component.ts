@@ -18,6 +18,7 @@
 
 import { Component } from '@angular/core';
 import { ConfigService } from './config.service';
+import { SessionService } from './session.service';
 
 @Component({
   selector: 'app-root',
@@ -27,5 +28,5 @@ import { ConfigService } from './config.service';
 export class AppComponent {
   title = 'whalerator';
 
-  constructor(public configService: ConfigService) { }
+  constructor(public configService: ConfigService, public sessionService: SessionService) { }
 }

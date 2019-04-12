@@ -3,7 +3,12 @@
     <img src="assets/buoy.svg" class="image-icon" />
   </div>
   <div class="pure-u-5-6 image-title">
-    <h1>{{name}}:{{selectedTag}}</h1>
+    <div class="repohead">{{name}}</div>
+    <div class="copyBuffer">
+      <span>{{fullPath}}</span>
+      <span (click)="copyPath()"><img src="assets/clipboard.svg" class="action-icon" alt="Copy path to clipboard" /></span>
+      <span class="copyMessage" [class.hidden]="!showCopyMsg">Copied!</span>
+    </div>
   </div>
 </div>
 <div *ngIf="errorMessage.length > 0" class="errorBox">{{errorMessage}}</div>
@@ -11,30 +16,31 @@
   <div class="pure-u-1 pure-u-sm-1-6">
     <div class="tag-list">
       <div *ngFor="let tag of tags" (click)="selectTag(tag)">
-        <span class="badge light-blue" [class.selected]="tag === selectedTag" [class.loading]="!tagMap[tag]">{{tag}}</span>
+        <span class="badge light-blue" [class.selected]="tag === selectedTag"
+          [class.loading]="!tagMap[tag]">{{tag}}</span>
       </div>
     </div>
   </div>
   <div class="pure-u-1 pure-u-sm-5-6">
     <div class="image-detail">
-      <div class="repo-head-sm">
-        <h3>{{name}}:{{selectedTag}}</h3>
-      </div>
       <div *ngIf="selectedTag; then tagBlock else promptBlock"></div>
       <ng-template #tagBlock>
         <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
         <ng-template #detailBlock>
           <div>
             <b>Last update:</b> {{selectedImageSet.date | date : "medium" }}
-            <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon" (click)="delete(selectedImageSet)" />
+            <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon"
+              (click)="delete(selectedImageSet)" />
           </div>
           <div>
             <b>Tags:</b>
-            <span class="badge light-blue" *ngFor="let tag of selectedImageSet.tags">{{tag}}</span>
+            <span class="badge light-blue" *ngFor="let tag of selectedImageSet.tags" [class.selected]="tag === selectedTag" (click)="selectTag(tag)">{{tag}}</span>
           </div>
           <div>
             <b>Platforms:</b>
-            <span class="badge light-orange" (click)="selectPlatform(platform)" [class.selected]="selectedPlatform.label === platform.label" *ngFor="let platform of selectedImageSet.platforms">
+            <span class="badge light-orange" (click)="selectPlatform(platform)"
+              [class.selected]="selectedPlatform.label === platform.label"
+              *ngFor="let platform of selectedImageSet.platforms">
               {{platform.label}}
             </span>
           </div>

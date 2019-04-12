@@ -28,6 +28,9 @@ const routes: Routes = [
   { path: '', redirectTo: '/catalog', pathMatch: 'full' },
   { path: 'login', component: LoginFormComponent },
   { path: 'catalog', component: CatalogComponent, canActivate: [SessionGuard] },
+  { path: 'r', component: RepositoryComponent, canActivate: [SessionGuard], children: [{
+    path: '**', component: RepositoryComponent
+  }] },
   { path: 'repo', component: RepositoryComponent, canActivate: [SessionGuard], children: [{
     path: '**', component: RepositoryComponent
   }] }
