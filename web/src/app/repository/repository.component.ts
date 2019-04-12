@@ -30,7 +30,6 @@ import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
 import { ConfigService } from '../config.service';
-import { Message } from '@angular/compiler/src/i18n/i18n_ast';
 
 @Component({
   selector: 'app-repository',
@@ -58,6 +57,8 @@ export class RepositoryComponent implements OnInit {
   public selectedPlatform: Platform;
   public selectedImage: Image;
   public readme: String;
+
+  public showCopyMsg: Boolean;
 
   public images: { [id: string]: ImageSet } = {};
   public tagMap: { [tag: string]: ImageSet } = {};
@@ -96,7 +97,7 @@ export class RepositoryComponent implements OnInit {
             });
             delete this.images[imageSet.setDigest as string];
             this.selectTag(nextImage.tags[0]); */
-            this.router.navigate([], { relativeTo: this.route, queryParams: { tag: nextImage.tags[0] }, replaceUrl: true})
+            this.router.navigate([], { relativeTo: this.route, queryParams: { tag: nextImage.tags[0] }, replaceUrl: true })
               .then(() => location.reload());
           } else {
             this.router.navigate(['/']);
@@ -104,6 +105,18 @@ export class RepositoryComponent implements OnInit {
         }
       });
     }
+  }
+
+  get fullPath(): String {
+    return `${this.sessionService.registryPath}${this.name}:${this.selectedTag}`;
+  }
+
+  copyPath() {
+    // the Clipboard API is new and shakily supported. Verified working in latest Chrome & Firefox, not in Safari
+    navigator.clipboard.writeText(this.fullPath.toString());
+
+    this.showCopyMsg = true;
+    setTimeout(() => { this.showCopyMsg = false; }, 3000);
   }
 
   selectPlatform(platform: Platform) {

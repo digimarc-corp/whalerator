@@ -19,7 +19,6 @@
 import { Component, OnInit } from '@angular/core';
 import { SessionService } from '../session.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { CatalogService } from '../catalog.service';
 import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
@@ -33,7 +32,6 @@ export class LoginFormComponent implements OnInit {
 
   constructor(
     public sessionService: SessionService,
-    private catalogService: CatalogService,
     private configService: ConfigService,
     private titleService: Title,
     private route: ActivatedRoute,
@@ -62,6 +60,11 @@ export class LoginFormComponent implements OnInit {
     this.route.queryParams.subscribe(p => {
       this.forwardingRoute = p['requested'];
     });
+
+    if (this.configService.config.autoLogin) {
+      this.anonymous = true;
+      this.submit();
+    }
   }
 
   logout() {
@@ -77,8 +80,7 @@ export class LoginFormComponent implements OnInit {
         this.errorMessage = 'Login failed.';
         this.isErrored = true;
       } else {
-        console.log(`Got ${t.token}`);
-        this.router.navigateByUrl(this.forwardingRoute.toString() || '');
+        this.router.navigateByUrl((this.forwardingRoute || '/catalog').toString());
       }
     });
   }

@@ -17,7 +17,12 @@
 */
 
 export class Config {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
+
     public registry: String;
     public searchLists: String[][];
     public secScanner: boolean;
+    public autoLogin: boolean;
 }

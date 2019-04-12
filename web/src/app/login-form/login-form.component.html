@@ -1,12 +1,17 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
   <div style="text-align: center; margin-top: 5em;">
-    <div>Logged in.</div>
+    <div>Connected to {{sessionService.activeRegistry}} as {{sessionService.userLabel}}.</div>
+    <div>Last login: {{sessionService.sessionStart}}</div>
+    <div>Session expires: {{sessionService.sessionExpiry}}</div>
     <button (click)="logout()">Log out</button>
   </div>
-  <div class="token">
+  <div *ngIf="!showToken" class="token-button" (click)="showToken=!showToken">Show token</div>
+  <div *ngIf="showToken" class="token-button" (click)="showToken=!showToken">Hide token</div>
+  <div *ngIf="showToken" class="token" >
     <span>{{sessionService.sessionToken}}</span>
   </div>
+
 </ng-template>
 <ng-template #elseBlock>
   <div class="formBox">
