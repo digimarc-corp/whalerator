@@ -1,6 +1,6 @@
 <div class="aboutBox">
   <span *ngIf="sessionService.sessionToken" style="float: left">
-    Ahoy!<a routerLink="/login">{{sessionService.userLabel}}</a>
+    Ahoy,<a routerLink="/login">{{sessionService.userLabel}}!</a>
   </span>
     <span *ngIf="configService.version" class="version">Whalerator {{configService.version.release}} ({{configService.version.hash}}) - Copyright © 2018, Digimarc, Inc</span>
     <span *ngIf="!configService.version">Whalerator - Copyright © 2018, Digimarc, Inc</span>

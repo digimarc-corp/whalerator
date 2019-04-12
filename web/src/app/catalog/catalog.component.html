@@ -1,4 +1,4 @@
-<h2>{{sessionService.activeRegistry}}</h2>
+<h2>{{sessionService.registryLabel}}</h2>
 
 <table class="pure-table pure-table-horizontal catalog">
   <thead>
@@ -17,7 +17,7 @@
     <tr *ngFor="let repo of repos" [class.working]="repoWorking[repo.name]">
       <td>
         <img src="assets/buoy.svg" class="action-icon" />
-        <a routerLink="/repo/{{repo.name}}">{{repo.name}}</a>
+        <a routerLink="/r/{{repo.name}}">{{repo.name}}</a>
       </td>
       <td class="right">
           <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>

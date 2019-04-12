@@ -60,7 +60,7 @@ export class SessionService extends WebService {
 
   get registryPath(): String {
     if (this.activeRegistry === 'registry-1.docker.io') {
-      return null;
+      return '';
     } else {
       return this.activeRegistry + '/';
     }
