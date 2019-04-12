@@ -112,7 +112,7 @@ export class RepositoryComponent implements OnInit {
   }
 
   copyPath() {
-    // the Clipboard API is new and shakily supported. Verified working in latest Chrome & Firefox, not in Safari
+    // @ts-ignore: the Clipboard API is new and shakily supported. Verified working in latest Chrome & Firefox, not in Safari
     navigator.clipboard.writeText(this.fullPath.toString());
 
     this.showCopyMsg = true;
