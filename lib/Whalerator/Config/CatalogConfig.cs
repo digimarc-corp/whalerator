@@ -25,6 +25,8 @@ namespace Whalerator.Config
     public class CatalogConfig
     {
         public string Registry { get; set; }
+        // Should only be used with anonymous registry
+        public bool AutoLogin { get; set; }
         public List<string> Repositories { get; set; }
         public List<string> Hidden { get; set; }
         public CatalogUser User { get; set; }
