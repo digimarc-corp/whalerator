@@ -37,7 +37,7 @@ export class CatalogComponent implements OnInit {
   public repoWorking: { [repo: string]: string } = {};
   public errorMessage: String;
 
-  constructor(private sessionService: SessionService,
+  constructor(public sessionService: SessionService,
     private catalogService: CatalogService,
     private location: Location,
     private router: Router,
