@@ -187,7 +187,8 @@ namespace Whalerator.WebAPI
             var options = new RewriteOptions()
                 .AddRewrite("^login.*", "index.html", skipRemainingRules: true)
                 .AddRewrite("^catalog.*", "index.html", skipRemainingRules: true)
-                .AddRewrite("^repo.*", "index.html", skipRemainingRules: true);
+                .AddRewrite("^repo.*", "index.html", skipRemainingRules: true)
+                .AddRewrite("^r.*", "index.html", skipRemainingRules: true);
             app.UseRewriter(options);
             app.UseDefaultFiles();
             app.UseStaticFiles();
