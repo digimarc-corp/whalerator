@@ -96,6 +96,7 @@ namespace Whalerator.WebAPI
             });
 #endif
 
+            // System.Text.Json is a bit limited, so rather than have two different Json libraries in use just revert to Newtonsoft for now
             services.AddMvc().AddNewtonsoftJson().AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.IgnoreNullValues = true;
