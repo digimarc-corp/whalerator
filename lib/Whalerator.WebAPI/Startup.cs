@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -91,13 +92,14 @@ namespace Whalerator.WebAPI
             });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v0", new Info { Title = "Whalerator", Version = "v0" });
+                c.SwaggerDoc("v0", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Whalerator", Version = "v0" });
             });
 #endif
 
-            services.AddMvc().AddJsonOptions(options =>
+            // System.Text.Json is a bit limited, so rather than have two different Json libraries in use just revert to Newtonsoft for now
+            services.AddMvc().AddNewtonsoftJson().AddJsonOptions(options =>
             {
-                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                options.JsonSerializerOptions.IgnoreNullValues = true;
             });
 
             var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
@@ -133,7 +135,14 @@ namespace Whalerator.WebAPI
 
             Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
             Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
-            Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
+            if (string.IsNullOrEmpty(config.Cache.LayerCache))
+            {
+                Logger.LogWarning("No layer cache specified, document search will not be available.");
+            }
+            else
+            {
+                Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
+            }
 
             services.AddScoped<IRegistryFactory>(p =>
             {
@@ -156,7 +165,7 @@ namespace Whalerator.WebAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -180,8 +189,13 @@ namespace Whalerator.WebAPI
             });
 #endif
 
+            app.UseRouting();
             app.UseAuthentication();
-            app.UseMvc();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
 
             // serve angular SPA
             var options = new RewriteOptions()

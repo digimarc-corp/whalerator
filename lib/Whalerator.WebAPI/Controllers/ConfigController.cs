@@ -52,6 +52,7 @@ namespace Whalerator.WebAPI.Controllers
                 Registry = Config.Catalog?.Registry,
                 AutoLogin = Config.Catalog?.AutoLogin ?? false,
                 SecScanner = !string.IsNullOrEmpty(Config.Scanner?.ClairApi),
+                DocScanner = !string.IsNullOrEmpty(Config.Cache.LayerCache),
                 SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
             });
         }
