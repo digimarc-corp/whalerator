@@ -46,10 +46,14 @@ export class DocumentComponent implements OnInit {
     if (image && !image.scanResult && this.config.config.secScanner) {
       this.getScan();
     }
-    if (image && !image.documents) {
-      this.getDocuments();
-    } else if (image && image.documents.length > 0) {
-      this.selected = image.documents[0];
+    if (this.config.config.docScanner) {
+      if (image && !image.documents) {
+        this.getDocuments();
+      } else if (image && image.documents.length > 0) {
+        this.selected = image.documents[0];
+      }
+    } else {
+      this.selected = image.history;
     }
   }
   get image(): Image { return this._image; }
@@ -93,6 +97,10 @@ export class DocumentComponent implements OnInit {
 
   scanningEnabled(): Boolean {
     return this.config.config.secScanner;
+  }
+
+  docsEnabled(): Boolean {
+    return this.config.config.docScanner;
   }
 
   isHistory(obj: any): Boolean {

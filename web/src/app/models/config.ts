@@ -24,5 +24,6 @@ export class Config {
     public registry: String;
     public searchLists: String[][];
     public secScanner: boolean;
+    public docScanner: boolean;
     public autoLogin: boolean;
 }

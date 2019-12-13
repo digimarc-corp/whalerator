@@ -9,7 +9,7 @@
     </span>
     <div *ngIf="!image.documents; then docsLoading else docsLoaded"></div>
     <ng-template #docsLoading>
-      <span class="tab searching" [class.selected]="!selected">Searching</span>
+      <span *ngIf="docsEnabled()" class="tab searching" [class.selected]="!selected">Searching</span>
       <div class="tab searching" *ngIf="!selected">Searching for documentation.</div>
     </ng-template>
     <ng-template #docsLoaded>
