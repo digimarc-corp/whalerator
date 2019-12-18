@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 using Whalerator.Config;
 using Whalerator.Model;
 using Whalerator.Queue;
-using Whalerator.Scanner;
+using Whalerator.Scanners.Security;
 
 namespace Whalerator.WebAPI
 {

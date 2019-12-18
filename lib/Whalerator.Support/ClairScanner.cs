@@ -27,7 +27,7 @@ using System.Threading;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Model;
-using Whalerator.Scanner;
+using Whalerator.Scanners.Security;
 
 namespace Whalerator.Support
 {

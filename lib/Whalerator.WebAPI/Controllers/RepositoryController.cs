@@ -28,7 +28,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Whalerator.Model;
 using Whalerator.Queue;
-using Whalerator.Scanner;
+using Whalerator.Scanners.Security;
 
 namespace Whalerator.WebAPI.Controllers
 {

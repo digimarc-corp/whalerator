@@ -17,9 +17,8 @@
 */
 
 using Whalerator.Model;
-using Whalerator.Scanner;
 
-namespace Whalerator.Scanner
+namespace Whalerator.Scanners.Security
 {
     public interface ISecurityScanner
     {

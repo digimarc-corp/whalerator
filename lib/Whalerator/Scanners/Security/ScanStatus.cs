@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,21 +16,12 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Whalerator.Scanner
+namespace Whalerator.Scanners.Security
 {
-    // see https://github.com/coreos/clair/blob/master/database/severity.go
-    public enum Severity
+    public enum ScanStatus
     {
-        Unknown,
-        Negligible,
-        Low,
-        Medium,
-        High,
-        Critical,
-        Defcon1
+        Succeeded,
+        Pending,
+        Failed,
     }
 }

@@ -19,14 +19,15 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Queue;
 
-namespace Whalerator.Scanner
+namespace Whalerator.Scanners.Security
 {
-    public class ScanRequest : WorkItem
+    public class Component
     {
-        public string TargetRepo { get; set; }
-        public string TargetDigest { get; set; }
-        public string Authorization { get; set; }
+        public string Name { get; set; }
+        public string Version { get; set; }        
+        public string NamespaceName { get; set; }
+        public string AddedBy { get; set; }
+        public List<Vulnerability> Vulnerabilities { get; set; }        
     }
 }

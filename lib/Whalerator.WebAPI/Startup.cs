@@ -38,7 +38,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Queue;
-using Whalerator.Scanner;
+using Whalerator.Scanners.Security;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI
