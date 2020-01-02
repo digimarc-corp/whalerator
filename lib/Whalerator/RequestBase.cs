@@ -21,9 +21,9 @@ using System.Collections.Generic;
 using System.Text;
 using Whalerator.Queue;
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator
 {
-    public class ScanRequest : WorkItem
+    public abstract class RequestBase : WorkItem
     {
         public string TargetRepo { get; set; }
         public string TargetDigest { get; set; }

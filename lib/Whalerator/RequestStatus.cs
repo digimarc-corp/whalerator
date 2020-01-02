@@ -16,9 +16,9 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator
 {
-    public enum ScanStatus
+    public enum RequestStatus
     {
         Succeeded,
         Pending,

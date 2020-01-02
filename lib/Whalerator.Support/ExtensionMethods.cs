@@ -20,20 +20,20 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Whalerator.Scanners.Security;
+using Whalerator.Security;
 
 namespace Whalerator.Support
 {
     public static class ExtensionMethods
     {
-        public static ScanResult ToScanResult(this ClairLayerResult result)
+        public static Result ToScanResult(this ClairLayerResult result)
         {
             var vComponents = result.Layer.Features == null ? new List<Component>() : result.Layer.Features.Where(f => f.Vulnerabilities != null).ToList();
             var vulns = vComponents.SelectMany(c => c.Vulnerabilities).ToList();
 
-            return new ScanResult
+            return new Result
             {
-                Status = ScanStatus.Succeeded,
+                Status = RequestStatus.Succeeded,
                 TotalComponents = result.Layer.Features?.Count() ?? 0,
                 VulnerableComponents = vComponents,
             };

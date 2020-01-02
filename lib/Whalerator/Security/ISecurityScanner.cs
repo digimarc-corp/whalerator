@@ -17,12 +17,28 @@
 */
 
 using Whalerator.Model;
+using Whalerator.Queue;
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator.Security
 {
     public interface ISecurityScanner
     {
-        ScanResult GetScan(Image image, bool hard = false);
+        /// <summary>
+        /// Fetch the results of a previously executed scan
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hard"></param>
+        /// <returns></returns>
+        Result GetScan(Image image, bool hard = false);
+
+        /// <summary>
+        /// Submit a scan request to the scanning engine
+        /// </summary>
+        /// <param name="registry"></param>
+        /// <param name="repository"></param>
+        /// <param name="image"></param>
         void RequestScan(IRegistry registry, string repository, Image image);
+
+        IWorkQueue<Request> Queue { get; }
     }
 }

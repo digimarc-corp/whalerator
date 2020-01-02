@@ -28,11 +28,11 @@ namespace Whalerator
         IEnumerable<string> GetTags(string repository);
         ImageSet GetImageSet(string repository, string tag, bool isDigest);
         Stream GetLayer(string repository, Layer layer);
-        LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer);
-        IEnumerable<string> GetFiles(string repository, Layer layer);
+        LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases);
+        IEnumerable<(string name, bool isDirectory)> GetPaths(string repository, Layer layer);
         byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true);
-        Layer FindFile(string repository, Image image, string filename, int maxDepth = 0, bool ignoreCase = true);
-        IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth);
+        LayerPath FindPath(string repository, Image image, string filename, int maxDepth = 0, bool ignoreCase = true);
+        IEnumerable<string> GetImageFiles(string repository, Image image, int maxDepth);
         Permissions GetPermissions(string repository);
         void DeleteImage(string repository, string digest);
         void DeleteRepository(string repository);

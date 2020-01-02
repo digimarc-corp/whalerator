@@ -31,30 +31,20 @@ namespace Whalerator.WebAPI.Controllers
     [Route("api/config")]
     public class ConfigController : Controller
     {
-        public ConfigController(ILogger<ConfigController> logger, ConfigRoot config)
+        public ConfigController(ILogger<ConfigController> logger, PublicConfig config)
         {
             Logger = logger;
             Config = config;
         }
 
         public ILogger<ConfigController> Logger { get; }
-        public ConfigRoot Config { get; }
+        public PublicConfig Config { get; }
 
         /// <summary>
         /// Returns configuration options for the Whalerator UI SPA
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult Get()
-        {
-            return Ok(new
-            {
-                Registry = Config.Catalog?.Registry,
-                AutoLogin = Config.Catalog?.AutoLogin ?? false,
-                SecScanner = !string.IsNullOrEmpty(Config.Scanner?.ClairApi),
-                DocScanner = !string.IsNullOrEmpty(Config.Cache.LayerCache),
-                SearchLists = Config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()))
-            });
-        }
+        public IActionResult Get() => Ok(Config);
     }
 }

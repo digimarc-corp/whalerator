@@ -16,20 +16,21 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator.Security
 {
-    public class Vulnerability
+    // see https://github.com/coreos/clair/blob/master/database/severity.go
+    public enum Severity
     {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Link { get; set; }
-        [JsonConverter(typeof(StringEnumConverter))]
-        public Severity Severity { get; set; }
+        Unknown,
+        Negligible,
+        Low,
+        Medium,
+        High,
+        Critical,
+        Defcon1
     }
 }

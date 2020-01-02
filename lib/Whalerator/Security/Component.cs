@@ -20,12 +20,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Model
+namespace Whalerator.Security
 {
-    public class ImageFile
+    public class Component
     {
-        //public string Layer { get; set; }
-        public int LayerDepth { get; set; }
-        public string Path { get; set; }
+        public string Name { get; set; }
+        public string Version { get; set; }        
+        public string NamespaceName { get; set; }
+        public string AddedBy { get; set; }
+        public List<Vulnerability> Vulnerabilities { get; set; }        
     }
 }

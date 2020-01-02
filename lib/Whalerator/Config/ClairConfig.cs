@@ -16,23 +16,22 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using Whalerator.Client;
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator.Config
 {
-    public class ScanResult
+    public class ClairConfig
     {
-        [JsonConverter(typeof(StringEnumConverter))]
-        public ScanStatus Status { get; set; }
-        public string Message { get; set; }
+        public string ClairApi { get; set; }
 
-        public List<Component> VulnerableComponents { get; set; }
-        public int TotalComponents { get; set; }
+        public List<RegistryAlias> RegistryAliases { get; set; }
+
+        public class RegistryAlias
+        {
+            public string Internal { get; set; }
+            public string External { get; set; }
+        }
     }
 }

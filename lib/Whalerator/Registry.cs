@@ -50,7 +50,7 @@ namespace Whalerator
         };
 
         // If this is a Docker hub alias, replace it with the canonical registry name.
-        public static string DeAliasDockerHub(string host) => 
+        public static string DeAliasDockerHub(string host) =>
             DockerHubAliases.Contains(host.ToLowerInvariant()) ? DockerHub : host;
 
         static Regex _HostWithScheme = new Regex(@"\w+:\/\/.+", RegexOptions.Compiled);
@@ -143,11 +143,11 @@ namespace Whalerator
             var repositories = repoNames.Distinct().Select(n => new Repository
             {
                 Name = n,
-                Permissions = Settings.AuthHandler.GetPermissions(n)                
+                Permissions = Settings.AuthHandler.GetPermissions(n)
             }).Where(r => r.Permissions >= Permissions.Pull).ToList();
             repositories.ForEach(r => r.Tags = GetTags(r.Name)?.Count() ?? 0);
 
-            return empties ? repositories.Where(r => r.Tags == 0) : repositories.Where(r => r.Tags > 0);            
+            return empties ? repositories.Where(r => r.Tags == 0) : repositories.Where(r => r.Tags > 0);
         }
 
         public IEnumerable<string> GetTags(string repository)
@@ -226,7 +226,7 @@ namespace Whalerator
             }
         }
 
-        public IEnumerable<ImageFile> GetImageFiles(string repository, Image image, int maxDepth)
+        public IEnumerable<string> GetImageFiles(string repository, Image image, int maxDepth)
         {
             string key = ImageFilesKey(image, maxDepth);
             string lockKey = ImageLockKey(image);
@@ -236,36 +236,37 @@ namespace Whalerator
             {
                 using (var lockObj = Settings.CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
                 {
-                    var files = new List<ImageFile>();
+                    var files = new List<string>();
 
                     var layers = image.Layers.Reverse();
                     var depth = 1;
                     foreach (var layer in layers)
                     {
-                        var layerFiles = GetFiles(repository, layer);
-                        files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f)).Select(f => new ImageFile
-                        {
-                            //Layer = layer.Digest,
-                            LayerDepth = depth,
-                            Path = f
-                        }));
+                        var layerFiles = GetPaths(repository, layer);
+                        files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f.name)).Select(f => f.name));
                         depth++;
                         if (depth > maxDepth) { break; }
                     }
 
-                    return files.OrderBy(f => f.Path).ToList();
+                    return files.OrderBy(f => f).ToList();
                 }
             });
         }
 
-        public IEnumerable<string> GetFiles(string repository, Layer layer)
+        /// <summary>
+        /// Gets a list of all files and folders in a given layer
+        /// </summary>
+        /// <param name="repository"></param>
+        /// <param name="layer"></param>
+        /// <returns></returns>
+        public IEnumerable<(string name, bool isDirectory)> GetPaths(string repository, Layer layer)
         {
             string key = LayerFilesKey(layer);
             var scope = RepoPullScope(repository);
 
             return GetCached(scope, key, false, () =>
             {
-                var files = new List<string>();
+                var files = new List<(string, bool)>();
                 using (var stream = GetLayer(repository, layer))
                 {
                     var temp = Path.GetTempFileName();
@@ -280,7 +281,7 @@ namespace Whalerator
                                 var entry = tarStream.GetNextEntry();
                                 while (entry != null)
                                 {
-                                    files.Add(entry.Name);
+                                    files.Add((entry.Name, entry.IsDirectory));
                                     entry = tarStream.GetNextEntry();
                                 }
                             }
@@ -352,7 +353,16 @@ namespace Whalerator
             });
         }
 
-        public Layer FindFile(string repository, Image image, string search, int maxDepth, bool ignoreCase = true)
+        /// <summary>
+        /// Returns the layer (if any) that contains a given path
+        /// </summary>
+        /// <param name="repository"></param>
+        /// <param name="image"></param>
+        /// <param name="search"></param>
+        /// <param name="maxDepth"></param>
+        /// <param name="ignoreCase"></param>
+        /// <returns></returns>
+        public LayerPath FindPath(string repository, Image image, string search, int maxDepth, bool ignoreCase = true)
         {
             string key = ImageSearchKey(image, search, maxDepth);
             var scope = RepoPullScope(repository);
@@ -369,22 +379,22 @@ namespace Whalerator
                 {
                     depth++;
                     if (maxDepth > 0 && depth > maxDepth) { break; }
-                    var files = GetFiles(repository, layer);
-                    foreach (var file in files)
+                    var paths = GetPaths(repository, layer);
+                    foreach (var path in paths)
                     {
-                        if (file.Matches(searchParams.searchPath, ignoreCase))
+                        if (path.name.Matches(searchParams.searchPath, ignoreCase))
                         {
-                            return layer;
+                            return new LayerPath { Layer = layer, IsDirectory = path.isDirectory };
                         }
                         else
                         {
-                            if (file.Matches(searchParams.fileWhiteout, ignoreCase))
+                            if (path.name.Matches(searchParams.fileWhiteout, ignoreCase))
                             {
                                 //found a whiteout entry for the file
                                 break;
                             }
 
-                            if (file.Matches(searchParams.pathWhiteout, ignoreCase))
+                            if (path.name.Matches(searchParams.pathWhiteout, ignoreCase))
                             {
                                 //found a opaque point for the whole path
                                 break;
@@ -432,9 +442,24 @@ namespace Whalerator
             }
         }
 
-        public LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer)
+        public LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases)
         {
             var proxyInfo = DistributionClient.GetBlobPathAndAuthorizationAsync(repository, layer.Digest).Result;
+
+            // if we've been given a set of hostname aliases, parse the proxy host and build a new uri if necessary
+            var alias = aliases?.FirstOrDefault(a => a.External.Equals(proxyInfo.path.Host, StringComparison.CurrentCultureIgnoreCase));
+            if (alias != null)
+            {
+                proxyInfo.path = new UriBuilder()
+                {
+                    Host = alias.Value.Internal,
+                    Path = proxyInfo.path.AbsolutePath,
+                    Port = proxyInfo.path.Port,
+                    Query = proxyInfo.path.Query,
+                    Scheme = proxyInfo.path.Scheme
+                }.Uri;  
+            }
+
             return new LayerProxyInfo
             {
                 LayerAuthorization = $"{proxyInfo.auth?.Scheme} {proxyInfo.auth?.Parameter}",

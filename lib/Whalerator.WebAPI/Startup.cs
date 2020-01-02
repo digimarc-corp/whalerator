@@ -37,8 +37,9 @@ using StackExchange.Redis;
 using Swashbuckle.AspNetCore.Swagger;
 using Whalerator.Client;
 using Whalerator.Config;
+using Whalerator.Content;
 using Whalerator.Queue;
-using Whalerator.Scanners.Security;
+using Whalerator.Security;
 using Whalerator.Support;
 
 namespace Whalerator.WebAPI
@@ -48,7 +49,7 @@ namespace Whalerator.WebAPI
         public Startup(IConfiguration configuration, ILogger<Startup> logger)
         {
             Configuration = configuration;
-            Logger = logger;
+            this.Logger = logger;
         }
 
         public IConfiguration Configuration { get; }
@@ -58,110 +59,22 @@ namespace Whalerator.WebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             var config = new ConfigRoot();
+            var uiConfig = new PublicConfig();
             Configuration.Bind(config);
             services.AddSingleton(config);
-
             services.AddSingleton(Logger);
 
-            RSA crypto;
-            var keyFile = config.Security?.PrivateKey;
-            if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
-            {
-                Logger?.LogInformation($"Loading private key from {config.Security.PrivateKey}.");
-                crypto = new RSA(File.ReadAllText("key.pem"));
-            }
-            else
-            {
-                Logger?.LogInformation($"Generating temporary private key.");
-                crypto = new RSA(2048);
-            }
-            services.AddSingleton<ICryptoAlgorithm>(crypto);
 
-            services.AddSingleton<RegistryAuthenticationDecoder>();
-            services.AddAuthentication(o =>
-            {
-                o.DefaultAuthenticateScheme = "Bearer";
-                o.DefaultChallengeScheme = "Bearer";
-                o.DefaultForbidScheme = "Bearer";
-            }).AddScheme<AuthenticationSchemeOptions, RegistryAuthenticationHandler>("Bearer", o => { });
+            services.AddWhaleCrypto(config, Logger)
+                .AddWhaleAuth()
+                .AddWhaleDebug()
+                .AddWhaleSerialization()
+                .AddWhaleVulnerabilities(config, uiConfig)
+                .AddWhaleDocuments(config, uiConfig, Logger)
+                .AddWhaleCache(config, Logger)
+                .AddWhaleRegistry(config, uiConfig, Logger);
 
-#if DEBUG
-            services.AddCors(o =>
-            {
-                o.AddPolicy("Allow dev ng", builder => builder.WithOrigins("http://localhost:4200"));
-            });
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v0", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Whalerator", Version = "v0" });
-            });
-#endif
-
-            // System.Text.Json is a bit limited, so rather than have two different Json libraries in use just revert to Newtonsoft for now
-            services.AddMvc().AddNewtonsoftJson().AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.IgnoreNullValues = true;
-            });
-
-            var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
-            var volatileTtl = new TimeSpan(0, 0, config.Cache.VolatileTtl);
-
-            bool scanningEnabled = false;
-            if (!string.IsNullOrEmpty(config.Scanner?.ClairApi))
-            {
-                scanningEnabled = true;
-                services.AddSingleton<ISecurityScanner, ClairScanner>();
-                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.Scanner.ClairApi));
-                services.AddHostedService<ScanQueueWorker>();
-            }
-
-            if (string.IsNullOrEmpty(config.Cache.Redis))
-            {
-                Logger?.LogInformation("Using in-memory cache.");
-                services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
-                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>(), volatileTtl));
-                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>, MemQueue<ScanRequest>>(); }
-            }
-            else
-            {
-                Logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
-                services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
-                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Ttl = volatileTtl });
-                if (scanningEnabled) { services.AddSingleton<IWorkQueue<ScanRequest>>(p => new RedQueue<ScanRequest>(p.GetService<IConnectionMultiplexer>())); }
-            }
-
-            services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
-            services.AddTransient<IAuthHandler, AuthHandler>();
-            services.AddScoped<IDistributionClient, DistributionClient>();
-
-            Logger?.LogInformation($"Cache lifetime for volatile objects: {volatileTtl}");
-            Logger?.LogInformation($"Cache lifetime for static objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
-            if (string.IsNullOrEmpty(config.Cache.LayerCache))
-            {
-                Logger.LogWarning("No layer cache specified, document search will not be available.");
-            }
-            else
-            {
-                Logger.LogInformation($"Using layer cache ({config.Cache.LayerCache})");
-            }
-
-            services.AddScoped<IRegistryFactory>(p =>
-            {
-                var catalogHandler = string.IsNullOrEmpty(config.Catalog?.User?.Username) ? null : p.GetService<IAuthHandler>();
-                catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
-
-                var settings = new RegistrySettings
-                {
-                    AuthHandler = p.GetService<IAuthHandler>(),
-                    CacheFactory = p.GetService<ICacheFactory>(),
-                    CatalogAuthHandler = catalogHandler,
-                    HiddenRepos = config.Catalog?.Hidden,
-                    LayerCache = config.Cache.LayerCache,
-                    StaticRepos = config.Catalog?.Repositories,
-                    StaticTtl = staticTtl,
-                    VolatileTtl = volatileTtl
-                };
-                return new RegistryFactory(settings);
-            });
+            services.AddSingleton(uiConfig);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

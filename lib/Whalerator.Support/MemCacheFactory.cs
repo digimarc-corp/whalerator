@@ -26,17 +26,12 @@ namespace Whalerator.Support
     public class MemCacheFactory : ICacheFactory
     {
         private IMemoryCache _Cache;
-        private TimeSpan _Ttl;
 
-        public MemCacheFactory(IMemoryCache cache, TimeSpan ttl)
+        public MemCacheFactory(IMemoryCache cache)
         {
             _Cache = cache;
-            _Ttl = ttl;
         }
 
-        public ICache<T> Get<T>() where T : class
-        {
-            return new MemCache<T>(_Cache, _Ttl);
-        }
+        public ICache<T> Get<T>() where T : class => new MemCache<T>(_Cache);
     }
 }

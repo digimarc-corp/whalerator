@@ -20,17 +20,18 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Scanners.Security
+namespace Whalerator.Config
 {
-    // see https://github.com/coreos/clair/blob/master/database/severity.go
-    public enum Severity
+    /// <summary>
+    /// Unlike the other Config classes, the configuration data here is synthesized from config.yaml to let the UI (or other consumers)
+    /// know what features to display and/or enable for the user.
+    /// </summary>
+    public class PublicConfig
     {
-        Unknown,
-        Negligible,
-        Low,
-        Medium,
-        High,
-        Critical,
-        Defcon1
+        public string Registry { get; set; }
+        public bool AutoLogin { get; set; }
+        public bool SecScanner { get; set; }
+        public bool DocScanner { get; set; }
+        public IEnumerable<IEnumerable<string>> SearchLists { get; set; }
     }
 }

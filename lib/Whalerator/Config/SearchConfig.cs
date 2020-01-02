@@ -24,6 +24,7 @@ namespace Whalerator.Config
 {
     public class SearchConfig
     {
+        public bool Vulnerabilities { get; set; }
         public int? Depth { get; set; } = 4;
         public List<string> Filelists { get; set; }
     }

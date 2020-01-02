@@ -28,24 +28,26 @@ namespace Whalerator.Support
     public class RedCache<T> : ICache<T> where T : class
     {
         private IConnectionMultiplexer _Mux;
-        private TimeSpan _Ttl;
 
-        public RedCache(IConnectionMultiplexer redisMux, TimeSpan ttl)
+        public RedCache(IConnectionMultiplexer redisMux)
         {
             _Mux = redisMux;
-            _Ttl = ttl;
         }
 
+        /// <inheritdoc/>
         public bool Exists(string key) => _Mux.GetDatabase().KeyExists(key);
 
+        /// <inheritdoc/>
         public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
             _Mux.GetDatabase().StringSet(key, json, ttl);
         }
 
-        public void Set(string key, T value) => Set(key, value, _Ttl);
+        /// <inheritdoc/>
+        public void Set(string key, T value) => Set(key, value, null);
 
+        /// <inheritdoc/>
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
         {
             var value = Guid.NewGuid().ToString();
@@ -62,8 +64,10 @@ namespace Whalerator.Support
             );
         }
 
+        /// <inheritdoc/>
         public bool TryDelete(string key) => _Mux.GetDatabase().KeyDelete(key);
 
+        /// <inheritdoc/>
         public bool TryGet(string key, out T value)
         {
             try

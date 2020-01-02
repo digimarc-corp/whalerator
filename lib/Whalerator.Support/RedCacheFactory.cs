@@ -26,11 +26,7 @@ namespace Whalerator.Support
     public class RedCacheFactory : ICacheFactory
     {
         public IConnectionMultiplexer Mux { get; set; }
-        public TimeSpan Ttl { get; set; }
 
-        public ICache<T> Get<T>() where T : class
-        {
-            return new RedCache<T>(Mux, Ttl);
-        }
+        public ICache<T> Get<T>() where T : class => new RedCache<T>(Mux);
     }
 }

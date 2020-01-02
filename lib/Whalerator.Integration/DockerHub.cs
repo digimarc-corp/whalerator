@@ -64,7 +64,7 @@ namespace Whalerator.Integration
         {
             var image = dockerHub.GetImageSet("microsoft/nanoserver", "1709", false).Images.Where(i => i.Platform.OS == Platform.Windows.OS).First();
             var layer = image.Layers.First();
-            var files = dockerHub.GetFiles("microsoft/nanoserver", layer);
+            var files = dockerHub.GetPaths("microsoft/nanoserver", layer);
             Assert.IsTrue(files.Count() > 1000);
 
             var license = dockerHub.GetFile("microsoft/nanoserver", layer, "Files/License.txt");
@@ -84,7 +84,7 @@ namespace Whalerator.Integration
         public void CanGetLayerFiles()
         {
             var image = dockerHub.GetImageSet("library/alpine", "3.4", false).Images.Where(i => i.Platform.OS == Platform.Linux.OS).First();
-            var x = dockerHub.GetFiles("library/alpine", image.Layers.Last());
+            var x = dockerHub.GetPaths("library/alpine", image.Layers.Last());
             Assert.IsTrue(x.Count() > 1);
         }
 
@@ -101,8 +101,8 @@ namespace Whalerator.Integration
         public void CanFindFile()
         {
             var image = dockerHub.GetImageSet("library/ubuntu", "16.04", false).Images.First();
-            var layer = dockerHub.FindFile("library/ubuntu", image, "/bin/bash");
-            var data = dockerHub.GetFile("library/ubuntu", layer, "bin/bash");
+            var layerPath = dockerHub.FindPath("library/ubuntu", image, "/bin/bash");
+            var data = dockerHub.GetFile("library/ubuntu", layerPath.Layer, "bin/bash");
             var hash = BitConverter.ToString(System.Security.Cryptography.SHA256.Create().ComputeHash(data)).ToLower().Replace("-", string.Empty);
 
             Assert.AreEqual("3d74ea46393deee0ff74bfbfd9479242b090f20ebffe9a27f572679f277153ed", hash);

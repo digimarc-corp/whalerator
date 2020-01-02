@@ -30,14 +30,12 @@ namespace Whalerator.Support
     {
         private IMemoryCache _MemCache;
 
-        public TimeSpan _Ttl { get; }
-
-        public MemCache(IMemoryCache memCache, TimeSpan cacheTtl)
+        public MemCache(IMemoryCache memCache)
         {
             _MemCache = memCache;
-            _Ttl = cacheTtl;
         }
 
+        /// <inheritdoc/>
         public bool TryGet(string key, out T value)
         {
             string json;
@@ -83,6 +81,7 @@ namespace Whalerator.Support
             }
         }
 
+        /// <inheritdoc/>
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
         {
             var value = Guid.NewGuid().ToString();
@@ -99,10 +98,13 @@ namespace Whalerator.Support
         }
         #endregion
 
-        public void Set(string key, T value) => Set(key, value, _Ttl);
+        /// <inheritdoc/>
+        public void Set(string key, T value) => Set(key, value, null);
 
+        /// <inheritdoc/>
         public bool Exists(string key) => _MemCache.TryGetValue(key, out var discard);
 
+        /// <inheritdoc/>
         public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
@@ -110,6 +112,7 @@ namespace Whalerator.Support
             else { _MemCache.Set(key, json, (TimeSpan)ttl); }
         }
 
+        /// <inheritdoc/>
         public bool TryDelete(string key)
         {
             if (Exists(key))
