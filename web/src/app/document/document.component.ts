@@ -16,18 +16,19 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
 import { ImageSet } from '../models/imageSet';
 import { Platform } from '../models/platform';
 import { CatalogService } from '../catalog.service';
 import { Image } from '../models/image';
 import { Document } from '../models/document';
 import { History } from '../models/history';
-import { isError } from '../web-service';
+import { isError, isHttpString } from '../web-service';
 import { ConfigService } from '../config.service';
 import { ScanResult } from '../models/scanResult';
-import { Observable, config } from 'rxjs';
+import { Observable, config, Subscriber } from 'rxjs';
 import { delay } from 'q';
+import { Console } from '@angular/core/src/console';
 
 @Component({
   selector: 'app-document',
@@ -48,6 +49,7 @@ export class DocumentComponent implements OnInit {
     }
     if (this.config.config.docScanner) {
       if (image && !image.documents) {
+        this.searchStatus = 'Searching';
         this.getDocuments();
       } else if (image && image.documents.length > 0) {
         this.selected = image.documents[0];
@@ -59,9 +61,11 @@ export class DocumentComponent implements OnInit {
   get image(): Image { return this._image; }
 
   selected: Document | History[] | ScanResult;
+  searching: Observable<string>[] = [];
+  searchStatus: String;
 
   constructor(private catalog: CatalogService,
-    private config: ConfigService) { }
+    private config: ConfigService, private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
   }
@@ -74,11 +78,11 @@ export class DocumentComponent implements OnInit {
         if (r.digest == this.image.digest) {
           this.image.scanResult = new ScanResult(r);
           if (r.status == "Pending") {
-            delay(5000).then(()=>{
+            delay(5000).then(() => {
               this.getScan();
             });
           }
-        } 
+        }
       }
     })
   }
@@ -125,70 +129,120 @@ export class DocumentComponent implements OnInit {
 
   select(document: Document) {
     this.selected = document;
+    // once there are more than 2-3 documents in the image, it seems to break change detection
+    // and we have to use a hack here and below actually make it work...
+    // needs further investigation
+    this.changeDetector.detectChanges();
   }
 
-  getDocuments() {
-    new Observable<any>((subscriber) => {
-      const lists = this.config.config.searchLists.slice().reverse().map(l => l.slice().reverse());
-      if (lists.length > 0) {
-        this.getDocumentLists(lists);
-      } else {
-        this.image.documents = [];
+  pushDocument(document: Document) {
+    if (this.image.documents) {
+      this.image.documents.push(document);
+    } else {
+      this.image.documents = [document];
+      if (!this.selected) {
+        this.selected = document;
       }
-      subscriber.complete();
-    }).subscribe();
+    }
+    this.changeDetector.detectChanges();
   }
 
-  getDocumentLists(lists: String[][]) {
-    if (lists.length > 0) {
-      this.getDocumentStack(lists.pop(), () => {
-        this.getDocumentLists(lists);
+  // translate search lists into stacks of documents to search for
+  getDocuments() {
+    if (this.config.config.searchLists.length > 0) {
+      // start a searcher observable for each potential stack of documents
+      this.config.config.searchLists.forEach(d => {
+        const obv = new Observable<string>((o) => {
+          this.searchStack(d.map(s => s.toString()), o);
+        });
+        this.addSearch(obv);
+        obv.subscribe(r => console.log(r), err => console.error(err), () => this.removeSearch(obv));
       });
+
+      // start rotating the search status mussage
+      this.rotateSearchStatus(0);
+
+    } else {
+      this.image.documents = [];
     }
   }
 
-  getDocumentStack(stack: String[], next?: () => void) {
-    // console.log(`Searching for hit from '${stack}'`);
-    if (stack.length > 0) {
-      this.getDocument(stack.pop(), (success) => {
-        if (!success) {
-          this.getDocumentStack(stack, next);
-        } else if (next) {
-          next();
-        }
+  addSearch(o: Observable<string>) {
+    this.searching.push(o);
+  }
+
+  removeSearch(o: Observable<string>) {
+    this.remove(this.searching, o);
+    if (this.searching.length === 0 && !this.image.documents) {
+      this.searchStatus = 'No docs found';
+      if (!this.selected) {
+        this.selected = this.image.history;
+      }
+      this.changeDetector.detectChanges();
+    }
+  }
+
+  remove<T>(list: T[], item: T) {
+    const index = list.indexOf(item, 0);
+    if (index > -1) {
+      list.splice(index, 1);
+    }
+  }
+
+  removeAll<T>(list: T[]) {
+    list.splice(0, list.length);
+  }
+
+  rotateSearchStatus(spin: number) {
+    if (this.searching.length > 0) {
+      this.searchStatus = 'Searching' + '.'.repeat(spin++ % 4);
+      delay(500).then(() => this.rotateSearchStatus(spin));
+    } else {
+      if (this.image.documents) {
+        this.searchStatus = null;
+      } else {
+        this.searchStatus = 'No docs found';
+      }
+    }
+    this.changeDetector.detectChanges();
+  }
+
+  // begin searching for a hit from a list of documents
+  searchStack(list: string[], s: Subscriber<string>) {
+    if (list.length > 0) {
+      this.pollDocument(list);
+      delay(500).then(() => {
+        this.searchStack(list, s);
       });
     } else {
-      if (next) {
-        next();
-      }
+      s.complete();
     }
   }
 
-  getDocument(filename: String, next?: (success: Boolean) => void) {
-    // console.log(`Searching for ${filename}`);
+  pollDocument(list: string[]) {
+    const filename = list[0];
+    console.log(`Searching for ${filename}`);
     this.catalog.getFile(this.repository, this.image.digest, filename).subscribe(r => {
       if (isError(r)) {
-        if (next) {
-          next(false);
-        } else {
-          this.image.documents = [];
-          if (!this.selected) {
-            this.selectHistory();
+        // if this document doesn't exist or is otherwise unretrievable, nix it and move on
+        this.remove(list, filename);
+      } else if (isHttpString(r)) {
+        if (r.status === 200) {
+          // verify we didn't have a race and already load a document from this list
+          if (list.length > 0) {
+            const document = new Document();
+            document.name = filename;
+            document.content = r.body.toString();
+            this.pushDocument(document);
+            this.removeAll(list);
           }
+        } else if (r.status === 202) {
+          console.log(`Search pending for ${filename}`);
+        } else {
+          console.error(`Unexpected service response ${r.status}`);
         }
       } else {
-        const document = new Document();
-        document.name = filename;
-        document.content = r.toString();
-        if (!this.image.documents) {
-          this.image.documents = [document];
-          if (!this.selected) {
-            this.selected = document;
-          }
-        } else {
-          this.image.documents.push(document);
-        }
-        next(true);
+        console.log('WTF?');
       }
     });
   }

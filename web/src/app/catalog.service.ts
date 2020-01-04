@@ -20,7 +20,7 @@ import { Injectable, OnInit } from '@angular/core';
 import { SessionService } from './session.service';
 import { Observable, of } from 'rxjs';
 import { Repository } from './models/repository';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ImageSet } from './models/imageSet';
 import { environment } from '../environments/environment';
@@ -109,11 +109,11 @@ export class CatalogService extends WebService {
     );
   }
 
-  getFile(repo: String, digest: String, path: String): Observable<Object> {
+  getFile(repo: String, digest: String, path: String): Observable<string | ServiceError | HttpResponse<string>> {
     const fileUrl = this.apiBase + `/repository/${repo}/file/${digest}?path=${path}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get(fileUrl, { headers: headers, responseType: 'text' }).pipe(
+    return this.http.get(fileUrl, { headers: headers, responseType: 'text', observe: 'response' }).pipe(
       tap(repos => console.log('got file contents')),
       catchError(this.handleError('getFile', 'No embedded documentation found'))
     );

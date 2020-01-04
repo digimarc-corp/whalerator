@@ -18,7 +18,7 @@
 
 import { Observable, of } from 'rxjs';
 import { ServiceError } from './service-error';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 
 export class WebService {
     /**
@@ -46,4 +46,8 @@ export class WebService {
 
 export function isError<T>(obj: T | ServiceError): obj is ServiceError {
     return obj instanceof ServiceError;
+}
+
+export function isHttpString<T>(obj: T | HttpResponse<string>): obj is HttpResponse<string> {
+    return obj instanceof HttpResponse;
 }
