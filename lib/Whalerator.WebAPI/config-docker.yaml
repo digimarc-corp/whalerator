@@ -7,8 +7,6 @@
 cache:
   # StackExchange.Redis connection string.
   #redis: localhost
-  # Local folder for storing downloaded layer data
-  layercache: /var/data
   # Cache lifetime (in seconds) for volatile data (tags, repository list, etc). Default is 900 (15 mintues).
   #volatileTtl: 3600 # 1 hour
   # Cache lifetime for non-volatile data (hashed layers, manifests, etc). Default is null (keep indefinitely).
@@ -18,6 +16,10 @@ search:
   filelists:
   - readme.md;about.md
   - setup.md
+
+contentScanner:
+  # Local folder for storing downloaded layer data
+  layercache: /var/data
 
 security:
   tokenLifetime: 2419200 # 4 weeks
