@@ -53,6 +53,7 @@ export class DocumentComponent implements OnInit {
         this.getDocuments();
       } else if (image && image.documents.length > 0) {
         this.selected = image.documents[0];
+        this.searchStatus = null;
       }
     } else {
       this.selected = image.history;
@@ -137,7 +138,9 @@ export class DocumentComponent implements OnInit {
 
   pushDocument(document: Document) {
     if (this.image.documents) {
-      this.image.documents.push(document);
+      if (!this.image.documents.some((d) => d.name === document.name)) {
+        this.image.documents.push(document);
+      }
     } else {
       this.image.documents = [document];
       if (!this.selected) {
@@ -222,20 +225,23 @@ export class DocumentComponent implements OnInit {
   pollDocument(list: string[]) {
     const filename = list[0];
     console.log(`Searching for ${filename}`);
+    const digest = this.image.digest;
     this.catalog.getFile(this.repository, this.image.digest, filename).subscribe(r => {
       if (isError(r)) {
         // if this document doesn't exist or is otherwise unretrievable, nix it and move on
         this.remove(list, filename);
       } else if (isHttpString(r)) {
         if (r.status === 200) {
-          // verify we didn't have a race and already load a document from this list
-          if (list.length > 0) {
+          // verify we didn't have a race and already load a document from this list, or switch images
+          if (list.length > 0 && this.image.digest === digest) {
             const document = new Document();
             document.name = filename;
             document.content = r.body.toString();
             this.pushDocument(document);
-            this.removeAll(list);
+          } else {
+            console.log("Mismatched digests, discarding document load");
           }
+          this.removeAll(list);
         } else if (r.status === 202) {
           console.log(`Search pending for ${filename}`);
         } else {

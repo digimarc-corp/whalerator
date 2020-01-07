@@ -194,7 +194,6 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
         {
-            _Logger.LogInformation($"Got request for {repository}");
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
