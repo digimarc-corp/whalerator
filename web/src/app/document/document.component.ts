@@ -211,7 +211,7 @@ export class DocumentComponent implements OnInit {
   searchStack(list: string[], s: Subscriber<string>) {
     if (list.length > 0) {
       this.pollDocument(list);
-      delay(500).then(() => {
+      delay(1000).then(() => {
         this.searchStack(list, s);
       });
     } else {

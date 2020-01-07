@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Whalerator.Model;
 using Whalerator.Queue;
@@ -35,6 +36,10 @@ namespace Whalerator.Support
             _Queue = new ConcurrentQueue<T>();
         }
 
+        public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
+
+        public bool Contains(string key) => _Queue.Any(i => i.WorkItemKey.Equals(key));
+
         public T Pop()
         {
             if (_Queue.TryDequeue(out var item)) { return item; }
@@ -42,5 +47,15 @@ namespace Whalerator.Support
         }
 
         public void Push(T workItem) => _Queue.Enqueue(workItem);
+
+        public bool TryPush(T workItem)
+        {
+            if (Contains(workItem)) { return false; }
+            else
+            {
+                Push(workItem);
+                return true;
+            }
+        }
     }
 }

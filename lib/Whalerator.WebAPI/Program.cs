@@ -47,7 +47,7 @@ namespace Whalerator.WebAPI
                     }
                     else if (!File.Exists(configPath))
                     {
-                        throw new ArgumentException($"The specified config file '{configPath}' couuld not be found.");
+                        throw new ArgumentException($"The specified config file '{configPath}' could not be found.");
                     }
 
                     if (File.Exists(configPath))
@@ -72,6 +72,7 @@ namespace Whalerator.WebAPI
                 {
                     logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                     logging.AddConsole();
+                    logging.AddFilter("Microsoft", (level) => false);
                     logging.AddDebug();
                 })
                 .UseStartup<Startup>()

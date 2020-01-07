@@ -148,7 +148,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (result == null)
                 {
-                    _ContentScanner.Queue.Push(new Whalerator.Content.Request
+                    _ContentScanner.Queue.TryPush(new Whalerator.Content.Request
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,

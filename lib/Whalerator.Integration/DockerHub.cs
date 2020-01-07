@@ -30,8 +30,10 @@ namespace Whalerator.Integration
     [TestClass]
     public class DockerHub
     {
-        IRegistry dockerHub = new Registry(new RegistryCredentials { Registry = "registry-1.docker.io" },
-            new RegistrySettings { LayerCache = @"c:\layercache", AuthHandler = new AuthHandler(new DictCache<Authorization>()) });
+        IRegistry dockerHub = new Registry(
+            credentials: new RegistryCredentials { Registry = "registry-1.docker.io" },
+            config: new RegistrySettings { LayerCache = @"c:\layercache", AuthHandler = new AuthHandler(new DictCache<Authorization>()) },
+            logger: null);
 
         //TestSettings Settings = TestSettings.FromFile("settings.yaml");
 

@@ -68,7 +68,7 @@ namespace Whalerator.WebAPI
                     }
                     else
                     {
-                        _Logger.LogInformation($"Request to index {request.TargetDigest} in {request.TargetRepo} already has a cached result, and is being discarded.");
+                        _Logger.LogInformation($"Request to index {request.TargetDigest}/{request.Path} in {request.TargetRepo} already has a cached result, and is being discarded.");
                     }
                 }
             }

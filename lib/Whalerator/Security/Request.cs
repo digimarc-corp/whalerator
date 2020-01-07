@@ -22,5 +22,8 @@ using System.Text;
 
 namespace Whalerator.Security
 {
-    public class Request : RequestBase { }
+    public class Request : RequestBase
+    {
+        public override string WorkItemKey => $"workitem:security:{this.TargetDigest}";
+    }
 }

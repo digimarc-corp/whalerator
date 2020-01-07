@@ -87,7 +87,7 @@ namespace Whalerator.WebAPI
                 logger?.LogInformation($"Cache lifetime for static registry objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
                 logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
-                return new RegistryFactory(settings);
+                return new RegistryFactory(settings, p.GetRequiredService<ILogger<Registry>>());
             });
 
             uiConfig.Registry = config.Catalog?.Registry;

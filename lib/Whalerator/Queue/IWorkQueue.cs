@@ -25,7 +25,10 @@ namespace Whalerator.Queue
 {
     public interface IWorkQueue<T> where T: WorkItem
     {
+        bool TryPush(T workItem);
         void Push(T workItem);
+        bool Contains(T workItem);
+        bool Contains(string key);
         T Pop();
     }
 }

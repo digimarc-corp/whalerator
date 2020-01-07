@@ -25,11 +25,5 @@ security:
   tokenLifetime: 2419200 # 4 weeks
 
 logging:
-  includeScopes: false
-  debug:
-    logLevel:
-      default: "Warning"
-  console:
-    logLevel:
-      default: "Warning"
-
+  logLevel:
+    default: "Warning"

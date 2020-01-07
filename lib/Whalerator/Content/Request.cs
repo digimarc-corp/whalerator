@@ -25,6 +25,7 @@ namespace Whalerator.Content
 {
     public class Request : RequestBase
     {
-        public string Path { get; set; }
+        public string Path { get; set; }        
+        public override string WorkItemKey => $"workitem:content:{this.TargetDigest}:{this.Path}";
     }
 }

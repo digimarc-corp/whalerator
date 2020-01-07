@@ -81,12 +81,14 @@ namespace Whalerator
 
         IDistributionClient DistributionClient { get; set; }
         IDistributionClient CatalogClient { get; set; }
+        ILogger Logger { get; set; }
 
         #region ctors
 
-        public Registry(RegistryCredentials credentials, RegistrySettings config)
+        public Registry(RegistryCredentials credentials, RegistrySettings config, ILogger<Registry> logger) 
         {
             Settings = config;
+            Logger = logger;
             Settings.AuthHandler.Login(credentials.Registry, credentials.Username, credentials.Password);
             DistributionClient = Settings.DistributionFactory(credentials.Registry, Settings.AuthHandler);
             CatalogClient = Settings.DistributionFactory(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
@@ -421,16 +423,12 @@ namespace Whalerator
             {
                 if (cache != null && cache.TryGet(key, out result))
                 {
-#if DEBUG
-                    Console.WriteLine($"Cache hit {key}");
-#endif
+                    Logger?.LogDebug($"Cache hit {key}");
                     return result;
                 }
                 else
                 {
-#if DEBUG
-                    Console.WriteLine($"Cache miss {key}");
-#endif
+                    Logger?.LogDebug($"Cache miss {key}");
                     result = func();
                     cache?.Set(key, result, isVolatile ? Settings.VolatileTtl : Settings.StaticTtl);
                     return result;
