@@ -85,7 +85,7 @@ namespace Whalerator
 
         #region ctors
 
-        public Registry(RegistryCredentials credentials, RegistrySettings config, ILogger<Registry> logger) 
+        public Registry(RegistryCredentials credentials, RegistrySettings config, ILogger<Registry> logger)
         {
             Settings = config;
             Logger = logger;
@@ -120,11 +120,15 @@ namespace Whalerator
         /// <summary>
         /// Gets a list of pullable repositories from the registry.
         /// </summary>
-        /// <param name="empties">If set, will return empty repositories only. Permissions checks still apply, but hidden/static repos are ignored.</param>
+        /// <param name="empties">If true, will return only empty repositories. If false, returns only populatied repos.
+        /// Permissions checks always apply, but hidden/static repos are ignored when returning empties.</param>
         /// <returns></returns>
         public IEnumerable<Repository> GetRepositories(bool empties = false)
         {
             var key = RepoListKey();
+            var userKey = string.Join(":", key,
+                (empties ? "empty" : "populated"),
+                (Settings.AuthHandler.AnonymousMode ? "anonymous" : Settings.AuthHandler.Username));
             var scope = CatalogScope();
 
             List<string> repoNames;
@@ -141,13 +145,19 @@ namespace Whalerator
             if (!empties && Settings.StaticRepos != null) { repoNames.AddRange(Settings.StaticRepos); }
             if (!empties && Settings.HiddenRepos != null) { repoNames.RemoveAll(r => Settings.HiddenRepos.Any(h => h.ToLowerInvariant() == r.ToLowerInvariant())); }
 
-            // must check and filter permissions before trying to count tags
-            var repositories = repoNames.Distinct().Select(n => new Repository
+            // this is given a very short ttl, as it should be relatively cheap to rebuild from longer-lived but still volatile
+            // auth information
+            var repositories = GetCached(scope, userKey, TimeSpan.FromMinutes(10), Settings.AuthHandler, () =>
             {
-                Name = n,
-                Permissions = Settings.AuthHandler.GetPermissions(n)
-            }).Where(r => r.Permissions >= Permissions.Pull).ToList();
-            repositories.ForEach(r => r.Tags = GetTags(r.Name)?.Count() ?? 0);
+                // must check and filter permissions before trying to count tags
+                var repos = repoNames.Distinct().Select(n => new Repository
+                {
+                    Name = n,
+                    Permissions = Settings.AuthHandler.GetPermissions(n)
+                }).Where(r => r.Permissions >= Permissions.Pull).ToList();
+                repos.ForEach(r => r.Tags = GetTags(r.Name)?.Count() ?? 0);
+                return repos;
+            });
 
             return empties ? repositories.Where(r => r.Tags == 0) : repositories.Where(r => r.Tags > 0);
         }
@@ -190,6 +200,7 @@ namespace Whalerator
                 var key = RepoTagsKey(repository);
                 var cache = Settings.CacheFactory?.Get<string>();
 
+                Logger.LogInformation($"Deleting image {repository}/{digest}");
                 DistributionClient.DeleteImage(repository, digest).Wait();
                 cache.TryDelete(key);
             }
@@ -209,6 +220,8 @@ namespace Whalerator
 
             if (Settings.AuthHandler.Authorize(scope))
             {
+                Logger.LogInformation($"Deleting repository {repository}");
+
                 var key = RepoTagsKey(repository);
                 var cache = Settings.CacheFactory?.Get<string>();
 
@@ -238,6 +251,7 @@ namespace Whalerator
             {
                 using (var lockObj = Settings.CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
                 {
+                    Logger.LogInformation($"Indexing {repository}/{image.Digest}");
                     var files = new List<string>();
 
                     var layers = image.Layers.Reverse();
@@ -414,7 +428,10 @@ namespace Whalerator
         private T GetCached<T>(string scope, string key, bool isVolatile, Func<T> func) where T : class =>
             GetCached<T>(scope, key, isVolatile, Settings.AuthHandler, func);
 
-        private T GetCached<T>(string scope, string key, bool isVolatile, IAuthHandler authHandler, Func<T> func) where T : class
+        private T GetCached<T>(string scope, string key, bool isVolatile, IAuthHandler authHandler, Func<T> func) where T : class =>
+            GetCached(scope, key, (isVolatile ? Settings.VolatileTtl : Settings.StaticTtl), authHandler, func);
+
+        private T GetCached<T>(string scope, string key, TimeSpan? ttl, IAuthHandler authHandler, Func<T> func) where T : class
         {
             var cache = Settings.CacheFactory?.Get<T>();
 
@@ -430,7 +447,7 @@ namespace Whalerator
                 {
                     Logger?.LogDebug($"Cache miss {key}");
                     result = func();
-                    cache?.Set(key, result, isVolatile ? Settings.VolatileTtl : Settings.StaticTtl);
+                    cache?.Set(key, result, ttl);
                     return result;
                 }
             }
@@ -455,7 +472,7 @@ namespace Whalerator
                     Port = proxyInfo.path.Port,
                     Query = proxyInfo.path.Query,
                     Scheme = proxyInfo.path.Scheme
-                }.Uri;  
+                }.Uri;
             }
 
             return new LayerProxyInfo
@@ -542,6 +559,7 @@ namespace Whalerator
 
         private void FetchForeignLayer(ForeignLayer layer, Stream buffer)
         {
+            var start = DateTime.UtcNow;
             using (var client = new HttpClient() { Timeout = new TimeSpan(0, 10, 0) })
             {
                 var result = client.GetAsync(layer.Urls.First()).Result;
@@ -554,13 +572,43 @@ namespace Whalerator
                     throw new Exception($"Failed to get layer data at {layer.Urls.First()}: {result.StatusCode} {result.ReasonPhrase}");
                 }
             }
+            LogDownload($"foreign layer {layer.Digest} from {layer.Urls.First()}", DateTime.UtcNow - start, buffer.Length);
         }
 
         private void FetchLayer(string repository, Layer layer, Stream buffer)
         {
+            var start = DateTime.UtcNow;
             var result = DistributionClient.GetBlobAsync(repository, layer.Digest).Result;
             result.Content.CopyToAsync(buffer).Wait();
+            LogDownload($"novel layer {layer.Digest} from {repository}", DateTime.UtcNow - start, buffer.Length);
         }
+
+        private void LogDownload(string source, TimeSpan time, long bytes)
+        {
+            var rate = FormatBytes(bytes / time.TotalSeconds);
+            var total = FormatBytes(bytes);
+            Logger.LogInformation($"Downloaded {source} ({total.amount:0.##}{total.label} @ {rate.amount:0.##}{rate.label}/s)");
+        }
+
+        private static (double amount, string label) FormatBytes(double bytes)
+        {
+            var scale = Scale(bytes, 0);
+            return (scale.Item1, ((ByteScales)scale.Item2).ToString());
+        }
+
+        private static (double, int) Scale(double bytes, int scale)
+        {
+            if (bytes < 1024 || scale >= 3)
+            {
+                return (bytes, scale);
+            }
+            else
+            {
+                return Scale(bytes / 1024f, ++scale);
+            }
+        }
+
+        private enum ByteScales { B, KB, MB, GB }
 
         public Permissions GetPermissions(string repository)
         {

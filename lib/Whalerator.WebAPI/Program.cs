@@ -33,7 +33,7 @@ namespace Whalerator.WebAPI
     {
         public static void Main(string[] args)
         {
-            var webHost = new WebHostBuilder()
+            var builder = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureAppConfiguration((hostingContext, config) =>
@@ -74,9 +74,9 @@ namespace Whalerator.WebAPI
                     logging.AddConsole();
                     logging.AddFilter("Microsoft", (level) => false);
                     logging.AddDebug();
-                })
-                .UseStartup<Startup>()
-                .Build();
+                });
+            builder.UseStartup<Startup>();
+            var webHost = builder.Build();
 
             webHost.Run();
         }

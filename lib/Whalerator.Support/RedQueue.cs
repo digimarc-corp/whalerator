@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
@@ -34,11 +35,13 @@ namespace Whalerator.Support
          */
 
         private IConnectionMultiplexer _Mux;
+        private ILogger<RedQueue<T>> _Logger;
         string QueueName = "queues:scanner:" + typeof(T).Name;
 
-        public RedQueue(IConnectionMultiplexer redisMux)
+        public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger)
         {
             _Mux = redisMux;
+            _Logger = logger;
         }
 
         public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
@@ -57,8 +60,16 @@ namespace Whalerator.Support
             else
             {
                 var json = db.StringGet(key.ToString());
-                if (json.HasValue) { db.KeyDelete(key.ToString()); }
-                return JsonConvert.DeserializeObject<T>(json);
+                if (json.HasValue)
+                {
+                    db.KeyDelete(key.ToString());
+                    return JsonConvert.DeserializeObject<T>(json);
+                }
+                else
+                {
+                    _Logger.LogWarning($"Got bad workitem key: {key}");
+                    return null;
+                }
             }
         }
 

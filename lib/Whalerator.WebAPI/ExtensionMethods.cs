@@ -64,6 +64,8 @@ namespace Whalerator.WebAPI
         {
             var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
             var volatileTtl = new TimeSpan(0, 0, config.Cache.VolatileTtl);
+            logger?.LogInformation($"Cache lifetime for static registry objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
+            logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
             services.AddScoped<IDistributionClient, DistributionClient>();
 
@@ -83,9 +85,6 @@ namespace Whalerator.WebAPI
                     StaticTtl = staticTtl,
                     VolatileTtl = volatileTtl
                 };
-
-                logger?.LogInformation($"Cache lifetime for static registry objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
-                logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
                 return new RegistryFactory(settings, p.GetRequiredService<ILogger<Registry>>());
             });
@@ -205,7 +204,7 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    services.AddSingleton<IWorkQueue<Content.Request>>(p => new RedQueue<Content.Request>(p.GetService<IConnectionMultiplexer>()));
+                    services.AddScoped<IWorkQueue<Content.Request>, RedQueue<Content.Request>>();
                 }
             }
 
@@ -234,7 +233,7 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    services.AddSingleton<IWorkQueue<Security.Request>>(p => new RedQueue<Security.Request>(p.GetService<IConnectionMultiplexer>()));
+                    services.AddScoped<IWorkQueue<Security.Request>, RedQueue<Security.Request>>();
                 }
             }
 
