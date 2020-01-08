@@ -27,6 +27,8 @@ namespace Whalerator.Client
         public string JWT { get; set; }
         public string Realm { get; set; }
         public string Service { get; set; }
+        public bool Anonymous { get; set; }
+        public bool DockerHub { get; set; }
 
         public static string CacheKey(string registry, string username, string password, string scope, bool grant = true)
         {
