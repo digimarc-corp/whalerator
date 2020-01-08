@@ -49,6 +49,10 @@ namespace Whalerator
             "registry-1.docker.io"
         };
 
+        // when working anonymously against docker hub, it's helpful to know the Realm and Service ahead of time
+        public const string DockerRealm = "https://auth.docker.io/token";
+        public const string DockerService = "registry.docker.io";
+
         // If this is a Docker hub alias, replace it with the canonical registry name.
         public static string DeAliasDockerHub(string host) =>
             DockerHubAliases.Contains(host.ToLowerInvariant()) ? DockerHub : host;
@@ -182,7 +186,17 @@ namespace Whalerator
             var key = isDigest ? ImageDigestKey(tag) : ImageTagKey(repository, tag);
             string scope = RepoPullScope(repository);
 
-            return GetCached(scope, key, !isDigest, () => DistributionClient.GetImageSet(repository, tag).Result);
+            return GetCached(scope, key, !isDigest, () =>
+            {
+                try
+                {
+                    return DistributionClient.GetImageSet(repository, tag).Result;
+                }catch (Exception ex)
+                {
+                    Logger.LogError(ex, $"Couldn't get image set for {repository}:{tag}");
+                    return null;
+                }
+            });
         }
 
         /// <summary>
@@ -227,6 +241,11 @@ namespace Whalerator
 
                 // coerce to list before deleting to avoid deleting a tag out from under ourselves                
                 var imageDigests = GetTags(repository).Select(t => GetImageSet(repository, t, false).SetDigest).Distinct().ToList();
+                if (imageDigests.Any(d => d == null))
+                {
+                    Logger.LogError($"Encountered at least one unreadable tag in {repository}, aborting");
+                    return;
+                }
 
                 foreach (var digest in imageDigests)
                 {

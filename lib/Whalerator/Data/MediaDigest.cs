@@ -25,7 +25,7 @@ namespace Whalerator.Data
     public class MediaDigest
     {
         public string MediaType { get; set; }
-        public int Size { get; set; }
+        public long Size { get; set; }
         public string Digest { get; set; }
         public IEnumerable<string> Urls { get; set; }
 

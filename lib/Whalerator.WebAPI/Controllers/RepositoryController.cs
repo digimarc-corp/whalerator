@@ -89,7 +89,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (scanResult == null)
                 {
-                    _SecScanner.Queue.Push(new Security.Request
+                    _SecScanner.Queue.TryPush(new Security.Request
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
@@ -227,7 +227,7 @@ namespace Whalerator.WebAPI.Controllers
                 var registryApi = _RegFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
-                return Ok(imageSet);
+                return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
             }
             catch (Client.NotFoundException)
             {
@@ -293,7 +293,7 @@ namespace Whalerator.WebAPI.Controllers
                 var registryApi = _RegFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
-                return Ok(imageSet.SetDigest);
+                return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet.SetDigest);
             }
             catch (Client.NotFoundException)
             {

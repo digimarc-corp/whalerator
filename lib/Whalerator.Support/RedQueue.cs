@@ -36,12 +36,13 @@ namespace Whalerator.Support
 
         private IConnectionMultiplexer _Mux;
         private ILogger<RedQueue<T>> _Logger;
-        string QueueName = "queues:scanner:" + typeof(T).Name;
+        private string _QueueName;
 
-        public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger)
+        public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger, string queueName)
         {
             _Mux = redisMux;
             _Logger = logger;
+            _QueueName = queueName;
         }
 
         public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
@@ -52,7 +53,7 @@ namespace Whalerator.Support
         public T Pop()
         {
             var db = _Mux.GetDatabase();
-            var key = db.ListRightPop(QueueName);
+            var key = db.ListRightPop(_QueueName);
             if (key.IsNullOrEmpty)
             {
                 return null;
@@ -78,7 +79,7 @@ namespace Whalerator.Support
             var db = _Mux.GetDatabase();
             // expiration is aggressive to allow queue failures to self-clear quickly
             db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(120));
-            db.ListLeftPush(QueueName, workItem.WorkItemKey);
+            db.ListLeftPush(_QueueName, workItem.WorkItemKey);
         }
 
         public bool TryPush(T workItem)

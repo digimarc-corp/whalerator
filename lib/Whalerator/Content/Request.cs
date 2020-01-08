@@ -27,5 +27,6 @@ namespace Whalerator.Content
     {
         public string Path { get; set; }        
         public override string WorkItemKey => $"workitem:content:{this.TargetDigest}:{this.Path}";
+        public const string WorkQueueKey = "workitems:queue:content";
     }
 }

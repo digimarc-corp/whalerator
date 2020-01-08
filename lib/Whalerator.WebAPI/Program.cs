@@ -72,7 +72,7 @@ namespace Whalerator.WebAPI
                 {
                     logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                     logging.AddConsole();
-                    logging.AddFilter("Microsoft", (level) => false);
+                    logging.AddFilter("Microsoft", (level) => level >= LogLevel.Warning);
                     logging.AddDebug();
                 });
             builder.UseStartup<Startup>();

@@ -53,6 +53,11 @@ namespace Whalerator.Client
         public bool AnonymousMode { get; private set; }
 
         /// <summary>
+        /// If true, the registry is running against Docker Hub, which has special cases attached
+        /// </summary>
+        public bool DockerHub { get; private set; }
+
+        /// <summary>
         /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
         /// </summary>
         /// <param name="registryHost">Actual registry host, i.e. myregistry.io</param>
@@ -71,21 +76,36 @@ namespace Whalerator.Client
             {
                 Service = authorization.Service;
                 Realm = authorization.Realm;
+                AnonymousMode = authorization.Anonymous;
+                DockerHub = authorization.DockerHub;
             }
             else
             {
                 using (var client = new HttpClient())
                 {
+                    AnonymousMode = (string.IsNullOrEmpty(username) && string.IsNullOrEmpty(password));
+
+                    // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
+                    // but we can set some known values
+                    if (registryHost == Registry.DockerHub)
+                    {
+                        DockerHub = true;
+                        Realm = Registry.DockerRealm;
+                        Service = Registry.DockerService;
+                        return;
+                    }
+
+                    // first try an anonymous get for the registry catalog - if that succeeds but we're in anonymous mode, throw
                     var preLogin = client.GetAsync(RegistryEndpoint).Result;
                     if (preLogin.IsSuccessStatusCode)
                     {
-                        if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(password))
+                        if (AnonymousMode)
                         {
                             throw new AuthenticationException("A username or password was specified, but the registry server does not support authentication.");
                         }
                         else
                         {
-                            AnonymousMode = true;
+                            // we're anon, and an anon catalog fetch worked, so we should be golden
                             return;
                         }
                     }
@@ -106,7 +126,7 @@ namespace Whalerator.Client
                             }
                             else
                             {
-                                _AuthCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service }, AuthTtl);
+                                _AuthCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service, Anonymous = AnonymousMode }, AuthTtl);
                             }
                         }
                         else
@@ -130,7 +150,7 @@ namespace Whalerator.Client
 
         public bool Authorize(string scope)
         {
-            return HasAuthorization(scope) || UpdateAuthorization(scope);
+            return HasAuthorization(scope) || UpdateAuthorization(scope) || (DockerHub && scope == "registry:catalog:*");
         }
 
         public bool HasAuthorization(string scope)
@@ -198,7 +218,7 @@ namespace Whalerator.Client
         public bool UpdateAuthorization(string scope, bool force = false)
         {
             // registry is fully anonymous, so authorization is moot
-            if (AnonymousMode) { return true; }
+            if (AnonymousMode && !DockerHub) { return true; }
 
             // if this user was recently denied for the same scope, don't waste a roundtrip on it
             if (!force && _AuthCache.Exists(GetKey(scope, granted: false))) { return false; }

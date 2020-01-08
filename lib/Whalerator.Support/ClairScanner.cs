@@ -40,7 +40,7 @@ namespace Whalerator.Support
         private ICacheFactory _CacheFactory;
 
         public IWorkQueue<Request> Queue { get; private set; }
-        
+
         public ClairScanner(ILogger<ClairScanner> logger, ConfigRoot config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
         {
             _Log = logger;
@@ -63,10 +63,17 @@ namespace Whalerator.Support
             var cache = _CacheFactory.Get<Result>();
             var key = GetKey(image);
 
+            // if we have a cached scan, return it
             if (!hard && cache.TryGet(key, out var cachedResult))
             {
                 return cachedResult;
             }
+            // if we don't have a Clair instance handy, return null
+            else if (_Clair == null)
+            {
+                return null;
+            }
+            // otherwise, try to get the latest scan result from Clair
             else
             {
                 try
