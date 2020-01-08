@@ -204,7 +204,9 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    services.AddScoped<IWorkQueue<Content.Request>, RedQueue<Content.Request>>();
+                    services.AddScoped<IWorkQueue<Content.Request>>(p => new RedQueue<Content.Request>(p.GetRequiredService<IConnectionMultiplexer>(),
+                        p.GetRequiredService<ILogger<RedQueue<Content.Request>>>(),
+                        Content.Request.WorkQueueKey));
                 }
             }
 
@@ -233,7 +235,9 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    services.AddScoped<IWorkQueue<Security.Request>, RedQueue<Security.Request>>();
+                    services.AddScoped<IWorkQueue<Security.Request>>(p => new RedQueue<Security.Request>(p.GetRequiredService<IConnectionMultiplexer>(),
+                        p.GetRequiredService<ILogger<RedQueue<Security.Request>>>(),
+                        Security.Request.WorkQueueKey));
                 }
             }
 
