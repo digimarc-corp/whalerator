@@ -13,7 +13,6 @@ catalog:
     - whalerator/whalerator
 security:
   tokenLifetime: 2419200 # 4 weeks
-security:
   privateKey: key.pem
 logging:
   logLevel:
