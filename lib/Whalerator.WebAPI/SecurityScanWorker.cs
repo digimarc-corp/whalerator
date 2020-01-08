@@ -43,7 +43,7 @@ namespace Whalerator.WebAPI
             _AuthDecoder = decoder;
         }
 
-        
+
         public override void DoRequest(Request request)
         {
             try
@@ -58,7 +58,7 @@ namespace Whalerator.WebAPI
                     var registry = _RegistryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
 
                     var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
-                    if (imageSet.Images.Count() != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
+                    if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
                     _Scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
                     _Logger.LogInformation($"Completed submitting {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");

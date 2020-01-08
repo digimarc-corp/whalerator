@@ -46,7 +46,7 @@ namespace Whalerator.Client
 
         public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest) =>
             Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
-        
+
         public Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
         {
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"));
@@ -88,7 +88,7 @@ namespace Whalerator.Client
 
             // In docker-land, a fat manifest is just a bunch of regular manifests bundled together under a single digest
             // In whalerator-land, there are no non-fat manifests, just fat manifests with a single image
-            if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.list.v2+json")
+            if (response.Content.Headers.ContentType.MediaType.StartsWith("application/vnd.docker.distribution.manifest.list.v2"))
             {
                 var images = new List<Image>();
                 var json = response.Content.ReadAsStringAsync().Result;
@@ -106,7 +106,7 @@ namespace Whalerator.Client
                     SetDigest = response.Headers.First(h => h.Key.ToLowerInvariant() == "docker-content-digest").Value.First(),
                 });
             }
-            else if (response.Content.Headers.ContentType.MediaType == "application/vnd.docker.distribution.manifest.v2+json")
+            else if (response.Content.Headers.ContentType.MediaType.StartsWith("application/vnd.docker.distribution.manifest.v2"))
             {
                 var json = response.Content.ReadAsStringAsync().Result;
                 var manifest = JsonConvert.DeserializeObject<ManifestV2>(json);

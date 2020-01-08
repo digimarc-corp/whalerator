@@ -227,7 +227,7 @@ namespace Whalerator.WebAPI.Controllers
                 var registryApi = _RegFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
-                return Ok(imageSet);
+                return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
             }
             catch (Client.NotFoundException)
             {
@@ -293,7 +293,7 @@ namespace Whalerator.WebAPI.Controllers
                 var registryApi = _RegFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
-                return Ok(imageSet.SetDigest);
+                return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet.SetDigest);
             }
             catch (Client.NotFoundException)
             {
