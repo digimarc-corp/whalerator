@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +16,18 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-namespace Whalerator.Scanner
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Whalerator.Model
 {
-    public enum ScanStatus
+    /// <summary>
+    /// Minimal information necessary to actually retrieve a path from an image
+    /// </summary>
+    public class LayerPath
     {
-        Succeeded,
-        Pending,
-        Failed,
+        public Layer Layer { get; set; }
+        public bool IsDirectory { get; set; }
     }
 }

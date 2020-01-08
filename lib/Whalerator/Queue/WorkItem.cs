@@ -25,5 +25,6 @@ namespace Whalerator.Queue
     public abstract class WorkItem
     {
         public DateTime CreatedTime { get; set; }
+        public abstract string WorkItemKey { get; }
     }
 }

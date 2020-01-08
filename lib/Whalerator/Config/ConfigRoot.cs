@@ -25,15 +25,15 @@ namespace Whalerator.Config
 {
     public class ConfigRoot
     {
-        public CacheConfig Cache { get; set; } = new CacheConfig();
-        
+        public CacheConfig Cache { get; set; } = new CacheConfig();        
 
         public SearchConfig Search { get; set; } = new SearchConfig();
 
         public SecurityConfig Security { get; set; } = new SecurityConfig();
 
+        public ContentScanner ContentScanner { get; set; }
 
-        public ScannerConfig Scanner { get; set; } = new ScannerConfig();
+        public ClairConfig ClairScanner { get; set; }
 
         public CatalogConfig Catalog { get; set; } = new CatalogConfig();
     }

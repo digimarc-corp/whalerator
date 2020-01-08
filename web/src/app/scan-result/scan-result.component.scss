@@ -65,7 +65,7 @@ span.scanSummary span {
 .tick.Unknown,
 .tick.Negligible {
     font-weight: lighter;
-    font-style: italic;
+    opacity: 0.5;
 }
 
 .detail {

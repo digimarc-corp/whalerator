@@ -19,16 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Model;
 
-namespace Whalerator.Queue
+namespace Whalerator.Content
 {
-    public interface IWorkQueue<T> where T: WorkItem
+    public class Result : ResultBase
     {
-        bool TryPush(T workItem);
-        void Push(T workItem);
-        bool Contains(T workItem);
-        bool Contains(string key);
-        T Pop();
+        public bool Exists { get; set; }
+        public byte[] Content { get; set; }
+        public List<string> Children { get; set; }
     }
 }

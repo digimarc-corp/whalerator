@@ -24,12 +24,14 @@ namespace Whalerator
     {
         bool Exists(string key);
         bool TryGet(string key, out T value);
+
         /// <summary>
-        /// Stores an object in cache, using the default TTL
+        /// Stores an object in cache, with no Ttl
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
         void Set(string key, T value);
+
         /// <summary>
         /// Stores an object in cache, using an explicit TTL (or null TTL for non-expiring data)
         /// </summary>

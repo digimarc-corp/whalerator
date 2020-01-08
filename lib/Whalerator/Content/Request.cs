@@ -19,16 +19,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Model;
+using Whalerator.Queue;
 
-namespace Whalerator.Queue
+namespace Whalerator.Content
 {
-    public interface IWorkQueue<T> where T: WorkItem
+    public class Request : RequestBase
     {
-        bool TryPush(T workItem);
-        void Push(T workItem);
-        bool Contains(T workItem);
-        bool Contains(string key);
-        T Pop();
+        public string Path { get; set; }        
+        public override string WorkItemKey => $"workitem:content:{this.TargetDigest}:{this.Path}";
     }
 }

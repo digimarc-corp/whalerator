@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using StackExchange.Redis;
 using System;
@@ -28,22 +29,66 @@ namespace Whalerator.Support
 {
     public class RedQueue<T> : IWorkQueue<T> where T : WorkItem
     {
-        private IConnectionMultiplexer _Mux;
-        const string _Key = "queues:scanner";
+        /*
+         * Ideally this will get reimplemented with a full reliable-queue pattern eventually, but it seems low priority.
+         * Failures on the queue will be resubmitted by the polling process, and otherwise we can just fail cheaply and move on
+         */
 
-        public RedQueue(IConnectionMultiplexer redisMux)
+        private IConnectionMultiplexer _Mux;
+        private ILogger<RedQueue<T>> _Logger;
+        string QueueName = "queues:scanner:" + typeof(T).Name;
+
+        public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger)
         {
             _Mux = redisMux;
+            _Logger = logger;
         }
+
+        public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
+
+        public bool Contains(string key) => _Mux.GetDatabase().KeyExists(key);
+
 
         public T Pop()
         {
-            var json = _Mux.GetDatabase().ListRightPop(_Key);
-            return json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
+            var db = _Mux.GetDatabase();
+            var key = db.ListRightPop(QueueName);
+            if (key.IsNullOrEmpty)
+            {
+                return null;
+            }
+            else
+            {
+                var json = db.StringGet(key.ToString());
+                if (json.HasValue)
+                {
+                    db.KeyDelete(key.ToString());
+                    return JsonConvert.DeserializeObject<T>(json);
+                }
+                else
+                {
+                    _Logger.LogWarning($"Got bad workitem key: {key}");
+                    return null;
+                }
+            }
         }
 
-        public void Push(T workItem) =>
-            _Mux.GetDatabase().ListLeftPush(_Key, JsonConvert.SerializeObject(workItem));
+        public void Push(T workItem)
+        {
+            var db = _Mux.GetDatabase();
+            // expiration is aggressive to allow queue failures to self-clear quickly
+            db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(120));
+            db.ListLeftPush(QueueName, workItem.WorkItemKey);
+        }
 
+        public bool TryPush(T workItem)
+        {
+            if (Contains(workItem)) { return false; }
+            else
+            {
+                Push(workItem);
+                return true;
+            }
+        }
     }
 }

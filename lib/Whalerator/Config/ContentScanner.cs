@@ -20,12 +20,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Model
+namespace Whalerator.Config
 {
-    public class ImageFile
+    public class ContentScanner
     {
-        //public string Layer { get; set; }
-        public int LayerDepth { get; set; }
-        public string Path { get; set; }
+        public string LayerCache { get; set; }
     }
 }

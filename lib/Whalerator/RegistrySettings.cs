@@ -47,7 +47,7 @@ namespace Whalerator
 
         public string LayerCache { get; set; }
 
-        public TimeSpan VolatileTtl { get; set; } = new TimeSpan(0, 20, 0);
         public TimeSpan? StaticTtl { get; set; } = null;
+        public TimeSpan VolatileTtl { get; set; }
     }
 }

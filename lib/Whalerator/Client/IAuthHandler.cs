@@ -33,5 +33,6 @@ namespace Whalerator.Client
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);
         bool TryParseScope(Uri uri, out string scope);
         bool UpdateAuthorization(string scope, bool force = false);
+        string Username { get; }
     }
 }

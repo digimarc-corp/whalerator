@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,9 +26,10 @@ namespace Whalerator.WebAPI
 {
     public class RegistryFactory : IRegistryFactory
     {
-        public RegistryFactory(RegistrySettings settings)
+        public RegistryFactory(RegistrySettings settings, ILogger<Registry> logger)
         {
             Settings = settings;
+            Logger = logger;
         }
 
         public IRegistry GetRegistry(RegistryCredentials credentials)
@@ -38,9 +40,10 @@ namespace Whalerator.WebAPI
                 credentials.Registry = Registry.DockerHub;
             }
 
-            return new Registry(credentials, Settings);
+            return new Registry(credentials, Settings, Logger);
         }
 
         public RegistrySettings Settings { get; }
+        public ILogger<Registry> Logger { get; }
     }
 }

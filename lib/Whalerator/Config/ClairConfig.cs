@@ -22,8 +22,16 @@ using System.Text;
 
 namespace Whalerator.Config
 {
-    public class ScannerConfig
+    public class ClairConfig
     {
         public string ClairApi { get; set; }
+
+        public List<RegistryAlias> RegistryAliases { get; set; }
+
+        public class RegistryAlias
+        {
+            public string Internal { get; set; }
+            public string External { get; set; }
+        }
     }
 }

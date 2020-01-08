@@ -44,11 +44,9 @@ namespace Whalerator.Client
 
         #region public methods
 
-        public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest)
-        {
-            return Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
-        }
-
+        public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest) =>
+            Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
+        
         public Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
         {
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"));
@@ -140,6 +138,15 @@ namespace Whalerator.Client
             {
                 throw new Exception($"Cannot build image set from mediatype '{response.Content.Headers.ContentType.MediaType}'");
             }
+        }
+
+        public Task DeleteImage(string repository, string digest)
+        {
+            var images = new List<Image>();
+            var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{digest}"));
+            var response = Delete(uri);
+
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -310,15 +317,6 @@ namespace Whalerator.Client
             var result = GetBlobAsync(repository, digest).Result;
             var json = result.Content.ReadAsStringAsync().Result;
             return JsonConvert.DeserializeObject<ImageConfig>(json);
-        }
-
-        public Task DeleteImage(string repository, string digest)
-        {
-            var images = new List<Image>();
-            var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{digest}"));
-            var response = Delete(uri);
-
-            return Task.CompletedTask;
         }
     }
 }

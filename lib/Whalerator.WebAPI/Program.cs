@@ -33,7 +33,7 @@ namespace Whalerator.WebAPI
     {
         public static void Main(string[] args)
         {
-            var webHost = new WebHostBuilder()
+            var builder = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .ConfigureAppConfiguration((hostingContext, config) =>
@@ -47,7 +47,7 @@ namespace Whalerator.WebAPI
                     }
                     else if (!File.Exists(configPath))
                     {
-                        throw new ArgumentException($"The specified config file '{configPath}' couuld not be found.");
+                        throw new ArgumentException($"The specified config file '{configPath}' could not be found.");
                     }
 
                     if (File.Exists(configPath))
@@ -72,10 +72,11 @@ namespace Whalerator.WebAPI
                 {
                     logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
                     logging.AddConsole();
+                    logging.AddFilter("Microsoft", (level) => false);
                     logging.AddDebug();
-                })
-                .UseStartup<Startup>()
-                .Build();
+                });
+            builder.UseStartup<Startup>();
+            var webHost = builder.Build();
 
             webHost.Run();
         }

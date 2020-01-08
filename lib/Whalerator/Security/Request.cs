@@ -20,14 +20,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Scanner
+namespace Whalerator.Security
 {
-    public class Component
+    public class Request : RequestBase
     {
-        public string Name { get; set; }
-        public string Version { get; set; }        
-        public string NamespaceName { get; set; }
-        public string AddedBy { get; set; }
-        public List<Vulnerability> Vulnerabilities { get; set; }        
+        public override string WorkItemKey => $"workitem:security:{this.TargetDigest}";
     }
 }

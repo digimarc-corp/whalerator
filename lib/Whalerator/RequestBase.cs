@@ -16,14 +16,17 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Whalerator.Model;
-using Whalerator.Scanner;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Whalerator.Queue;
 
-namespace Whalerator.Scanner
+namespace Whalerator
 {
-    public interface ISecurityScanner
+    public abstract class RequestBase : WorkItem
     {
-        ScanResult GetScan(Image image, bool hard = false);
-        void RequestScan(IRegistry registry, string repository, Image image);
+        public string TargetRepo { get; set; }
+        public string TargetDigest { get; set; }
+        public string Authorization { get; set; }
     }
 }

@@ -20,16 +20,16 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Whalerator.Client;
 
-namespace Whalerator.Scanner
+namespace Whalerator
 {
-    public class Vulnerability
+    public abstract class ResultBase
     {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Link { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]
-        public Severity Severity { get; set; }
+        public RequestStatus Status { get; set; }
+        public string Message { get; set; }
     }
 }

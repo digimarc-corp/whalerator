@@ -19,16 +19,15 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Model;
 
-namespace Whalerator.Queue
+namespace Whalerator.Security
 {
-    public interface IWorkQueue<T> where T: WorkItem
+    public class Component
     {
-        bool TryPush(T workItem);
-        void Push(T workItem);
-        bool Contains(T workItem);
-        bool Contains(string key);
-        T Pop();
+        public string Name { get; set; }
+        public string Version { get; set; }        
+        public string NamespaceName { get; set; }
+        public string AddedBy { get; set; }
+        public List<Vulnerability> Vulnerabilities { get; set; }        
     }
 }

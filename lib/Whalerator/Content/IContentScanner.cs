@@ -19,14 +19,29 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Model;
 using Whalerator.Queue;
 
-namespace Whalerator.Scanner
+namespace Whalerator.Content
 {
-    public class ScanRequest : WorkItem
+    public interface IContentScanner
     {
-        public string TargetRepo { get; set; }
-        public string TargetDigest { get; set; }
-        public string Authorization { get; set; }
+        /// <summary>
+        /// Fetch the results of a previously executed content scan
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hard"></param>
+        /// <returns></returns>
+        Result GetPath(Image image, string path);
+
+        /// <summary>
+        /// Extract and index content at the given location
+        /// </summary>
+        /// <param name="registry"></param>
+        /// <param name="repository"></param>
+        /// <param name="image"></param>
+        void Index(IRegistry registry, string repository, Image image, string path);
+
+        IWorkQueue<Request> Queue { get; }
     }
 }

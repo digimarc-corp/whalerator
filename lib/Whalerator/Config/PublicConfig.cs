@@ -19,16 +19,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Whalerator.Model;
 
-namespace Whalerator.Queue
+namespace Whalerator.Config
 {
-    public interface IWorkQueue<T> where T: WorkItem
+    /// <summary>
+    /// Unlike the other Config classes, the configuration data here is synthesized from config.yaml to let the UI (or other consumers)
+    /// know what features to display and/or enable for the user.
+    /// </summary>
+    public class PublicConfig
     {
-        bool TryPush(T workItem);
-        void Push(T workItem);
-        bool Contains(T workItem);
-        bool Contains(string key);
-        T Pop();
+        public string Registry { get; set; }
+        public bool AutoLogin { get; set; }
+        public bool SecScanner { get; set; }
+        public bool DocScanner { get; set; }
+        public IEnumerable<IEnumerable<string>> SearchLists { get; set; }
     }
 }
