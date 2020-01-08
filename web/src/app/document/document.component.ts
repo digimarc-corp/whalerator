@@ -83,6 +83,7 @@ export class DocumentComponent implements OnInit {
               this.getScan();
             });
           }
+          this.changeDetector.detectChanges();
         }
       }
     })

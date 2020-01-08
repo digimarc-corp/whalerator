@@ -26,5 +26,6 @@ namespace Whalerator.Security
     {
         public override string WorkItemKey => $"workitem:security:{this.TargetDigest}";
         public const string WorkQueueKey = "workitems:queue:security";
+        public bool Submitted { get; set; }
     }
 }

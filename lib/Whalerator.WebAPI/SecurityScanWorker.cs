@@ -60,8 +60,26 @@ namespace Whalerator.WebAPI
                     var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
-                    _Scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
-                    _Logger.LogInformation($"Completed submitting {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
+                    var scanResult = _Scanner.GetScan(imageSet.Images.First());
+                    if (scanResult == null)
+                    {
+                        if (request.Submitted)
+                        {
+                            // we've already submitted this one to the scanner, just sleep on it for a few seconds
+                            System.Threading.Thread.Sleep(2000);
+                        }
+                        else
+                        {
+                            _Scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
+                            _Logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
+                            request.Submitted = true;
+                        }
+                        _Queue.Push(request);
+                    }
+                    else
+                    {
+                        _Logger.LogInformation($"Got latest {_Scanner.GetType().Name} scan for {request.TargetRepo}:{request.TargetDigest}");
+                    }
                 }
             }
             catch (Exception ex)

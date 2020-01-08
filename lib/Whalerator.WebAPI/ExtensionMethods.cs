@@ -228,7 +228,11 @@ namespace Whalerator.WebAPI
 
             if (clairWorker || vulnUi)
             {
-                services.AddSingleton<ISecurityScanner, ClairScanner>();
+                services.AddSingleton<ISecurityScanner>(p => new ClairScanner(p.GetRequiredService<ILogger<ClairScanner>>(),
+                    config,
+                    p.GetService<IClairAPI>(),
+                    p.GetRequiredService<ICacheFactory>(),
+                    p.GetRequiredService<IWorkQueue<Security.Request>>()));
                 if (string.IsNullOrEmpty(config.Cache.Redis))
                 {
                     services.AddSingleton<IWorkQueue<Security.Request>, MemQueue<Security.Request>>();

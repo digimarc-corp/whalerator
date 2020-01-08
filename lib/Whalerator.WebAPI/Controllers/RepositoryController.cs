@@ -89,7 +89,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (scanResult == null)
                 {
-                    _SecScanner.Queue.Push(new Security.Request
+                    _SecScanner.Queue.TryPush(new Security.Request
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
