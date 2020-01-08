@@ -1,0 +1,20 @@
+﻿# Minimal front-end service with no content or security workers
+cache:
+  redis: redis
+  volatileTtl: 3600 # 1 hour
+search:
+  vulnerabilities: true
+  filelists:
+  - readme.md;
+catalog:
+  registry: hub.docker.io
+  autoLogin: true
+  repositories:
+    - whalerator/whalerator
+security:
+  tokenLifetime: 2419200 # 4 weeks
+security:
+  privateKey: key.pem
+logging:
+  logLevel:
+    default: "Warning"

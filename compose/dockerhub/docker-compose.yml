@@ -1,3 +1,6 @@
+# A complete multi-worker deployment targeting Docker Hub,
+# with CoreOS Clair integration
+
 version: '3.7'
 services:
   pgsql:
@@ -30,5 +33,16 @@ services:
     ports: 
     - "80:80"
     volumes:
-    - './whalerator-config.yaml:/app/config.yaml'
+    - './whalerator-service.yaml:/app/config.yaml'
+    - './samplekey.pem:/app/key.pem'
+  content_worker:
+    build: ../..
+    volumes:
+    - './whalerator-contentworker.yaml:/app/config.yaml'
+    - './samplekey.pem:/app/key.pem'
+  security_worker:
+    build: ../..
+    volumes:
+    - './whalerator-securityworker.yaml:/app/config.yaml'
+    - './samplekey.pem:/app/key.pem'
   
