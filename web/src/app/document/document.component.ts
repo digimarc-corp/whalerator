@@ -28,7 +28,6 @@ import { ConfigService } from '../config.service';
 import { ScanResult } from '../models/scanResult';
 import { Observable, config, Subscriber } from 'rxjs';
 import { delay } from 'q';
-import { Console } from '@angular/core/src/console';
 
 @Component({
   selector: 'app-document',
