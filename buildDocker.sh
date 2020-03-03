@@ -20,15 +20,8 @@ fi
 
 echo "Preparing to build and release version $revision ($hash)"
 
-# make sure build tools are up-to-date
-docker pull mcr.microsoft.com/dotnet/core/aspnet:3.1
-docker pull mcr.microsoft.com/dotnet/core/sdk:3.1
-
 # build
-docker build . -t $repo:$revision --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision
-docker tag $repo:$revision $repo:$release
-#docker tag $repo:$revision $repo:$major
-docker tag $repo:$revision $repo:latest
+docker build . --pull --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision -t $repo:$revision -t $repo:$release -t $repo:latest
 
 # push
 #docker push $repo:$revision
