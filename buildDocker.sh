@@ -7,7 +7,9 @@ major=$1
 release="$1.$2"
 revision="$1.$2.$3"
 
-repo=$4
+repo=${4-whalerator/whalerator}
+
+echo "Building $repo:$revision"
 
 hash=`git rev-parse HEAD | cut -c 1-7`
 
