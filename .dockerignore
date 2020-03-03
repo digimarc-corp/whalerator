@@ -1,6 +1,8 @@
 #ignore all by default
 *
 
+.vs
+
 #include only lib & web folders
 !/lib
 !/web

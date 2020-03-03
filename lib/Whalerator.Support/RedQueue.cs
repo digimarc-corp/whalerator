@@ -78,7 +78,7 @@ namespace Whalerator.Support
         {
             var db = _Mux.GetDatabase();
             // expiration is aggressive to allow queue failures to self-clear quickly
-            db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(120));
+            db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(1200));
             db.ListLeftPush(_QueueName, workItem.WorkItemKey);
         }
 
