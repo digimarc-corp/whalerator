@@ -152,8 +152,25 @@ namespace Whalerator.WebAPI
             }
             else
             {
-                logger.LogInformation($"Using Redis cache ({config.Cache.Redis})");
-                services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
+                logger?.LogInformation($"Using Redis cache ({config.Cache.Redis})");
+                var ready = false;
+                var retryTime = 15;
+                while (!ready)
+                {
+                    try
+                    {
+                        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
+                        ready = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.LogWarning($"Could not connect to redis instance. Retrying in {retryTime}s.");
+                        logger?.LogInformation($"Connection string: {config.Cache.Redis}");
+                        logger?.LogInformation(ex, "Error:");
+                        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(retryTime));
+                    }
+                }
+
                 services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>() });
             }
 
