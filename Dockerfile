@@ -14,10 +14,6 @@
 #
 #  SPDX-License-Identifier: Apache-2.0
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS base
-WORKDIR /app
-EXPOSE 80
-
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
 WORKDIR /src
 COPY lib .
@@ -27,7 +23,7 @@ RUN dotnet build -c Release -o /app
 FROM build AS publish
 RUN dotnet publish -c Release -o /app
 
-FROM node:dubnium as ngbuild
+FROM node:erbium as ngbuild
 COPY web/src /web/src
 COPY web/package.json /web/
 COPY web/package-lock.json /web/
@@ -38,11 +34,12 @@ RUN npm install
 RUN npm install @angular/cli
 RUN /web/node_modules/@angular/cli/bin/ng build --prod --output-path /dist
 
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS final
 WORKDIR /app
 COPY --from=publish /app .
 COPY --from=ngbuild /dist ./wwwroot
 COPY lib/Whalerator.WebAPI/config-docker.yaml config.yaml
+EXPOSE 80
 
 ARG SRC_HASH="Unknown"
 ARG RELEASE="0.0"
