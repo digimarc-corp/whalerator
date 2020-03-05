@@ -31,4 +31,4 @@ docker build . --pull --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision -
 #docker push $repo:$major
 #docker push $repo:latest
 
-echo -n "Done"; read
+#echo -n "Done"; read
