@@ -114,7 +114,7 @@ namespace Whalerator.WebAPI
             if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
                 logger?.LogInformation($"Loading private key from {config.Security.PrivateKey}.");
-                crypto = new RSA(File.ReadAllText("key.pem"));
+                crypto = new RSA(File.ReadAllText(keyFile));
             }
             else
             {
