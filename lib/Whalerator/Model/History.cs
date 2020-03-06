@@ -33,13 +33,15 @@ namespace Whalerator.Model
         public string ShortCommand { get; set; }
         public string CommandArgs { get; set; }
 
+        static Regex argsRegex = new Regex(@"^\|\d(.+)(/bin/sh.*)$", RegexOptions.Compiled);
+
         public static History From(Data.History rawHistory)
         {
             // null Created_By usually means the image was squashed
             var command = rawHistory.Created_By ?? string.Empty;
             string args = null;
 
-            var argsm = new Regex(@"^\|\d(.+)(/bin/sh.*)$", RegexOptions.Compiled).Match(command);
+            var argsm = argsRegex.Match(command);
             if (argsm.Success)
             {
                 args = argsm.Groups[1].Value;
