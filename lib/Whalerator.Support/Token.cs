@@ -24,11 +24,11 @@ namespace Whalerator.Support
 {
     public class Token
     {
-        private ICryptoAlgorithm _Algorithm;
+        private ICryptoAlgorithm algorithm;
 
         public Token(ICryptoAlgorithm algorithm)
         {
-            _Algorithm = algorithm;
+            this.algorithm = algorithm;
         }
 
         public string Generate(object payload)

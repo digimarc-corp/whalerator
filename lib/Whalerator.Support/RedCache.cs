@@ -27,21 +27,21 @@ namespace Whalerator.Support
 {
     public class RedCache<T> : ICache<T> where T : class
     {
-        private IConnectionMultiplexer _Mux;
+        private IConnectionMultiplexer mux;
 
         public RedCache(IConnectionMultiplexer redisMux)
         {
-            _Mux = redisMux;
+            mux = redisMux;
         }
 
         /// <inheritdoc/>
-        public bool Exists(string key) => _Mux.GetDatabase().KeyExists(key);
+        public bool Exists(string key) => mux.GetDatabase().KeyExists(key);
 
         /// <inheritdoc/>
         public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
-            _Mux.GetDatabase().StringSet(key, json, ttl);
+            mux.GetDatabase().StringSet(key, json, ttl);
         }
 
         /// <inheritdoc/>
@@ -51,7 +51,7 @@ namespace Whalerator.Support
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
         {
             var value = Guid.NewGuid().ToString();
-            var db = _Mux.GetDatabase();
+            var db = mux.GetDatabase();
             var start = DateTime.UtcNow;
             while (!db.LockTake(key, value, lockTime))
             {
@@ -65,14 +65,14 @@ namespace Whalerator.Support
         }
 
         /// <inheritdoc/>
-        public bool TryDelete(string key) => _Mux.GetDatabase().KeyDelete(key);
+        public bool TryDelete(string key) => mux.GetDatabase().KeyDelete(key);
 
         /// <inheritdoc/>
         public bool TryGet(string key, out T value)
         {
             try
             {
-                var json = _Mux.GetDatabase().StringGet(key);
+                var json = mux.GetDatabase().StringGet(key);
                 value = json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
             }
             catch

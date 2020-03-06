@@ -33,14 +33,14 @@ namespace Whalerator.WebAPI
 {
     public class ContentScanWorker : QueueWorker<Request>
     {
-        private IContentScanner _Scanner;
-        private RegistryAuthenticationDecoder _AuthDecoder;
+        private IContentScanner scanner;
+        private RegistryAuthenticationDecoder authDecoder;
 
         public ContentScanWorker(ILogger<ContentScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, IContentScanner scanner, IRegistryFactory regFactory,
             RegistryAuthenticationDecoder decoder) : base(logger, config, queue, regFactory)
         {
-            _Scanner = scanner;
-            _AuthDecoder = decoder;
+            this.scanner = scanner;
+            authDecoder = decoder;
         }
 
 
@@ -48,33 +48,33 @@ namespace Whalerator.WebAPI
         {
             try
             {
-                var auth = _AuthDecoder.AuthenticateAsync(request.Authorization).Result;
+                var auth = authDecoder.AuthenticateAsync(request.Authorization).Result;
                 if (!auth.Succeeded)
                 {
-                    _Logger.LogWarning(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
+                    logger.LogWarning(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
                 }
                 else
                 {
-                    var registry = _RegistryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
+                    var registry = registryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
 
                     var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
                     // if there is no cached result for this image/path, perform an index operation
-                    if (_Scanner.GetPath(imageSet.Images.First(), request.Path) == null)
+                    if (scanner.GetPath(imageSet.Images.First(), request.Path) == null)
                     {
-                        _Scanner.Index(registry, request.TargetRepo, imageSet.Images.First(), request.Path);
-                        _Logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest}:{request.Path}");
+                        scanner.Index(registry, request.TargetRepo, imageSet.Images.First(), request.Path);
+                        logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest}:{request.Path}");
                     }
                     else
                     {
-                        _Logger.LogInformation($"Request to index {request.TargetDigest}/{request.Path} in {request.TargetRepo} already has a cached result, and is being discarded.");
+                        logger.LogInformation($"Request to index {request.TargetDigest}/{request.Path} in {request.TargetRepo} already has a cached result, and is being discarded.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                _Logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(request)}");
+                logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(request)}");
             }
         }
     }

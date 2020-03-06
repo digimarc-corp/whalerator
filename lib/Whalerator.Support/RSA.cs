@@ -34,7 +34,7 @@ namespace Whalerator.Support
 {
     public class RSA : ICryptoAlgorithm
     {
-        AsymmetricCipherKeyPair _KeyPair;
+        AsymmetricCipherKeyPair keyPair;
         const string SigningAlg = "SHA-256withRSA";
         public int KeyLength { get; }
 
@@ -43,7 +43,7 @@ namespace Whalerator.Support
             KeyLength = length;
             var gen = new RsaKeyPairGenerator();
             gen.Init(new KeyGenerationParameters(SecureRandom.GetInstance("SHA256PRNG", true), length));
-            _KeyPair = gen.GenerateKeyPair();
+            keyPair = gen.GenerateKeyPair();
         }
 
         public RSA(string key)
@@ -53,14 +53,14 @@ namespace Whalerator.Support
             using (var reader = new StreamReader(stream))
             {
                 var pemReader = new PemReader(reader);
-                _KeyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-                KeyLength = ((RsaPrivateCrtKeyParameters)_KeyPair.Private).Modulus.BitLength;
+                keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
+                KeyLength = ((RsaPrivateCrtKeyParameters)keyPair.Private).Modulus.BitLength;
             }
         }
 
         public System.Security.Cryptography.RSA ToDotNetRSA()
         {
-            RsaPrivateCrtKeyParameters keyParams = (RsaPrivateCrtKeyParameters)_KeyPair.Private;
+            RsaPrivateCrtKeyParameters keyParams = (RsaPrivateCrtKeyParameters)keyPair.Private;
             System.Security.Cryptography.RSAParameters rsaParameters = DotNetUtilities.ToRSAParameters(keyParams);
             var rsa = System.Security.Cryptography.RSA.Create();
             rsa.ImportParameters(rsaParameters);
@@ -73,7 +73,7 @@ namespace Whalerator.Support
 
             var signer = SignerUtilities.GetSigner(SigningAlg);
 
-            signer.Init(true, _KeyPair.Private);
+            signer.Init(true, keyPair.Private);
             signer.BlockUpdate(bytes, 0, bytes.Length);
 
             return Convert.ToBase64String(signer.GenerateSignature());
@@ -86,7 +86,7 @@ namespace Whalerator.Support
 
             var signer = SignerUtilities.GetSigner(SigningAlg);
 
-            signer.Init(false, _KeyPair.Public);
+            signer.Init(false, keyPair.Public);
             signer.BlockUpdate(bytes, 0, bytes.Length);
             return signer.VerifySignature(sigBytes);
         }
@@ -96,7 +96,7 @@ namespace Whalerator.Support
             var bytes = Encoding.UTF8.GetBytes(clearText);
 
             var engine = new Pkcs1Encoding(new RsaEngine());
-            engine.Init(true, _KeyPair.Public);
+            engine.Init(true, keyPair.Public);
 
             var encrypted = Convert.ToBase64String(engine.ProcessBlock(bytes, 0, bytes.Length));
             return encrypted;
@@ -107,7 +107,7 @@ namespace Whalerator.Support
             var bytes = Convert.FromBase64String(cipherText);
 
             var encryptEngine = new Pkcs1Encoding(new RsaEngine());
-            encryptEngine.Init(false, _KeyPair.Private);
+            encryptEngine.Init(false, keyPair.Private);
 
             var clearText = encryptEngine.ProcessBlock(bytes, 0, bytes.Length);
 

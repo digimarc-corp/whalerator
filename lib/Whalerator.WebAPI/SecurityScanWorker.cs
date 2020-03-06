@@ -33,14 +33,14 @@ namespace Whalerator.WebAPI
 {
     public class SecurityScanWorker : QueueWorker<Request>
     {
-        private ISecurityScanner _Scanner;
-        private RegistryAuthenticationDecoder _AuthDecoder;
+        private ISecurityScanner scanner;
+        private RegistryAuthenticationDecoder authDecoder;
 
         public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, ISecurityScanner scanner, IRegistryFactory regFactory,
             RegistryAuthenticationDecoder decoder) : base(logger, config, queue, regFactory)
         {
-            _Scanner = scanner;
-            _AuthDecoder = decoder;
+            this.scanner = scanner;
+            authDecoder = decoder;
         }
 
 
@@ -48,19 +48,19 @@ namespace Whalerator.WebAPI
         {
             try
             {
-                var auth = _AuthDecoder.AuthenticateAsync(request.Authorization).Result;
+                var auth = authDecoder.AuthenticateAsync(request.Authorization).Result;
                 if (!auth.Succeeded)
                 {
-                    _Logger.LogError(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
+                    logger.LogError(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
                 }
                 else
                 {
-                    var registry = _RegistryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
+                    var registry = registryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
 
                     var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
-                    var scanResult = _Scanner.GetScan(imageSet.Images.First());
+                    var scanResult = scanner.GetScan(imageSet.Images.First());
                     if (scanResult == null)
                     {
                         if (request.Submitted)
@@ -70,21 +70,21 @@ namespace Whalerator.WebAPI
                         }
                         else
                         {
-                            _Scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
-                            _Logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {_Scanner.GetType().Name} for analysis.");
+                            scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
+                            logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
                             request.Submitted = true;
                         }
-                        _Queue.Push(request);
+                        queue.Push(request);
                     }
                     else
                     {
-                        _Logger.LogInformation($"Got latest {_Scanner.GetType().Name} scan for {request.TargetRepo}:{request.TargetDigest}");
+                        logger.LogInformation($"Got latest {scanner.GetType().Name} scan for {request.TargetRepo}:{request.TargetDigest}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                _Logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(request)}");
+                logger.LogError(ex, $"Processing failed for work item\n {Newtonsoft.Json.JsonConvert.SerializeObject(request)}");
             }
         }
     }

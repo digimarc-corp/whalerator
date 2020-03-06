@@ -32,12 +32,12 @@ namespace Whalerator.WebAPI
 {
     public class RegistryAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
-        private RegistryAuthenticationDecoder _Decoder;
+        private RegistryAuthenticationDecoder decoder;
 
         public RegistryAuthenticationHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, RegistryAuthenticationDecoder decoder)
             : base(options, logger, encoder, clock)
         {
-            _Decoder = decoder;
+            this.decoder = decoder;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -48,7 +48,7 @@ namespace Whalerator.WebAPI
             }
             else
             {
-                return _Decoder.AuthenticateAsync(Request.Headers["Authorization"]);
+                return decoder.AuthenticateAsync(Request.Headers["Authorization"]);
             }
         }
 

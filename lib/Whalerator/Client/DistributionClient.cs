@@ -32,14 +32,14 @@ namespace Whalerator.Client
 {
     public class DistributionClient : IDistributionClient
     {
-        private IAuthHandler _TokenSource;
+        private IAuthHandler tokenSource;
 
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 3, 0);
         public string Host { get; set; } = Registry.DockerHub;
 
         public DistributionClient(IAuthHandler tokenSource)
         {
-            _TokenSource = tokenSource;
+            this.tokenSource = tokenSource;
         }
 
         #region public methods
@@ -50,10 +50,10 @@ namespace Whalerator.Client
         public Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
         {
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"));
-            var scope = _TokenSource.ParseScope(uri) + ":pull";
-            if (_TokenSource.UpdateAuthorization(scope))
+            var scope = tokenSource.ParseScope(uri) + ":pull";
+            if (tokenSource.UpdateAuthorization(scope))
             {
-                var auth = _TokenSource.GetAuthorization(scope);
+                var auth = tokenSource.GetAuthorization(scope);
                 return Task.FromResult((uri, auth));
             }
             else
@@ -166,7 +166,7 @@ namespace Whalerator.Client
         {
             //work out the basic scope + action we'd need to perform this GET
             string scope = null;
-            if (_TokenSource.TryParseScope(uri, out var scopePath))
+            if (tokenSource.TryParseScope(uri, out var scopePath))
             {
                 var action = scopePath == "registry:catalog" ? "*" : "pull";
                 scope = $"{scopePath}:{action}";
@@ -177,7 +177,7 @@ namespace Whalerator.Client
                 client.Timeout = Timeout;
                 HttpResponseMessage result;
                 var message = new HttpRequestMessage { RequestUri = uri };
-                message.Headers.Authorization = _TokenSource.GetAuthorization(scope);
+                message.Headers.Authorization = tokenSource.GetAuthorization(scope);
 
                 if (!string.IsNullOrEmpty(accept)) { message.Headers.Add("Accept", accept); }
 
@@ -199,12 +199,12 @@ namespace Whalerator.Client
                 {
                     if (result.StatusCode == HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(scope))
                     {
-                        var authRequest = _TokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
+                        var authRequest = tokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
                         if (authRequest.scope != scope) { throw new ArgumentException($"The scope requested by the server ({authRequest.scope}) does not match that expected by the auth engine ({scope})"); }
                         // skip service check for dockerhub, since it returns inconsistent values
                         //if (!IsDockerHub && authRequest.service != Host) { throw new ArgumentException($"The service indicated by the server ({authRequest.service}), does not match that expected by the auth engine ({Host})."); }
 
-                        if (_TokenSource.UpdateAuthorization(authRequest.scope))
+                        if (tokenSource.UpdateAuthorization(authRequest.scope))
                         {
                             return Get(uri, accept, retries - 1);
                         }
@@ -241,7 +241,7 @@ namespace Whalerator.Client
         {
             //work out the basic scope + action we'd need to perform this GET
             string scope = null;
-            if (_TokenSource.TryParseScope(uri, out var scopePath))
+            if (tokenSource.TryParseScope(uri, out var scopePath))
             {
                 scope = $"{scopePath}:*";
             }
@@ -251,7 +251,7 @@ namespace Whalerator.Client
                 client.Timeout = Timeout;
                 HttpResponseMessage result;
                 var message = new HttpRequestMessage { RequestUri = uri, Method = HttpMethod.Delete };
-                message.Headers.Authorization = _TokenSource.GetAuthorization(scope);
+                message.Headers.Authorization = tokenSource.GetAuthorization(scope);
 
                 try
                 {
@@ -271,10 +271,10 @@ namespace Whalerator.Client
                 {
                     if (result.StatusCode == HttpStatusCode.Unauthorized && !string.IsNullOrEmpty(scope))
                     {
-                        var authRequest = _TokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
+                        var authRequest = tokenSource.ParseWwwAuthenticate(result.Headers.WwwAuthenticate.First());
                         if (authRequest.scope != scope) { throw new ArgumentException($"The scope requested by the server ({authRequest.scope}) does not match that expected by the auth engine ({scope})"); }
 
-                        if (_TokenSource.UpdateAuthorization(authRequest.scope))
+                        if (tokenSource.UpdateAuthorization(authRequest.scope))
                         {
                             return Delete(uri, retries - 1);
                         }

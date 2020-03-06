@@ -20,4 +20,10 @@
     <ProjectReference Include="..\Whalerator\Whalerator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="settings.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -25,13 +25,13 @@ namespace Whalerator.Support
 {
     public class MemCacheFactory : ICacheFactory
     {
-        private IMemoryCache _Cache;
+        private IMemoryCache cache;
 
         public MemCacheFactory(IMemoryCache cache)
         {
-            _Cache = cache;
+            this.cache = cache;
         }
 
-        public ICache<T> Get<T>() where T : class => new MemCache<T>(_Cache);
+        public ICache<T> Get<T>() where T : class => new MemCache<T>(cache);
     }
 }

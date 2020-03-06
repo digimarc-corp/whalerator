@@ -29,16 +29,16 @@ namespace Whalerator.Content
 {
     public class ContentScanner : IContentScanner
     {
-        private ILogger<ContentScanner> _Log;
-        private ConfigRoot _Config;
-        private ICacheFactory _CacheFactory;
+        private ILogger<ContentScanner> logger;
+        private ConfigRoot config;
+        private ICacheFactory cacheFactory;
         public IWorkQueue<Request> Queue { get; private set; }
 
         public ContentScanner(ILogger<ContentScanner> logger, ConfigRoot config, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
         {
-            _Log = logger;
-            _Config = config;
-            _CacheFactory = cacheFactory;
+            this.logger = logger;
+            this.config = config;
+            this.cacheFactory = cacheFactory;
             Queue = queue;
         }
 
@@ -52,7 +52,7 @@ namespace Whalerator.Content
         /// <returns></returns>
         public Result GetPath(Image image, string path)
         {
-            var cache = _CacheFactory.Get<Result>();
+            var cache = cacheFactory.Get<Result>();
             var key = GetKey(image, path);
 
             return cache.TryGet(key, out var cachedResult) ? cachedResult : null;
@@ -69,7 +69,7 @@ namespace Whalerator.Content
         /// <param name="path"></param>
         public void Index(IRegistry registry, string repository, Image image, string path)
         {
-            var cache = _CacheFactory.Get<Result>();
+            var cache = cacheFactory.Get<Result>();
             var key = GetKey(image, path);
 
             // find a pointer to the specific layer that contains the requested path

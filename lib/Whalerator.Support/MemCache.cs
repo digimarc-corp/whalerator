@@ -28,18 +28,18 @@ namespace Whalerator.Support
 {
     public class MemCache<T> : ICache<T> where T : class
     {
-        private IMemoryCache _MemCache;
+        private IMemoryCache memCache;
 
         public MemCache(IMemoryCache memCache)
         {
-            _MemCache = memCache;
+            this.memCache = memCache;
         }
 
         /// <inheritdoc/>
         public bool TryGet(string key, out T value)
         {
             string json;
-            if (_MemCache.TryGetValue(key, out json))
+            if (memCache.TryGetValue(key, out json))
             {
                 value = JsonConvert.DeserializeObject<T>(json);
                 return true;
@@ -54,25 +54,25 @@ namespace Whalerator.Support
             if (Exists(key)) { return false; }
             else
             {
-                _MemCache.Set(key, value, lockTime);
-                var check = _MemCache.Get<string>(key);
+                memCache.Set(key, value, lockTime);
+                var check = memCache.Get<string>(key);
                 return check == value;
             }
         }
 
         void LockRelease(string key, string value)
         {
-            var check = _MemCache.Get<string>(key);
-            if (check == value) { _MemCache.Remove(key); }
+            var check = memCache.Get<string>(key);
+            if (check == value) { memCache.Remove(key); }
         }
 
         bool LockExtend(string key, string value, TimeSpan time)
         {
-            var check = _MemCache.Get<string>(key);
+            var check = memCache.Get<string>(key);
             if (check == value)
             {
-                _MemCache.Set(key, value, time);
-                check = _MemCache.Get<string>(key);
+                memCache.Set(key, value, time);
+                check = memCache.Get<string>(key);
                 return check == value;
             }
             else
@@ -102,14 +102,14 @@ namespace Whalerator.Support
         public void Set(string key, T value) => Set(key, value, null);
 
         /// <inheritdoc/>
-        public bool Exists(string key) => _MemCache.TryGetValue(key, out var discard);
+        public bool Exists(string key) => memCache.TryGetValue(key, out var discard);
 
         /// <inheritdoc/>
         public void Set(string key, T value, TimeSpan? ttl)
         {
             var json = JsonConvert.SerializeObject(value);
-            if (ttl == null) { _MemCache.Set(key, json); }
-            else { _MemCache.Set(key, json, (TimeSpan)ttl); }
+            if (ttl == null) { memCache.Set(key, json); }
+            else { memCache.Set(key, json, (TimeSpan)ttl); }
         }
 
         /// <inheritdoc/>
@@ -117,7 +117,7 @@ namespace Whalerator.Support
         {
             if (Exists(key))
             {
-                _MemCache.Remove(key);
+                memCache.Remove(key);
                 return true;
             }
             else

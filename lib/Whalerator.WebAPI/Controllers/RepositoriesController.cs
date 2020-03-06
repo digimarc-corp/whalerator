@@ -34,11 +34,11 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoriesController : Controller
     {
-        private IRegistryFactory _RegFactory;
+        private IRegistryFactory regFactory;
 
         public RepositoriesController(IRegistryFactory regFactory)
         {
-            _RegFactory = regFactory;
+            this.regFactory = regFactory;
         }
 
         [HttpGet("list")]
@@ -49,7 +49,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
 
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
                 var repos = registryApi.GetRepositories(empties).OrderBy(r => r.Name);
@@ -70,7 +70,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var permissions = registryApi.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 

@@ -34,26 +34,26 @@ namespace Whalerator.Support
          * Failures on the queue will be resubmitted by the polling process, and otherwise we can just fail cheaply and move on
          */
 
-        private IConnectionMultiplexer _Mux;
-        private ILogger<RedQueue<T>> _Logger;
-        private string _QueueName;
+        private IConnectionMultiplexer mux;
+        private ILogger<RedQueue<T>> logger;
+        private string queueName;
 
         public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger, string queueName)
         {
-            _Mux = redisMux;
-            _Logger = logger;
-            _QueueName = queueName;
+            mux = redisMux;
+            this.logger = logger;
+            this.queueName = queueName;
         }
 
         public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
 
-        public bool Contains(string key) => _Mux.GetDatabase().KeyExists(key);
+        public bool Contains(string key) => mux.GetDatabase().KeyExists(key);
 
 
         public T Pop()
         {
-            var db = _Mux.GetDatabase();
-            var key = db.ListRightPop(_QueueName);
+            var db = mux.GetDatabase();
+            var key = db.ListRightPop(queueName);
             if (key.IsNullOrEmpty)
             {
                 return null;
@@ -68,7 +68,7 @@ namespace Whalerator.Support
                 }
                 else
                 {
-                    _Logger.LogWarning($"Got bad workitem key: {key}");
+                    logger.LogWarning($"Got bad workitem key: {key}");
                     return null;
                 }
             }
@@ -76,10 +76,10 @@ namespace Whalerator.Support
 
         public void Push(T workItem)
         {
-            var db = _Mux.GetDatabase();
+            var db = mux.GetDatabase();
             // expiration is aggressive to allow queue failures to self-clear quickly
             db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(1200));
-            db.ListLeftPush(_QueueName, workItem.WorkItemKey);
+            db.ListLeftPush(queueName, workItem.WorkItemKey);
         }
 
         public bool TryPush(T workItem)

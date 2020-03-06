@@ -33,30 +33,30 @@ namespace Whalerator.WebAPI
 {
     public abstract class QueueWorker<T> : IHostedService where T : Whalerator.RequestBase
     {
-        protected ILogger _Logger;
-        protected ConfigRoot _Config;
-        protected IWorkQueue<T> _Queue;
-        protected IRegistryFactory _RegistryFactory;
-        private Timer _Timer;
+        protected ILogger logger;
+        protected ConfigRoot config;
+        protected IWorkQueue<T> queue;
+        protected IRegistryFactory registryFactory;
+        private Timer timer;
 
         protected QueueWorker(ILogger logger, ConfigRoot config, IWorkQueue<T> queue, IRegistryFactory regFactory)
         {
-            _Logger = logger;
-            _Config = config;
-            _Queue = queue;
-            _RegistryFactory = regFactory;
+            this.logger = logger;
+            this.config = config;
+            this.queue = queue;
+            registryFactory = regFactory;
         }
 
-        void StartTimer() => _Timer.Change(5000, 5000);
-        void PauseTimer() => _Timer.Change(Timeout.Infinite, 0);
+        void StartTimer() => timer.Change(5000, 5000);
+        void PauseTimer() => timer.Change(Timeout.Infinite, 0);
 
         public abstract void DoRequest(T request);
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _Logger.LogInformation("QueueWorker starting");
+            logger.LogInformation("QueueWorker starting");
 
-            _Timer = new Timer(DoWork);
+            timer = new Timer(DoWork);
             StartTimer();
 
             return Task.CompletedTask;
@@ -67,24 +67,24 @@ namespace Whalerator.WebAPI
             try
             {
                 PauseTimer();
-                var workItem = _Queue.Pop();
+                var workItem = queue.Pop();
                 while (workItem != null)
                 {
                     DoRequest(workItem);
 
-                    workItem = _Queue.Pop();
+                    workItem = queue.Pop();
                 }
             }
             catch (Exception ex)
             {
-                _Logger.LogError(ex, "An error occurred while processing a queued work item.");
+                logger.LogError(ex, "An error occurred while processing a queued work item.");
             }
             StartTimer();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            _Timer?.Change(Timeout.Infinite, 0);
+            timer?.Change(Timeout.Infinite, 0);
             return Task.CompletedTask;
         }
     }

@@ -29,24 +29,24 @@ namespace Whalerator.Support
 {
     public class MemQueue<T> : IWorkQueue<T> where T : WorkItem
     {
-        private ConcurrentQueue<T> _Queue;
+        private ConcurrentQueue<T> queue;
 
         public MemQueue()
         {
-            _Queue = new ConcurrentQueue<T>();
+            queue = new ConcurrentQueue<T>();
         }
 
         public bool Contains(T workItem) => Contains(workItem.WorkItemKey);
 
-        public bool Contains(string key) => _Queue.Any(i => i.WorkItemKey.Equals(key));
+        public bool Contains(string key) => queue.Any(i => i.WorkItemKey.Equals(key));
 
         public T Pop()
         {
-            if (_Queue.TryDequeue(out var item)) { return item; }
+            if (queue.TryDequeue(out var item)) { return item; }
             else { return null; }
         }
 
-        public void Push(T workItem) => _Queue.Enqueue(workItem);
+        public void Push(T workItem) => queue.Enqueue(workItem);
 
         public bool TryPush(T workItem)
         {

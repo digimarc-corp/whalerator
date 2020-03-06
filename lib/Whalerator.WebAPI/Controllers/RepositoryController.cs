@@ -38,17 +38,17 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoryController : Controller
     {
-        private IRegistryFactory _RegFactory;
-        private ILogger<RepositoryController> _Logger;
-        private ISecurityScanner _SecScanner;
-        private IContentScanner _ContentScanner;
+        private IRegistryFactory regFactory;
+        private ILogger<RepositoryController> logger;
+        private ISecurityScanner secScanner;
+        private IContentScanner contentScanner;
 
         public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner secScanner = null, IContentScanner contentScanner = null)
         {
-            _RegFactory = regFactory;
-            _Logger = logger;
-            _SecScanner = secScanner;
-            _ContentScanner = contentScanner;
+            this.regFactory = regFactory;
+            this.logger = logger;
+            this.secScanner = secScanner;
+            this.contentScanner = contentScanner;
         }
 
         string Validate(string digest)
@@ -70,7 +70,7 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("sec/{digest}/{*repository}")]
         public IActionResult GetSecScan(string repository, string digest)
         {
-            if (_SecScanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
+            if (secScanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
 
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
@@ -80,16 +80,16 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, digest, true);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
-                var scanResult = _SecScanner.GetScan(imageSet.Images.First());
+                var scanResult = secScanner.GetScan(imageSet.Images.First());
 
                 if (scanResult == null)
                 {
-                    _SecScanner.Queue.TryPush(new Security.Request
+                    secScanner.Queue.TryPush(new Security.Request
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
@@ -139,16 +139,16 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, digest, true);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
-                var result = _ContentScanner.GetPath(imageSet.Images.First(), path);
+                var result = contentScanner.GetPath(imageSet.Images.First(), path);
 
                 if (result == null)
                 {
-                    _ContentScanner.Queue.TryPush(new Whalerator.Content.Request
+                    contentScanner.Queue.TryPush(new Whalerator.Content.Request
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
@@ -199,7 +199,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var tags = registryApi.GetTags(repository);
                 var permissions = registryApi.GetPermissions(repository);
 
@@ -224,7 +224,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
@@ -248,13 +248,13 @@ namespace Whalerator.WebAPI.Controllers
         [HttpDelete("digest/{digest}/{*repository}")]
         public IActionResult DeleteImageSet(string repository, string digest)
         {
-            _Logger.LogInformation($"Preparing to delete {repository}/{digest}");
+            logger.LogInformation($"Preparing to delete {repository}/{digest}");
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var permissions = registryApi.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
@@ -290,7 +290,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = _RegFactory.GetRegistry(credentials);
+                var registryApi = regFactory.GetRegistry(credentials);
                 var imageSet = registryApi.GetImageSet(repository, tag, false);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet.SetDigest);

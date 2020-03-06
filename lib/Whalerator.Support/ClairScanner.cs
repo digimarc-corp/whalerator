@@ -34,19 +34,19 @@ namespace Whalerator.Support
 {
     public class ClairScanner : ISecurityScanner
     {
-        private ILogger _Log;
-        private ConfigRoot _Config;
-        private IClairAPI _Clair;
-        private ICacheFactory _CacheFactory;
+        private ILogger logger;
+        private ConfigRoot config;
+        private IClairAPI clair;
+        private ICacheFactory cacheFactory;
 
         public IWorkQueue<Request> Queue { get; private set; }
 
         public ClairScanner(ILogger<ClairScanner> logger, ConfigRoot config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
         {
-            _Log = logger;
-            _Config = config;
-            _Clair = clair;
-            _CacheFactory = cacheFactory;
+            this.logger = logger;
+            this.config = config;
+            this.clair = clair;
+            this.cacheFactory = cacheFactory;
             Queue = queue;
         }
 
@@ -60,7 +60,7 @@ namespace Whalerator.Support
         /// <returns></returns>
         public Result GetScan(Image image, bool hard = false)
         {
-            var cache = _CacheFactory.Get<Result>();
+            var cache = cacheFactory.Get<Result>();
             var key = GetKey(image);
 
             // if we have a cached scan, return it
@@ -69,7 +69,7 @@ namespace Whalerator.Support
                 return cachedResult;
             }
             // if we don't have a Clair instance handy, return null
-            else if (_Clair == null)
+            else if (clair == null)
             {
                 return null;
             }
@@ -78,7 +78,7 @@ namespace Whalerator.Support
             {
                 try
                 {
-                    var scanResult = _Clair.GetLayerResult(image.Layers.First().Digest).Result.ToScanResult();
+                    var scanResult = clair.GetLayerResult(image.Layers.First().Digest).Result.ToScanResult();
                     cache.Set(key, scanResult);
 
                     return scanResult;
@@ -104,7 +104,7 @@ namespace Whalerator.Support
         /// <param name="image"></param>
         public void RequestScan(IRegistry registry, string repository, Image image)
         {
-            var cache = _CacheFactory.Get<Result>();
+            var cache = cacheFactory.Get<Result>();
             var lockTime = new TimeSpan(0, 5, 0);
 
             // if this image is already in cache, skip it entirely
@@ -119,7 +119,7 @@ namespace Whalerator.Support
                     {
                         if (!CheckLayerScanned(layer))
                         {
-                            var aliases = _Config.ClairScanner?.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
+                            var aliases = config.ClairScanner?.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
                             var proxy = registry.GetLayerProxyInfo(repository, layer, aliases);
 
                             var request = new ClairLayerRequest
@@ -141,7 +141,7 @@ namespace Whalerator.Support
                             {
                                 var tokenSource = new CancellationTokenSource();
                                 tokenSource.CancelAfter(60000);
-                                _Clair.SubmitLayer(request, tokenSource.Token).Wait();
+                                clair.SubmitLayer(request, tokenSource.Token).Wait();
                             }
                             catch (AggregateException ex)
                             {
@@ -157,7 +157,7 @@ namespace Whalerator.Support
                                         var json = JObject.Parse(errorContent);
                                         lastError = (string)json["Error"]["Message"];
                                     }
-                                    catch { _Log.LogError($"Could not parse Clair error response '{errorContent}'", ex); }
+                                    catch { logger.LogError($"Could not parse Clair error response '{errorContent}'", ex); }
                                     continue;
                                 }
                                 else { throw; }
@@ -188,7 +188,7 @@ namespace Whalerator.Support
         {
             try
             {
-                var result = _Clair.GetLayerResult(layer.Digest, vulnerabilities: false).Result;
+                var result = clair.GetLayerResult(layer.Digest, vulnerabilities: false).Result;
                 return true;
             }
             catch (AggregateException ex)

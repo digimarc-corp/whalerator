@@ -35,16 +35,16 @@ namespace Whalerator.WebAPI.Controllers
     [Route("api/Token")]
     public class TokenController : Controller
     {
-        private ICryptoAlgorithm _Crypto;
-        private ICache<Authorization> _Cache;
+        private ICryptoAlgorithm crypto;
+        private ICache<Authorization> cache;
 
         public ILogger<TokenController> Logger { get; }
         public ConfigRoot Config { get; }
 
         public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ConfigRoot config)
         {
-            _Crypto = crypto;
-            _Cache = cache;
+            this.crypto = crypto;
+            this.cache = cache;
             Logger = logger;
             Config = config;
         }
@@ -63,10 +63,10 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 credentials.DeAliasRegistry();
-                var handler = new AuthHandler(_Cache);
+                var handler = new AuthHandler(cache);
                 handler.Login(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
-                var cipherText = _Crypto.Encrypt(json);
+                var cipherText = crypto.Encrypt(json);
 
                 return Ok(new
                 {
@@ -77,7 +77,7 @@ namespace Whalerator.WebAPI.Controllers
                         Reg = credentials.Registry,
                         Iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                         Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.Security.TokenLifetime
-                    }, _Crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256)
+                    }, crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256)
                 });
             }
             catch (Exception ex)
