@@ -209,7 +209,7 @@ namespace Whalerator.WebAPI
             if (contentUI)
             {
                 uiConfig.DocScanner = true;
-                uiConfig.SearchLists = config.Search?.Filelists?.Select(l => l.Split(';').Select(f => f.Trim()));
+                uiConfig.SearchLists = config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)));
             }
 
             if (contentWorker || contentUI)
