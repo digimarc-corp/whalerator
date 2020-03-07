@@ -67,6 +67,9 @@ export class ConfigService extends WebService {
         this.errorMessage = c.message;
       } else {
         this.config = new Config(c);
+        if (document.getElementById("usertheme")) {
+          (<HTMLLinkElement>document.getElementById("usertheme")).href = c.userTheme.toString();
+        }
       }
     });
   }

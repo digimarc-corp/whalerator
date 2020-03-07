@@ -28,6 +28,7 @@ namespace Whalerator.Config
     /// </summary>
     public class PublicConfig
     {
+        public string UserTheme { get; set; }
         public string Registry { get; set; }
         public bool AutoLogin { get; set; }
         public bool SecScanner { get; set; }

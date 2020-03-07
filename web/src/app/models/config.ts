@@ -26,4 +26,5 @@ export class Config {
     public secScanner: boolean;
     public docScanner: boolean;
     public autoLogin: boolean;
+    public userTheme: String;
 }

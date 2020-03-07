@@ -59,11 +59,14 @@ namespace Whalerator.WebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             var config = new ConfigRoot();
-            var uiConfig = new PublicConfig();
             Configuration.Bind(config);
+            var uiConfig = new PublicConfig()
+            {
+                UserTheme = config.Catalog?.Theme
+            };
+
             services.AddSingleton(config);
             services.AddSingleton(Logger);
-
 
             services.AddWhaleCrypto(config, Logger)
                 .AddWhaleAuth()

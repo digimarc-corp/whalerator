@@ -1,0 +1,26 @@
+body.background {
+    background-color: gray;
+    background-image: none;    
+}
+
+div.appBox {
+    border-color: black;
+}
+
+div.aboutBox {
+    border-color: black;
+}
+
+table tr:nth-child(2n) {
+    background-color: #eeeeee;
+}
+
+span.badge.tag-count {
+    background-color: white;
+    border-color: black;
+    color: black;
+}
+
+#user::before {
+    content: "hello";
+}
