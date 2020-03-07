@@ -1,0 +1,154 @@
+body.background {
+    background-color: #272727;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3E%3Cpath fill='%23000000' fill-opacity='0.24' d='M14 16H9v-2h5V9.87a4 4 0 1 1 2 0V14h5v2h-5v15.95A10 10 0 0 0 23.66 27l-3.46-2 8.2-2.2-2.9 5a12 12 0 0 1-21 0l-2.89-5 8.2 2.2-3.47 2A10 10 0 0 0 14 31.95V16zm40 40h-5v-2h5v-4.13a4 4 0 1 1 2 0V54h5v2h-5v15.95A10 10 0 0 0 63.66 67l-3.47-2 8.2-2.2-2.88 5a12 12 0 0 1-21.02 0l-2.88-5 8.2 2.2-3.47 2A10 10 0 0 0 54 71.95V56zm-39 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm40-40a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM15 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm40 40a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+a:visited {
+    color: #777aaa;
+}
+
+a {
+    color: #999ccc;
+}
+
+img.action-icon {
+    opacity: 0.5;
+}
+
+img.image-icon {
+    opacity: 0.4;
+}
+
+div.appBox {
+    border-color: #424242;
+    background: #373737;
+    color: #bbbbbb;
+}
+
+table.catalog {
+    border: none;
+}
+
+table.catalog thead {
+    background-color: #1b1b1b;
+    color: #bbbbbb;
+}
+
+table.catalog tr:nth-child(2n) {
+    background-color: #222222;
+}
+
+table.catalog tr {
+    border-bottom: 0.02em solid #373737;
+}
+
+table.catalog tbody tr:hover {
+    border-bottom: 0.02em solid #777aaa;
+}
+
+div.aboutBox {
+    border-color: #424242;
+    background: #373737;
+    color: #bbbbbb;
+}
+
+span.badge.tag-count {
+    background-color: #424242;
+    border-color: #424242;
+    color: #bbbbbb;
+}
+
+.badge.tag {
+    background-color: #292929;
+    border: none;
+    color: #3f7ea0;
+}
+
+.badge.tag.selected {
+    border-left: 0.1em solid #3f7ea0;
+}
+
+
+.badge.platform {
+    background-color: #292929;
+    border: none;
+    color: #afa519;
+}
+
+.badge.platform.selected {
+    border-left: 0.1em solid #afa519;
+}
+
+div.image-detail {
+    border-left: none;
+}
+
+#user::before {
+    content: "ahoy";
+}
+
+.tab.searching {
+    border-color: #292929;
+    color: #666666;
+    background-color: #292929;
+}
+
+.tab.document {
+    background-color: #292929;
+    color: #26c36d
+}
+
+.tab.document.selected {
+    border-left: 0.1em solid #26c36d;
+}
+
+.tab.document div {
+    background-color: #292929;
+    color: #a2a2a2;
+    border-color: #292929;
+}
+
+markdown pre {
+    border: 0.05em dotted #373737;
+    background: #373737;
+    color: #797979
+}
+
+markdown code {
+    background: #373737;
+    color: #797979;
+}
+
+markdown img {
+    width: 100%;
+}
+
+.tab.scanning {
+    background-color: #292929;
+    color: #851717
+}
+
+.tab.scanning.selected {
+    border-left: 0.1em solid #851717;
+}
+
+.tab.scanning div {
+    background-color: #292929;
+    color: #797979;
+    border-color: #424242;
+}
+
+.tab.history {
+    background-color: #292929;
+    color: #c05ac0;
+}
+
+.tab.history.selected {
+    border-left: 0.1em solid #c05ac0;
+}
+
+.tab.history div {
+    background-color: #292929;
+    color: #797979;
+    border-color: #424242;
+}
