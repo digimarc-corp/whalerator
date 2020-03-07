@@ -1,14 +1,36 @@
 body.background {
     background-color: #272727;
+    background-attachment: fixed;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'%3E%3Cpath fill='%23000000' fill-opacity='0.24' d='M14 16H9v-2h5V9.87a4 4 0 1 1 2 0V14h5v2h-5v15.95A10 10 0 0 0 23.66 27l-3.46-2 8.2-2.2-2.9 5a12 12 0 0 1-21 0l-2.89-5 8.2 2.2-3.47 2A10 10 0 0 0 14 31.95V16zm40 40h-5v-2h5v-4.13a4 4 0 1 1 2 0V54h5v2h-5v15.95A10 10 0 0 0 63.66 67l-3.47-2 8.2-2.2-2.88 5a12 12 0 0 1-21.02 0l-2.88-5 8.2 2.2-3.47 2A10 10 0 0 0 54 71.95V56zm-39 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm40-40a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM15 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm40 40a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'%3E%3C/path%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar {
+    width: 0.5em;
+    height: 0.5em;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #111111;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #292929;
+}
+
+a {
+    color: #999ccc;
 }
 
 a:visited {
     color: #777aaa;
 }
 
-a {
-    color: #999ccc;
+input {
+    color: #111111;
+}
+
+button {
+    color: #111111;
 }
 
 img.action-icon {
@@ -19,7 +41,7 @@ img.image-icon {
     opacity: 0.4;
 }
 
-div.appBox {
+div.box {
     border-color: #424242;
     background: #373737;
     color: #bbbbbb;
@@ -46,16 +68,18 @@ table.catalog tbody tr:hover {
     border-bottom: 0.02em solid #777aaa;
 }
 
-div.aboutBox {
-    border-color: #424242;
-    background: #373737;
-    color: #bbbbbb;
-}
-
 span.badge.tag-count {
     background-color: #424242;
     border-color: #424242;
     color: #bbbbbb;
+}
+
+.label {
+    padding-right: 0.5em;
+}
+
+.badge {
+    border-radius: 0em;
 }
 
 .badge.tag {
@@ -67,7 +91,6 @@ span.badge.tag-count {
 .badge.tag.selected {
     border-left: 0.1em solid #3f7ea0;
 }
-
 
 .badge.platform {
     background-color: #292929;
@@ -141,6 +164,10 @@ markdown img {
 .tab.history {
     background-color: #292929;
     color: #c05ac0;
+}
+
+.tab.history div.command {
+    background-color: #373737;
 }
 
 .tab.history.selected {

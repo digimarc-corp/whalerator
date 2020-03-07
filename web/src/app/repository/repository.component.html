@@ -31,16 +31,16 @@
         <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
         <ng-template #detailBlock>
           <div>
-            <b>Last update:</b> {{selectedImageSet.date | date : "medium" }}
+            <span class="label">Last update:</span> {{selectedImageSet.date | date : "medium" }}
             <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon"
               (click)="delete(selectedImageSet)" />
           </div>
           <div>
-            <b>Tags:</b>
+              <span class="label">Tags:</span>
             <span class="badge tag" *ngFor="let tag of selectedImageSet.tags" [class.selected]="tag === selectedTag" (click)="selectTag(tag)">{{tag}}</span>
           </div>
           <div>
-            <b>Platforms:</b>
+              <span class="label">Platforms:</span>
             <span class="badge platform" (click)="selectPlatform(platform)"
               [class.selected]="selectedPlatform.label === platform.label"
               *ngFor="let platform of selectedImageSet.platforms">

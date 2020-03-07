@@ -11,9 +11,9 @@ a {
     margin: 0.3em;
 }
 
-%box {
-    border: 0.1em solid $blue-dark;
-    border-radius: 0.2em;
+.box {
+//    border: 0.1em solid $blue-dark;
+//    border-radius: 0.2em;
     background-color: $appForeground;
     padding: 1em;
     @media (min-width: $width-break-md) {
@@ -26,8 +26,8 @@ a {
     }    
 }
 
-.appBox {
-    @extend %box;
+.box.app {
+//    @extend %box;
     @media (min-width: $width-break-md) {
         margin-top: 5em;
     }
@@ -36,8 +36,8 @@ a {
     }
 }
 
-.aboutBox {
-    @extend %box;
+.box.about {
+//    @extend %box;
     padding: 0.2em 1em;
     overflow: auto;
 }
