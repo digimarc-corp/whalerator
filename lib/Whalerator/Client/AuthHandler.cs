@@ -99,7 +99,7 @@ namespace Whalerator.Client
                     var preLogin = client.GetAsync(RegistryEndpoint).Result;
                     if (preLogin.IsSuccessStatusCode)
                     {
-                        if (AnonymousMode)
+                        if (!AnonymousMode)
                         {
                             throw new AuthenticationException("A username or password was specified, but the registry server does not support authentication.");
                         }
