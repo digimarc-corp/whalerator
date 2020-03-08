@@ -82,7 +82,10 @@ export class LoginFormComponent implements OnInit {
       }
     }
 
-    this.themes = this.configService.config.themes;
+    // only offer the selector if there is more than one theme to choose from
+    if (this.configService.config.themes && this.configService.config.themes.length > 1) {
+      this.themes = this.configService.config.themes;
+    }
   }
 
   logout() {

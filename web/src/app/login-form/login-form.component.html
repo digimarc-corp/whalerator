@@ -1,6 +1,6 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
-  <div style="max-width: 40em; margin: auto;">
+  <div *ngIf="themes" style="max-width: 40em; margin: auto;">
     <div style="text-align: center;">
       Theme: <select [(ngModel)]="selectedTheme" >
         <option *ngFor="let theme of themes" [value]="theme.name">{{theme.name}}</option>

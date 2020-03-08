@@ -17,6 +17,16 @@ search:
   - readme.md;about.md
   - setup.md
 
+catalog:
+  themes:
+    - name: dark
+      style: assets/dark.css
+    - name: techie
+      style: assets/techie.css
+    - name: anchors
+      style: assets/classic.css
+    - name: minimalist
+
 contentScanner:
   # Local folder for storing downloaded layer data
   layercache: /var/data
