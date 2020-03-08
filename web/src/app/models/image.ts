@@ -30,7 +30,7 @@ export class Image {
         this.scanResult = this.scanResult ? new ScanResult(this.scanResult) : null;
     }
 
-    public digest: String;
+    public digest: string;
     public platform: Platform;
     public history: History[];
     public documents: Document[];

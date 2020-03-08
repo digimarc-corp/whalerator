@@ -46,17 +46,17 @@ export class RepositoryComponent implements OnInit {
     private configService: ConfigService,
     private titleService: Title) { }
 
-  public name: String;
+  public name: string;
 
-  requestedTag: String;
+  requestedTag: string;
   loadRequested = false;
 
-  public tags: String[];
-  public selectedTag: String;
+  public tags: string[];
+  public selectedTag: string;
   public selectedImageSet: ImageSet;
   public selectedPlatform: Platform;
   public selectedImage: Image;
-  public readme: String;
+  public readme: string;
 
   public showCopyMsg: Boolean;
 
@@ -64,11 +64,11 @@ export class RepositoryComponent implements OnInit {
   public tagMap: { [tag: string]: ImageSet } = {};
 
   public permissions: Permissions;
-  public get canDelete(): Boolean {
+  public get canDelete(): boolean {
     return this.permissions >= Permissions.Admin;
   }
 
-  public errorMessage: String[] = [];
+  public errorMessage: string[] = [];
 
   // provide lookup for enum strings
   public permissionsType: typeof Permissions = Permissions;
@@ -77,7 +77,7 @@ export class RepositoryComponent implements OnInit {
     this.route.queryParams.subscribe(p => {
       this.name = this.route.snapshot.children[0].url.join('/');
       this.requestedTag = p['tag'];
-      this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name.toString());
+      this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name);
       this.getRepo();
     });
   }
@@ -107,13 +107,13 @@ export class RepositoryComponent implements OnInit {
     }
   }
 
-  get fullPath(): String {
+  get fullPath(): string {
     return `${this.sessionService.registryPath}${this.name}:${this.selectedTag}`;
   }
 
   copyPath() {
     // @ts-ignore: the Clipboard API is new and shakily supported. Verified working in latest Chrome & Firefox, not in Safari
-    navigator.clipboard.writeText(this.fullPath.toString());
+    navigator.clipboard.writeText(this.fullPath);
 
     this.showCopyMsg = true;
     setTimeout(() => { this.showCopyMsg = false; }, 3000);
@@ -125,9 +125,9 @@ export class RepositoryComponent implements OnInit {
   }
 
 
-  selectTag(tag: String) {
+  selectTag(tag: string) {
     this.selectedTag = tag;
-    this.selectedImageSet = this.tagMap[tag.toString()];
+    this.selectedImageSet = this.tagMap[tag];
     if (!this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
       this.selectedPlatform = this.selectedImageSet.images[0].platform;
       console.log('Setting platform ' + this.selectedPlatform.label);
@@ -157,7 +157,7 @@ export class RepositoryComponent implements OnInit {
     }
   }
 
-  getFirstImage(tag: String, next: () => void) {
+  getFirstImage(tag: string, next: () => void) {
     this.getImage(tag, () => {
       if (next) { next(); }
     });
@@ -174,13 +174,13 @@ export class RepositoryComponent implements OnInit {
     }
   }
 
-  showNotFound(tag: String, next?: () => void) {
+  showNotFound(tag: string, next?: () => void) {
     this.errorMessage.push(`Tag '${tag}' not found.`);
     if (next) { next(); }
   }
 
   // this is where the magic happens
-  getImage(tag: String, next?: () => void) {
+  getImage(tag: string, next?: () => void) {
     // request the digest associated with this tag
     this.catalog.getImageSetDigest(this.name, tag).subscribe(digest => {
       if (isError(digest)) {
@@ -191,7 +191,7 @@ export class RepositoryComponent implements OnInit {
         }
       } else {
         // if we've already loaded an imageset with this digest, just make the map entry
-        if (this.images[digest.toString()]) {
+        if (this.images[digest]) {
           this.mapTag(digest, tag);
           if (next) { next(); }
         } else {
@@ -202,13 +202,13 @@ export class RepositoryComponent implements OnInit {
             } else {
               // this request may have been duplicated since it was sent, so recheck the set of fetched images.
               // throwing away the extra information is cheaper than implementing locking or eliminating parallelism here.
-              if (this.images[digest.toString()]) {
+              if (this.images[digest]) {
                 this.mapTag(digest, tag);
               } else {
-                const setDigest = i.setDigest.toString();
+                const setDigest = i.setDigest;
                 i.tags = [tag];
                 this.images[setDigest] = i;
-                this.tagMap[tag.toString()] = this.images[setDigest];
+                this.tagMap[tag] = this.images[setDigest];
                 // if this tag is currently selected, set the active image and start loading documents
                 if (tag === this.selectedTag) {
                   this.selectedImageSet = this.images[setDigest];
@@ -227,21 +227,8 @@ export class RepositoryComponent implements OnInit {
     });
   }
 
-  private mapTag(digest: String, tag: String) {
-    this.images[digest.toString()].tags.push(tag);
-    this.tagMap[tag.toString()] = this.images[digest.toString()];
+  private mapTag(digest: string, tag: string) {
+    this.images[digest].tags.push(tag);
+    this.tagMap[tag] = this.images[digest];
   }
-  /*
-    getDocuments(imageSet: ImageSet, platform: Platform, next?: () => void) {
-      const digest = this.getDigestFor(imageSet, platform);
-      const filename = 'readme.md';
-      this.catalog.getFile(this.name, digest, filename).subscribe(r => {
-        if (this.selectedImageSet === this.images[digest.toString()]) {
-          this.readme = r.toString();
-          if (next) { next(); }
-        } else {
-          console.log(`Discarded stale request for ${filename}`);
-        }
-      });
-    }*/
 }

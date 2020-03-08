@@ -25,6 +25,6 @@ export class TagSet {
         this.permissions = Permissions[obj.permissions as keyof typeof Permissions];
     }
 
-    public tags: String[];
+    public tags: string[];
     public permissions: Permissions;
 }

@@ -36,7 +36,7 @@ import { delay } from 'q';
 })
 export class DocumentComponent implements OnInit {
 
-  @Input() repository: String;
+  @Input() repository: string;
 
   _image: Image;
   @Input()
@@ -62,7 +62,7 @@ export class DocumentComponent implements OnInit {
 
   selected: Document | History[] | ScanResult;
   searching: Observable<string>[] = [];
-  searchStatus: String;
+  searchStatus: string;
 
   constructor(private catalog: CatalogService,
     private config: ConfigService, private changeDetector: ChangeDetectorRef) { }
@@ -100,23 +100,23 @@ export class DocumentComponent implements OnInit {
     }
   }
 
-  scanningEnabled(): Boolean {
+  scanningEnabled(): boolean {
     return this.config.config.secScanner;
   }
 
-  docsEnabled(): Boolean {
+  docsEnabled(): boolean {
     return this.config.config.docScanner;
   }
 
-  isHistory(obj: any): Boolean {
+  isHistory(obj: any): boolean {
     return obj && obj[0] instanceof History;
   }
 
-  isDocument(obj: any): Boolean {
+  isDocument(obj: any): boolean {
     return obj instanceof Document;
   }
 
-  isScan(obj: any): Boolean {
+  isScan(obj: any): boolean {
     return obj instanceof ScanResult;
   }
 
@@ -156,7 +156,7 @@ export class DocumentComponent implements OnInit {
       // start a searcher observable for each potential stack of documents
       this.config.config.searchLists.forEach(d => {
         const obv = new Observable<string>((o) => {
-          this.searchStack(d.map(s => s.toString()), o);
+          this.searchStack(d, o);
         });
         this.addSearch(obv);
         obv.subscribe(r => console.log(r), err => console.error(err), () => this.removeSearch(obv));
@@ -236,7 +236,7 @@ export class DocumentComponent implements OnInit {
           if (list.length > 0 && this.image.digest === digest) {
             const document = new Document();
             document.name = filename;
-            document.content = r.body.toString();
+            document.content = r.body;
             this.pushDocument(document);
           } else {
             console.log("Mismatched digests, discarding document load");

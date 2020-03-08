@@ -42,15 +42,15 @@ export class SessionService extends WebService {
     this.setSession(localStorage.getItem(sessionKey) ? localStorage.getItem(sessionKey) : sessionStorage.getItem(sessionKey));
   }
 
-  sessionToken: String;
-  activeRegistry: String;
-  activeUser: String;
+  sessionToken: string;
+  activeRegistry: string;
+  activeUser: string;
   sessionExpiry: any;
   sessionStart: any;
 
   whaleratorUrl = environment.serviceBaseUri;
 
-  get registryLabel(): String {
+  get registryLabel(): string {
     if (this.activeRegistry === 'registry-1.docker.io') {
       return 'Docker Hub';
     } else {
@@ -58,7 +58,7 @@ export class SessionService extends WebService {
     }
   }
 
-  get registryPath(): String {
+  get registryPath(): string {
     if (this.activeRegistry === 'registry-1.docker.io') {
       return '';
     } else {
@@ -66,15 +66,15 @@ export class SessionService extends WebService {
     }
   }
 
-  public get userLabel(): String {
+  public get userLabel(): string {
     return this.sessionToken ? (this.activeUser || "anonymous") : "Login";
   }
 
-  private setSession(token: String) {
+  private setSession(token: string) {
     this.sessionToken = token;
     if (token) {
       const helper = new JwtHelperService();
-      const credential = helper.decodeToken(token.toString());
+      const credential = helper.decodeToken(token);
       this.activeRegistry = credential.Reg || 'Unknown Registry';
       this.activeUser = credential.Usr;
       this.sessionExpiry = new Date(credential.Exp * 1000).toLocaleString();
@@ -93,7 +93,7 @@ export class SessionService extends WebService {
     this.sessionToken = null;
   }
 
-  login(username: String, password: String, registry: String, remember: Boolean): Observable<Token | ServiceError> {
+  login(username: string, password: string, registry: string, remember: Boolean): Observable<Token | ServiceError> {
     const tokenRequest = new TokenRequest();
     tokenRequest.username = username;
     tokenRequest.password = password;
@@ -104,8 +104,8 @@ export class SessionService extends WebService {
     return this.http.post<Token>(endpoint, tokenRequest, httpOptions).pipe(
       tap((token: Token) => {
         this.setSession(token.token);
-        sessionStorage.setItem(sessionKey, token.token.toString());
-        if (remember) { localStorage.setItem(sessionKey, token.token.toString()); }
+        sessionStorage.setItem(sessionKey, token.token);
+        if (remember) { localStorage.setItem(sessionKey, token.token); }
       }),
       catchError(this.handleError<Token>('getToken'))
     );

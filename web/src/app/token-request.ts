@@ -17,7 +17,7 @@
 */
 
 export class TokenRequest {
-    public username: String;
-    public password: String;
-    public registry: String;
+    public username: string;
+    public password: string;
+    public registry: string;
 }

@@ -21,6 +21,6 @@ export class Document {
         Object.assign(this, obj);
     }
 
-    public name: String;
-    public content: String;
+    public name: string;
+    public content: string;
 }

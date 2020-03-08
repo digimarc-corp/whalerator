@@ -30,9 +30,9 @@ import { Theme } from './models/theme';
 })
 export class ConfigService extends WebService {
 
-  private apiBase: String;
+  private apiBase: string;
   public config: Config;
-  public errorMessage: String;
+  public errorMessage: string;
   public isErrored = false;
   public version: any;
   public themes: Theme[];
@@ -82,7 +82,7 @@ export class ConfigService extends WebService {
   setTheme(theme: Theme) {
     if (theme && document.getElementById("usertheme")) {
       this.currentTheme = theme;
-      localStorage.setItem('theme', theme.name.toString());
+      localStorage.setItem('theme', theme.name);
       (<HTMLLinkElement>document.getElementById("usertheme")).href = theme.style;
     }
   }

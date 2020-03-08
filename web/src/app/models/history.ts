@@ -21,10 +21,10 @@ export class History {
         Object.assign(this, obj);
     }
 
-    public command: String;
-    public created: String;
-    public type: String;
-    public args: String;
+    public command: string;
+    public created: string;
+    public type: string;
+    public args: string;
 
     public static From(obj: any): History {
         const history = new History();

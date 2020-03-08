@@ -27,8 +27,8 @@ import { Severity } from '../models/severity';
   styleUrls: ['./scan-result.component.scss']
 })
 export class ScanResultComponent implements OnInit {
-  @Input() 
-  set scan(scan: ScanResult){
+  @Input()
+  set scan(scan: ScanResult) {
     this._scan = scan;
   }
 

@@ -25,9 +25,9 @@ export class ScanComponent {
         this.vulnerabilities = (this.vulnerabilities || []).map(v => new Vulnerability(v)).sort((a, b) => b.severity - a.severity);
     }
 
-    public name: String;
-    public addedBy: String;
-    public version: String;
+    public name: string;
+    public addedBy: string;
+    public version: string;
     public namespaceName: number;
     public vulnerabilities: Vulnerability[];
 

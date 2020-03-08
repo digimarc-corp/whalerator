@@ -56,7 +56,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  deleteRepo(repo: String): Observable<Object | ServiceError> {
+  deleteRepo(repo: string): Observable<Object | ServiceError> {
     const imageUrl = this.apiBase + `/repositories/${repo}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -65,9 +65,7 @@ export class CatalogService extends WebService {
     );
   }
 
-
-
-  getTags(repo: String): Observable<TagSet | ServiceError> {
+  getTags(repo: string): Observable<TagSet | ServiceError> {
     const tagsUrl = this.apiBase + `/repository/${repo}/tags/list`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -78,7 +76,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  getImageSet(repo: String, tag: String): Observable<ImageSet | ServiceError> {
+  getImageSet(repo: string, tag: string): Observable<ImageSet | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/tag/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -90,7 +88,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  deleteImageSet(repo: String, digest: String): Observable<Object | ServiceError> {
+  deleteImageSet(repo: string, digest: string): Observable<Object | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/digest/${digest}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -99,17 +97,17 @@ export class CatalogService extends WebService {
     );
   }
 
-  getImageSetDigest(repo: String, tag: String): Observable<String | ServiceError> {
+  getImageSetDigest(repo: string, tag: string): Observable<string | ServiceError> {
     const imageUrl = this.apiBase + `/repository/${repo}/digest/${tag}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
-    return this.http.get<String>(imageUrl, { headers: headers }).pipe(
+    return this.http.get<string>(imageUrl, { headers: headers }).pipe(
       tap(repos => console.log('got image set')),
-      catchError(this.handleError<String>('getImage'))
+      catchError(this.handleError<string>('getImage'))
     );
   }
 
-  getFile(repo: String, digest: String, path: String): Observable<string | ServiceError | HttpResponse<string>> {
+  getFile(repo: string, digest: string, path: string): Observable<string | ServiceError | HttpResponse<string>> {
     const fileUrl = this.apiBase + `/repository/${repo}/file/${digest}?path=${path}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -119,7 +117,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  getScan(repo: String, digest: String): Observable<ScanResult | ServiceError> {
+  getScan(repo: string, digest: string): Observable<ScanResult | ServiceError> {
     const scanUrl = this.apiBase + `/repository/${repo}/sec/${digest}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
@@ -130,7 +128,7 @@ export class CatalogService extends WebService {
     );
   }
 
-  private handleGetFileError(operation = 'operation', path: String, result?: Object) {
+  private handleGetFileError(operation = 'operation', path: string, result?: Object) {
     return (error: any): Observable<Object> => {
       if (error.status === 404) {
         return of(`Could not find a file at \`/${path}\`.`);

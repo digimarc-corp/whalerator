@@ -24,11 +24,11 @@ export class Repository {
         this.permissions = Permissions[obj.permissions as keyof typeof Permissions];
     }
 
-    public name: String;
+    public name: string;
     public tags: number;
     public permissions: Permissions;
 
-    public get canDelete(): Boolean {
+    public get canDelete(): boolean {
         return this.permissions >= Permissions.Admin;
     }
 }

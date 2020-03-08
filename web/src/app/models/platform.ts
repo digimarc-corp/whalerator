@@ -21,10 +21,10 @@ export class Platform {
         Object.assign(this, obj);
     }
 
-    public architecture: String;
-    public os: String;
+    public architecture: string;
+    public os: string;
 
-    public get label(): String {
+    public get label(): string {
         return this.os + '/' + this.architecture;
     }
 }

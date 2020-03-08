@@ -17,5 +17,5 @@
 */
 
 export class Token {
-    public token: String;
+    public token: string;
 }

@@ -21,6 +21,6 @@ export class Theme {
         Object.assign(this, obj);
     }
 
-    public name: String;
-    public style: String;
+    public name: string;
+    public style: string;
 }

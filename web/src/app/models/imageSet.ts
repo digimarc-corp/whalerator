@@ -28,7 +28,7 @@ export class ImageSet {
 
     public platforms: Platform[];
     public date: Date;
-    public setDigest: String;
-    public tags: String[];
+    public setDigest: string;
+    public tags: string[];
     public images: Image[];
 }

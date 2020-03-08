@@ -38,12 +38,12 @@ export class LoginFormComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router) { }
 
-  username: String;
-  password: String;
-  registry: String;
+  username: string;
+  password: string;
+  registry: string;
   registryLocked = false;
-  remember: Boolean = true;
-  anonymous: Boolean = false;
+  remember = true;
+  anonymous = false;
   themes: Theme[];
   showPreview = false;
 
@@ -51,17 +51,17 @@ export class LoginFormComponent implements OnInit {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n' +
     '```\nprint("Hello, world!")```';
 
-  get selectedTheme(): String {
+  get selectedTheme(): string {
     return this.configService.currentTheme.name;
   }
-  set selectedTheme(theme: String) {
+  set selectedTheme(theme: string) {
     this.configService.setTheme(this.themes.find(t => t.name === theme));
   }
 
-  errorMessage: String;
+  errorMessage: string;
   isErrored = false;
 
-  forwardingRoute: String;
+  forwardingRoute: string;
 
   ngOnInit() {
     if (this.configService.config.registry) {
@@ -98,7 +98,7 @@ export class LoginFormComponent implements OnInit {
         this.errorMessage = 'Login failed.';
         this.isErrored = true;
       } else {
-        this.router.navigateByUrl((this.forwardingRoute || '/catalog').toString());
+        this.router.navigateByUrl((this.forwardingRoute || '/catalog'));
       }
     });
   }

@@ -35,7 +35,7 @@ export class CatalogComponent implements OnInit {
   public repos: Repository[];
   public repoError: { [repo: string]: string } = {};
   public repoWorking: { [repo: string]: string } = {};
-  public errorMessage: String;
+  public errorMessage: string;
 
   constructor(public sessionService: SessionService,
     private catalogService: CatalogService,
@@ -61,16 +61,16 @@ export class CatalogComponent implements OnInit {
   }
 
   delete(repo: Repository) {
-    const name = repo.name.toString();
+    const name = repo.name;
     if (!this.repoWorking[name]) {
       if (confirm(`Delete all images and tags in repository ${repo.name}?`)) {
         this.repoWorking[name] = 'Deleting';
         this.catalogService.deleteRepo(name).subscribe((e) => {
           if (isError(e)) {
             if (e.resultCode === 405) {
-              this.repoError[name] = e.error.toString();
+              this.repoError[name] = e.error;
             } else {
-              this.repoError[name] = e.message.toString();
+              this.repoError[name] = e.message;
             }
           } else {
             this.repos = this.repos.filter(r => r.name !== repo.name);

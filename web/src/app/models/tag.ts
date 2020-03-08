@@ -23,6 +23,6 @@ export class Tag {
         Object.assign(this, obj);
     }
 
-    public name: String;
+    public name: string;
     public image: ImageSet;
 }

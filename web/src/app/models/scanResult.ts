@@ -25,13 +25,13 @@ export class ScanResult {
         this.vulnerableComponents = (this.vulnerableComponents || []).map(c => new ScanComponent(c)).sort((a, b) => b.maxSeverity - a.maxSeverity);
     }
 
-    public digest: String;
-    public status: String;
-    public message: String;
+    public digest: string;
+    public status: string;
+    public message: string;
     public totalComponents: number;
     public vulnerableComponents: ScanComponent[];
 
-    public get hasVulnerabilities(): Boolean {
+    public get hasVulnerabilities(): boolean {
         return this.vulnerableComponents != null && this.vulnerableComponents.length > 0;
     }
 }

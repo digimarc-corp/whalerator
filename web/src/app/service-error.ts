@@ -17,7 +17,7 @@
 */
 
 export class ServiceError {
-    public message: String;
-    public error: String;
+    public message: string;
+    public error: string;
     public resultCode: Number;
 }
