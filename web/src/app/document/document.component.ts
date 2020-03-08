@@ -26,7 +26,7 @@ import { History } from '../models/history';
 import { isError, isHttpString } from '../web-service';
 import { ConfigService } from '../config.service';
 import { ScanResult } from '../models/scanResult';
-import { Observable, config, Subscriber } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 import { delay } from 'q';
 
 @Component({
@@ -43,10 +43,10 @@ export class DocumentComponent implements OnInit {
   set image(image: Image) {
     this._image = image;
     this.selected = null;
-    if (image && !image.scanResult && this.config.config.secScanner) {
+    if (image && !image.scanResult && this.configService.config.secScanner) {
       this.getScan();
     }
-    if (this.config.config.docScanner) {
+    if (this.configService.config.docScanner) {
       if (image && !image.documents) {
         this.searchStatus = 'Searching';
         this.getDocuments();
@@ -65,7 +65,8 @@ export class DocumentComponent implements OnInit {
   searchStatus: string;
 
   constructor(private catalog: CatalogService,
-    private config: ConfigService, private changeDetector: ChangeDetectorRef) { }
+    private configService: ConfigService,
+    private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
   }
@@ -73,11 +74,11 @@ export class DocumentComponent implements OnInit {
   getScan() {
     this.catalog.getScan(this.repository, this.image.digest).subscribe(r => {
       if (isError(r)) {
-        console.error("Failed to get scan result.");
+        console.error('Failed to get scan result.');
       } else {
-        if (r.digest == this.image.digest) {
+        if (r.digest === this.image.digest) {
           this.image.scanResult = new ScanResult(r);
-          if (r.status == "Pending") {
+          if (r.status === 'Pending') {
             delay(5000).then(() => {
               this.getScan();
             });
@@ -85,27 +86,27 @@ export class DocumentComponent implements OnInit {
           this.changeDetector.detectChanges();
         }
       }
-    })
+    });
   }
 
   getScanHeadline(): String {
-    if (this.image.scanResult.status == "Succeeded") {
-      let components = this.image.scanResult.vulnerableComponents == null ?
+    if (this.image.scanResult.status === 'Succeeded') {
+      const components = this.image.scanResult.vulnerableComponents == null ?
         0 : this.image.scanResult.vulnerableComponents.length;
-      return components == 0 ? "No known issues" : components == 1 ? "1 known issue" : `${components} known issues`;
-    } else if (this.image.scanResult.status == "Pending") {
-      return "Scan pending";
+      return components === 0 ? '"No known issues' : components === 1 ? '1 known issue' : `${components} known issues`;
+    } else if (this.image.scanResult.status === 'Pending') {
+      return 'Scan pending';
     } else {
-      return "Scan failed";
+      return 'Scan failed';
     }
   }
 
   scanningEnabled(): boolean {
-    return this.config.config.secScanner;
+    return this.configService.config.secScanner;
   }
 
   docsEnabled(): boolean {
-    return this.config.config.docScanner;
+    return this.configService.config.docScanner;
   }
 
   isHistory(obj: any): boolean {
@@ -152,11 +153,12 @@ export class DocumentComponent implements OnInit {
 
   // translate search lists into stacks of documents to search for
   getDocuments() {
-    if (this.config.config.searchLists.length > 0) {
+    if (this.configService.config.searchLists.length > 0) {
       // start a searcher observable for each potential stack of documents
-      this.config.config.searchLists.forEach(d => {
+      this.configService.config.searchLists.forEach(list => {
         const obv = new Observable<string>((o) => {
-          this.searchStack(d, o);
+          // searchStack will actually remove items from the list as it processes them, so use map() to clone the original
+          this.searchStack(list.map(d => d), o);
         });
         this.addSearch(obv);
         obv.subscribe(r => console.log(r), err => console.error(err), () => this.removeSearch(obv));
@@ -239,7 +241,7 @@ export class DocumentComponent implements OnInit {
             document.content = r.body;
             this.pushDocument(document);
           } else {
-            console.log("Mismatched digests, discarding document load");
+            console.log('Mismatched digests, discarding document load');
           }
           this.removeAll(list);
         } else if (r.status === 202) {
