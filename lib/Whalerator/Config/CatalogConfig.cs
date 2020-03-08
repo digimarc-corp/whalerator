@@ -24,7 +24,8 @@ namespace Whalerator.Config
 {
     public class CatalogConfig
     {
-        public string Theme { get; set; }
+        public List<Theme> Themes { get; set; }
+        
         public string Registry { get; set; }
         // Should only be used with anonymous registry
         public bool AutoLogin { get; set; }

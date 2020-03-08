@@ -2,8 +2,12 @@ button {
     margin: 1em;
 }
 
-.formBox {
-    /*text-align: center;*/
+.preview {
+    margin: 1.5em;
+}
+
+.preview .badge {
+    margin-bottom: 1em;
 }
 
 form > * {
@@ -20,7 +24,7 @@ form > * {
     margin: 3em;
 }
 
-.token-button {
+.toggle-button {
     color: #999;
     padding: 0.4em;
     text-align: center;

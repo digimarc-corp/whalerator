@@ -1,0 +1,93 @@
+body.background {
+    background-attachment: fixed;
+    background-image: url("mosiac-tall.png");
+    background-size: contain;
+}
+
+::-webkit-scrollbar {
+    width: 0.4em;
+    height: 0.4em;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #636363;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #bbbbbb;
+}
+
+img.action-icon {
+    opacity: 0.5;
+}
+
+img.image-icon {
+    opacity: 0.4;
+}
+
+div.box {
+    border: 0.1em solid #22a;    
+}
+
+.label {
+    padding-right: 0.5em;
+}
+
+div.image-detail {
+    border-left: none;
+}
+
+#user::before {
+    content: "u:";
+}
+
+.badge {
+    border-radius: 0em;
+}
+
+.badge.tag {
+    border: none;
+    color: #3f7ea0;
+}
+
+.badge.tag-count {
+    background-color: #3f7ea0;
+    border: none;
+}
+
+.badge.tag.selected {
+    border-left: 0.1em solid #3f7ea0;
+}
+
+.badge.platform {
+    border: none;
+    color: #694a12;
+}
+
+.badge.platform.selected {
+    border-left: 0.1em solid #694a12;
+}
+
+.tab.document {
+    color: #26c36d
+}
+
+.tab.document.selected {
+    border-left: 0.1em solid #26c36d;
+}
+
+.tab.scanning {
+    color: #851717
+}
+
+.tab.scanning.selected {
+    border-left: 0.1em solid #851717;
+}
+
+.tab.history {
+    color: #407;
+}
+
+.tab.history.selected {
+    border-left: 0.1em solid #407;
+}

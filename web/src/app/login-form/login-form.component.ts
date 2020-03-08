@@ -16,12 +16,13 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { SessionService } from '../session.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
+import { Theme } from '../models/theme';
 
 @Component({
   selector: 'app-login-form',
@@ -43,6 +44,19 @@ export class LoginFormComponent implements OnInit {
   registryLocked = false;
   remember: Boolean = true;
   anonymous: Boolean = false;
+  themes: Theme[];
+  showPreview = false;
+
+  lorem = '## Readme\n' +
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n' +
+    '```\nprint("Hello, world!")```';
+
+  get selectedTheme(): String {
+    return this.configService.currentTheme.name;
+  }
+  set selectedTheme(theme: String) {
+    this.configService.setTheme(this.themes.find(t => t.name === theme));
+  }
 
   errorMessage: String;
   isErrored = false;
@@ -67,6 +81,8 @@ export class LoginFormComponent implements OnInit {
         this.submit();
       }
     }
+
+    this.themes = this.configService.config.themes;
   }
 
   logout() {

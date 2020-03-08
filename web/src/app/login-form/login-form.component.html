@@ -1,13 +1,41 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
+  <div style="max-width: 40em; margin: auto;">
+    <div style="text-align: center;">
+      Theme: <select [(ngModel)]="selectedTheme" >
+        <option *ngFor="let theme of themes" [value]="theme.name">{{theme.name}}</option>
+      </select>
+      <div *ngIf="!showPreview" class="toggle-button" (click)="showPreview=!showPreview">Show preview</div>
+      <div *ngIf="showPreview" class="toggle-button" (click)="showPreview=!showPreview">Hide preview</div>
+    </div>
+    <div *ngIf="showPreview" class="preview">
+      <div>
+        <span class="label">Tags:</span><span class="badge tag selected">Tag</span>
+      </div>
+      <div>
+        <span class="label">Platforms:</span> <span class="badge platform selected">Platform</span>
+      </div>  
+      <div>
+        <span class="tab history">History</span>
+        <span class="tab scanning">Static Analysis</span>
+        <span class="tab document selected">Readme.md</span>
+        <span class="tab searching">Searching...</span>
+        <div class="tab document">
+          <div class="frame">
+            <markdown [data]="lorem"></markdown>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div style="text-align: center; margin-top: 5em;">
     <div>Connected to {{sessionService.activeRegistry}} as {{sessionService.userLabel}}.</div>
     <div>Last login: {{sessionService.sessionStart}}</div>
     <div>Session expires: {{sessionService.sessionExpiry}}</div>
     <button (click)="logout()">Log out</button>
   </div>
-  <div *ngIf="!showToken" class="token-button" (click)="showToken=!showToken">Show token</div>
-  <div *ngIf="showToken" class="token-button" (click)="showToken=!showToken">Hide token</div>
+  <div *ngIf="!showToken" class="toggle-button" (click)="showToken=!showToken">Show token</div>
+  <div *ngIf="showToken" class="toggle-button" (click)="showToken=!showToken">Hide token</div>
   <div *ngIf="showToken" class="token" >
     <span>{{sessionService.sessionToken}}</span>
   </div>

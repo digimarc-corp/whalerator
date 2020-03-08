@@ -23,6 +23,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { Observable, of } from 'rxjs';
 import { WebService, isError } from './web-service';
+import { Theme } from './models/theme';
 
 @Injectable({
   providedIn: 'root'
@@ -34,6 +35,8 @@ export class ConfigService extends WebService {
   public errorMessage: String;
   public isErrored = false;
   public version: any;
+  public themes: Theme[];
+  public currentTheme: Theme;
 
   constructor(private http: HttpClient) {
     super();
@@ -67,10 +70,20 @@ export class ConfigService extends WebService {
         this.errorMessage = c.message;
       } else {
         this.config = new Config(c);
-        if (document.getElementById("usertheme")) {
-          (<HTMLLinkElement>document.getElementById("usertheme")).href = c.userTheme.toString();
+        if (this.config.themes && this.config.themes.length > 0) {
+          const favTheme = this.config.themes.find(t => t.name === localStorage.getItem('theme'));
+          const theme = favTheme ? favTheme : this.config.themes[0];
+          this.setTheme(theme);
         }
       }
     });
+  }
+
+  setTheme(theme: Theme) {
+    if (theme && document.getElementById("usertheme")) {
+      this.currentTheme = theme;
+      localStorage.setItem('theme', theme.name.toString());
+      (<HTMLLinkElement>document.getElementById("usertheme")).href = theme.style;
+    }
   }
 }

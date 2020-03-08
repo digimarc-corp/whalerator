@@ -62,7 +62,7 @@ namespace Whalerator.WebAPI
             Configuration.Bind(config);
             var uiConfig = new PublicConfig()
             {
-                UserTheme = config.Catalog?.Theme
+                Themes = config.Catalog?.Themes
             };
 
             services.AddSingleton(config);

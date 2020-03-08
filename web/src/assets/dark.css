@@ -14,7 +14,7 @@ body.background {
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: #292929;
+    background-color: #373737;
 }
 
 a {
@@ -30,6 +30,10 @@ input {
 }
 
 button {
+    color: #111111;
+}
+
+select {
     color: #111111;
 }
 

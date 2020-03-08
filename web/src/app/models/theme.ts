@@ -16,17 +16,11 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Theme } from "./theme";
-
-export class Config {
+export class Theme {
     constructor(obj?: any) {
         Object.assign(this, obj);
     }
 
-    public registry: String;
-    public searchLists: String[][];
-    public secScanner: boolean;
-    public docScanner: boolean;
-    public autoLogin: boolean;
-    public themes: Theme[];
+    public name: String;
+    public style: String;
 }
