@@ -19,12 +19,12 @@ search:
 
 catalog:
   themes:
-    - name: dark
-      style: assets/dark.css
     - name: techie
       style: assets/techie.css
     - name: anchors
       style: assets/classic.css
+    - name: dark
+      style: assets/dark.css
     - name: minimalist
 
 contentScanner:
