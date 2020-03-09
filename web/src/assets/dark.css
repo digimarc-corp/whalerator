@@ -47,6 +47,15 @@ input {
     color: #111111;
 }
 
+.search {
+    background-color: #292929;
+    color: #bbbbbb;
+}
+
+.tag-list.filtered {
+    border-bottom: 1px dotted #424242;
+}
+
 button {
     color: #111111;
 }

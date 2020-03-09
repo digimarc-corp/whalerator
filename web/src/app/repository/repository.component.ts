@@ -52,6 +52,7 @@ export class RepositoryComponent implements OnInit {
   loadRequested = false;
 
   public tags: string[];
+  public filteredTags: string[];
   public selectedTag: string;
   public selectedImageSet: ImageSet;
   public selectedPlatform: Platform;
@@ -81,6 +82,15 @@ export class RepositoryComponent implements OnInit {
       this.getRepo();
     });
   }
+
+  set searchQuery(search: string) {
+    if (search) {
+      this.filteredTags = this.tags.filter(t => t.includes(search));
+    } else {
+      this.filteredTags = null;
+    }
+  }
+
 
   delete(imageSet: ImageSet) {
     if (confirm('Delete this image and all related tags?')) {

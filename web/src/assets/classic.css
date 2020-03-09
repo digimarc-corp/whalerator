@@ -30,16 +30,20 @@ img.image-icon {
     opacity: 0.4;
 }
 
+div.search {
+    border: 1px dotted #222;
+}
+
+.tag-list.filtered {
+    border-bottom: 1px dotted #222;
+}
+
 div.box {
     border: 0.1em solid #22a;    
 }
 
 .label {
     padding-right: 0.5em;
-}
-
-div.image-detail {
-    border-left: none;
 }
 
 #user::before {

@@ -67,6 +67,26 @@ tr.working {
     opacity: 0.25;
 }
 
+input.search {
+    text-align: right;    
+    width: 100%;
+    padding: 0em;
+    border: none;
+}
+
+div.search {
+    margin-right: 0.5em;
+    padding: 0.1em;
+    border: 1px dotted black;
+}
+
+.tag-count {
+    font-size: small;
+    font-style: italic;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
 nav {
     text-align: right
 }

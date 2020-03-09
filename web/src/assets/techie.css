@@ -35,6 +35,14 @@ body.background {
     background-color: #bbbbbb;
 }
 
+div.search {
+    border: 1px solid #ddd;
+}
+
+.tag-list.filtered {
+    border-bottom: 1px solid #ddd;
+}
+
 img.action-icon {
     opacity: 0.5;
 }
