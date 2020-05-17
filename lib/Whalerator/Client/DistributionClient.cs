@@ -27,15 +27,16 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Whalerator.Model;
+using System.IO;
 
 namespace Whalerator.Client
 {
-    public class DistributionClient : IDistributionClient
+    public class DistributionClient : DistributionClientBase
     {
         private IAuthHandler tokenSource;
 
         public TimeSpan Timeout { get; set; } = new TimeSpan(0, 3, 0);
-        public string Host { get; set; } = Registry.DockerHub;
+        public override string Host { get; set; } = Registry.DockerHub;
 
         public DistributionClient(IAuthHandler tokenSource)
         {
@@ -44,10 +45,10 @@ namespace Whalerator.Client
 
         #region public methods
 
-        public Task<HttpResponseMessage> GetBlobAsync(string repository, string digest) =>
-            Task.FromResult(Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))));
+        public override Task<Stream> GetBlobAsync(string repository, string digest) =>
+            Get(new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"))).Content.ReadAsStreamAsync();
 
-        public Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
+        public override Task<(Uri, AuthenticationHeaderValue)> GetBlobPathAndAuthorizationAsync(string repository, string digest)
         {
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/blobs/{digest}"));
             var scope = tokenSource.ParseScope(uri) + ":pull";
@@ -62,14 +63,14 @@ namespace Whalerator.Client
             }
         }
 
-        public Task<RepositoryList> GetRepositoriesAsync()
+        public override Task<RepositoryList> GetRepositoriesAsync()
         {
             var list = Get<RepositoryList>(new Uri(Registry.HostToEndpoint(Host, "_catalog"))).Result;
 
             return Task.FromResult(list);
         }
 
-        public Task<TagList> GetTagsAsync(string repository)
+        public override Task<TagList> GetTagsAsync(string repository)
         {
             try
             {
@@ -81,7 +82,7 @@ namespace Whalerator.Client
             }
         }
 
-        public Task<ImageSet> GetImageSet(string repository, string tag)
+        public override Task<ImageSet> GetImageSet(string repository, string tag)
         {
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{tag}"));
             var response = Get(uri, "application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json");
@@ -140,7 +141,7 @@ namespace Whalerator.Client
             }
         }
 
-        public Task DeleteImage(string repository, string digest)
+        public override Task DeleteImage(string repository, string digest)
         {
             var images = new List<Image>();
             var uri = new Uri(Registry.HostToEndpoint(Host, $"{repository}/manifests/{digest}"));
@@ -312,11 +313,6 @@ namespace Whalerator.Client
 
         #endregion
 
-        private ImageConfig GetImageConfig(string repository, string digest)
-        {
-            var result = GetBlobAsync(repository, digest).Result;
-            var json = result.Content.ReadAsStringAsync().Result;
-            return JsonConvert.DeserializeObject<ImageConfig>(json);
-        }
+        
     }
 }

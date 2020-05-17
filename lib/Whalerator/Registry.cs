@@ -140,8 +140,9 @@ namespace Whalerator
             {
                 repoNames = GetCached(scope, key, true, Settings.CatalogAuthHandler ?? Settings.AuthHandler, () => CatalogClient.GetRepositoriesAsync().Result.Repositories).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogError($"Failed to get repositories list: {ex.Message}", ex);
                 repoNames = new List<string>();
             }
 
@@ -191,7 +192,8 @@ namespace Whalerator
                 try
                 {
                     return DistributionClient.GetImageSet(repository, tag).Result;
-                }catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     Logger.LogError(ex, $"Couldn't get image set for {repository}:{tag}");
                     return null;
@@ -503,7 +505,11 @@ namespace Whalerator
 
         public Stream GetLayer(string repository, Layer layer)
         {
-            if (!string.IsNullOrEmpty(Settings.LayerCache))
+            if (DistributionClient is LocalDistributionClient)
+            {
+                return DistributionClient.GetBlobAsync(repository, layer.Digest).Result;
+            }
+            else if (!string.IsNullOrEmpty(Settings.LayerCache))
             {
                 // registry path is ignored for caching purposes; only digest matters
                 var digestPath = layer.Digest.Replace(':', Path.DirectorySeparatorChar);
@@ -598,7 +604,7 @@ namespace Whalerator
         {
             var start = DateTime.UtcNow;
             var result = DistributionClient.GetBlobAsync(repository, layer.Digest).Result;
-            result.Content.CopyToAsync(buffer).Wait();
+            result.CopyToAsync(buffer).Wait();
             LogDownload($"novel layer {layer.Digest} from {repository}", DateTime.UtcNow - start, buffer.Length);
         }
 

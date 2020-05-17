@@ -23,6 +23,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Whalerator.Model;
 using System.Net.Http.Headers;
+using System.IO;
 
 namespace Whalerator.Client
 {
@@ -31,7 +32,7 @@ namespace Whalerator.Client
         string Host { get; }
         Task<RepositoryList> GetRepositoriesAsync();
         Task<TagList> GetTagsAsync(string repository);
-        Task<HttpResponseMessage> GetBlobAsync(string repository, string digest);
+        Task<Stream> GetBlobAsync(string repository, string digest);
         Task<(Uri path, AuthenticationHeaderValue auth)> GetBlobPathAndAuthorizationAsync(string repository, string digest);
         Task<ImageSet> GetImageSet(string repository, string tag);
         Task DeleteImage(string repository, string digest);

@@ -27,6 +27,8 @@ namespace Whalerator.Config
         public List<Theme> Themes { get; set; }
         
         public string Registry { get; set; }
+        public string RegistryRoot { get; set; }
+
         // Should only be used with anonymous registry
         public bool AutoLogin { get; set; }
         public List<string> Repositories { get; set; }

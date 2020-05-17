@@ -67,7 +67,17 @@ namespace Whalerator.WebAPI
             logger?.LogInformation($"Cache lifetime for static registry objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
             logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
-            services.AddScoped<IDistributionClient, DistributionClient>();
+            Func<string, IAuthHandler, IDistributionClient> factory;
+            if (string.IsNullOrEmpty(config.Catalog.RegistryRoot))
+            {
+                services.AddScoped<IDistributionClient, DistributionClient>();
+                factory = (host, handler) => new DistributionClient(handler) { Host = host };
+            }
+            else
+            {
+                services.AddScoped<IDistributionClient, LocalDistributionClient>();
+                factory = (host, handler) => new LocalDistributionClient(config);
+            }
 
             services.AddScoped<IRegistryFactory>(p =>
             {
@@ -76,6 +86,7 @@ namespace Whalerator.WebAPI
 
                 var settings = new RegistrySettings
                 {
+                    DistributionFactory = factory,
                     AuthHandler = p.GetService<IAuthHandler>(),
                     CacheFactory = p.GetService<ICacheFactory>(),
                     CatalogAuthHandler = catalogHandler,
