@@ -126,7 +126,7 @@ namespace Whalerator.Client
         }
 
         public override Task<RepositoryList> GetRepositoriesAsync() =>
-            Task.FromResult(new RepositoryList { Repositories = GetRepositories(repositoriesRoot) });
+            Task.FromResult(new RepositoryList { Repositories = GetRepositories(repositoriesRoot).Select(r => r.Replace('\\', '/')) });
 
 
         private IEnumerable<string> GetRepositories(string path)
@@ -151,7 +151,6 @@ namespace Whalerator.Client
                         yield return Path.Combine(new DirectoryInfo(d).Name, sd);
                     }
                 }
-
             }
         }
 
