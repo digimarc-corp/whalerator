@@ -16,65 +16,64 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using Whalerator.Support;
+using Xunit;
 
 namespace Whalerator.Test
 {
-    [TestClass]
     public class Crypto
     {
-        [TestMethod]
+        [Fact]
         public void CanSignText()
         {
             var crypto = new RSA(TestKey);
 
             var signature = crypto.Sign(Sample);
 
-            Assert.IsTrue(crypto.VerifySignature(Sample, signature));
+            Assert.True(crypto.VerifySignature(Sample, signature));
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGetProviderWithPemKey()
         {
             var crypto = new RSA(TestKey);
             var provider = crypto.ToDotNetRSA();
 
-            Assert.IsNotNull(provider);
+            Assert.NotNull(provider);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanGetProviderWithSelfGeneratedKey()
         {
             var crypto = new RSA();
             var provider = crypto.ToDotNetRSA();
 
-            Assert.IsNotNull(provider);
+            Assert.NotNull(provider);
         }
 
-        [TestMethod]
+        [Fact]
         public void CanEncryptTextWithPemKey()
         {
             var crypto = new RSA(TestKey);
 
             var cipherText = crypto.Encrypt(Sample);
 
-            Assert.AreNotEqual(Sample, cipherText);
-            Assert.AreEqual(Sample, crypto.Decrypt(cipherText));
+            Assert.NotEqual(Sample, cipherText);
+            Assert.Equal(Sample, crypto.Decrypt(cipherText));
         }
         
-        [TestMethod]
+        [Fact]
         public void CanEncryptTextWithSelfGeneratedKey()
         {
             var crypto = new RSA();
 
             var cipherText = crypto.Encrypt(Sample);
 
-            Assert.AreNotEqual(Sample, cipherText);
-            Assert.AreEqual(Sample, crypto.Decrypt(cipherText));
+            Assert.NotEqual(Sample, cipherText);
+            Assert.Equal(Sample, crypto.Decrypt(cipherText));
         }
 
         const string Sample = "The quick brown fox jumped over the lazy dog";
