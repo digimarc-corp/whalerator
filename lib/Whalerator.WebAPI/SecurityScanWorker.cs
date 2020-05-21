@@ -55,7 +55,7 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    var registry = registryFactory.GetClient(auth.Principal.ToRegistryCredentials());
+                    var registry = clientFactory.GetClient(auth.Principal.ToRegistryCredentials());
 
                     var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }

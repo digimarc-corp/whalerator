@@ -16,10 +16,18 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-namespace Whalerator.WebAPI
+using System;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.Text;
+using Whalerator.Content;
+
+namespace Whalerator
 {
-    public interface IRegistryFactory
+    public interface IIndexStore
     {
-        IRegistry GetRegistry(RegistryCredentials credentials);
+        IEnumerable<LayerIndex> GetIndex(string digest, string targetPath = null);
+        bool IndexExists(string digest, string targetPath = null);
+        void SetIndex(IEnumerable<LayerIndex> index, string digest, string targetPath = null);
     }
 }

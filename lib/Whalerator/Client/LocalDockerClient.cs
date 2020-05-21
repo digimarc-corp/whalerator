@@ -65,7 +65,7 @@ namespace Whalerator.Client
             throw new NotImplementedException();
         }
 
-        public Stream GetFile(Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath()), path);
+        public Stream GetFile(Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
 
         public ImageSet GetImageSet(string repository, string tag)
         {
@@ -141,14 +141,15 @@ namespace Whalerator.Client
             return imageSet;
         }
 
-        public IEnumerable<LayerIndex> GetIndexes(Image image) => filter.FilterLayers(GetLayers(image));
+        public IEnumerable<LayerIndex> GetIndexes(Image image, string targetPath) => filter.FilterLayers(GetLayers(image), targetPath);
 
         /// <summary>
         /// Extracts raw file indexes from each layer in an image, working from the top down.
         /// </summary>
-        /// <param name="imageDigest"></param>
+        /// <param name="image"></param>
+        /// <param name="maxDepth">Maximum layers down to search. If 0, searches all layers</param>
         /// <returns></returns>
-        public IEnumerable<LayerIndex> GetLayers(Image image)
+        public IEnumerable<LayerIndex> GetLayers(Image image, int maxDepth = 0)
         {
             var layers = image.Layers.Reverse();
             var depth = 1;
@@ -159,8 +160,10 @@ namespace Whalerator.Client
                 {
                     Depth = depth++,
                     Digest = layer.Digest,
-                    Files = extractor.ExtractFiles(layerStream)
+                    Files = extractor.ExtractFiles(layerStream).ToList()
                 };
+
+                if (maxDepth > 0 && depth > maxDepth) { break; }
             }
         }
 
@@ -223,6 +226,16 @@ namespace Whalerator.Client
             return list;
         }
 
-        public Stream GetLayerArchive(string digest) => new FileStream(Path.Combine(blobsRoot, digest.ToDigestPath()), FileMode.Open, FileAccess.Read, FileShare.Read);
+        public Stream GetLayerArchive(string digest) => new FileStream(Path.Combine(blobsRoot, digest.ToDigestPath(), "data"), FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        public Layer GetLayer(string layerDigest)
+        {
+            var info = new FileInfo(Path.Combine(blobsRoot, layerDigest.ToDigestPath(), "data"));
+            return new Layer
+            {
+                Digest = layerDigest,
+                Size = info.Length
+            };
+        }
     }
 }

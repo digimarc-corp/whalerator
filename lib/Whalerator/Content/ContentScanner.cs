@@ -26,19 +26,17 @@ using Whalerator.Model;
 using Whalerator.Queue;
 
 namespace Whalerator.Content
-{
+{/*
     public class ContentScanner : IContentScanner
     {
         private ILogger<ContentScanner> logger;
         private ConfigRoot config;
-        private ICacheFactory cacheFactory;
         public IWorkQueue<Request> Queue { get; private set; }
 
-        public ContentScanner(ILogger<ContentScanner> logger, ConfigRoot config, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
+        public ContentScanner(ILogger<ContentScanner> logger, ConfigRoot config, IWorkQueue<Request> queue)
         {
             this.logger = logger;
             this.config = config;
-            this.cacheFactory = cacheFactory;
             Queue = queue;
         }
 
@@ -52,12 +50,9 @@ namespace Whalerator.Content
         /// <returns></returns>
         public Result GetPath(Image image, string path)
         {
-            var cache = cacheFactory.Get<Result>();
-            var key = GetKey(image, path);
-
-            return cache.TryGet(key, out var cachedResult) ? cachedResult : null;
+            throw new NotImplementedException();
         }
-
+        
         public void Index(IRegistry registry, string repository, Image image)
         {
             var cache = cacheFactory.Get<Result>();
@@ -66,6 +61,7 @@ namespace Whalerator.Content
             var indexes = registry.GetLayerIndexes(repository, image).ToList();
             cache.Set(key, new Result { Exists = true, Children = indexes });
         }
+        
 
         /// <summary>
         /// Searches a given image for a specific path, and pushes the result into the cache. If the path is a directory,
@@ -94,5 +90,5 @@ namespace Whalerator.Content
                 cache.Set(key, new Result { Exists = true, Content = data });
             }
         }
-    }
+    }*/
 }

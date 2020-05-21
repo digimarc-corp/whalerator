@@ -29,7 +29,35 @@ namespace Whalerator.Content
     {
         public Stream ExtractFile(string layerFile, string path)
         {
-            throw new NotImplementedException();
+            path = path.TrimStart('/');
+
+            // can't put in using block as we're (hopefully) returning all these items nested in the final SubStream
+            var stream = new FileStream(layerFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var gzipStream = new GZipInputStream(stream);
+            var tarStream = new TarInputStream(gzipStream);
+
+            Stream foundStream = null;
+            var entry = tarStream.GetNextEntry();
+            while (entry != null)
+            {
+                if (entry.Name.Equals(path))
+                {
+                    foundStream = new SubStream(tarStream, entry.Size);
+                    break;
+                }
+                entry = tarStream.GetNextEntry();
+            }
+
+            if (foundStream != null)
+            {
+                return foundStream;
+            }
+            else
+            {
+                // tarStream will dispose the entire chain for us
+                tarStream.Dispose();
+                throw new FileNotFoundException();
+            }
         }
 
 
@@ -40,8 +68,8 @@ namespace Whalerator.Content
         /// <returns></returns>
         public IEnumerable<string> ExtractFiles(Stream stream)
         {
-            using (var gzipStream = new GZipInputStream(stream))
-            using (var tarStream = new TarInputStream(gzipStream))
+            using (var gzipStream = new GZipInputStream(stream) { IsStreamOwner = false })
+            using (var tarStream = new TarInputStream(gzipStream) { IsStreamOwner = false })
             {
                 var entry = tarStream.GetNextEntry();
                 while (entry != null)

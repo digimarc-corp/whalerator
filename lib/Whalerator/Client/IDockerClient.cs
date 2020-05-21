@@ -32,10 +32,11 @@ namespace Whalerator.Client
         ImageSet GetImageSet(string repository, string tag);
         LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases);
         Stream GetFile(Layer layer, string path);
-        IEnumerable<LayerIndex> GetIndexes(Image image);
+        Layer GetLayer(string layerDigest);
+        IEnumerable<LayerIndex> GetIndexes(Image image, string target = null);
         Permissions GetPermissions(string repository);
-        void DeleteImage(string repository, string digest);
+        void DeleteImage(string repository, string imageDigest);
         void DeleteRepository(string repository);
-        Stream GetLayerArchive(string digest);
+        Stream GetLayerArchive(string layerDigest);
     }
 }

@@ -25,6 +25,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Model;
 
 namespace Whalerator.Content
@@ -32,6 +33,12 @@ namespace Whalerator.Content
     public class AufsFilter : IAufsFilter
     {
         private Regex whRegex = new Regex(@"^(.*/)\.wh\.([^/]+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// If true, targeted searches will terminate on case-insenitive matches
+        /// </summary>
+        public bool CaseInsensitiveSearch { get; set; } = false;
+
         private bool MatchWh(string path, out Match match)
         {
             match = whRegex.Match(path);
@@ -68,8 +75,6 @@ namespace Whalerator.Content
             }
         }
 
-
-       
         /// <summary>
         /// Checks if a file path is covered by any known whiteouts
         /// </summary>
@@ -87,6 +92,7 @@ namespace Whalerator.Content
         public IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, string target = null)
         {
             var files = new List<(string name, string digest, int depth)>();
+            target = target?.TrimStart('/');
 
             int currentDepth = 0;
 
@@ -112,7 +118,11 @@ namespace Whalerator.Content
                 files.AddRange(newFiles);
 
                 // check for a target hit
-                if (newFiles.Any(f => f.path.Equals(target))) { break; }
+                if (!string.IsNullOrEmpty(target) &&
+                    newFiles.Any(f => f.path.Equals(target, CaseInsensitiveSearch ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))
+                {
+                    break;
+                }
 
                 // add any new whiteouts
                 wh.AddRange(layerFiles.Where(f => f.isWh).Select(f => f.path));

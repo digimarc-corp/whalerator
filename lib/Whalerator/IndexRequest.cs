@@ -20,14 +20,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Config
+namespace Whalerator
 {
-    public class SearchConfig
+    public class IndexRequest : RequestBase
     {
-        public bool Vulnerabilities { get; set; }
-        public int MaxDepth { get; set; }
-        public List<string> Filelists { get; set; }
-        public bool CaseInsensitive { get; set; }
-    }
+        public override string WorkItemKey => $"workitem:content:{TargetDigest}";
 
+        public string TargetPath { get; set; }
+
+        public const string WorkQueueKey = "workitems:queue:index";
+    }
 }

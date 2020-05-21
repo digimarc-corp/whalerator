@@ -34,25 +34,25 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoriesController : Controller
     {
-        private IRegistryFactory regFactory;
+        private IClientFactory clientFactory;
 
-        public RepositoriesController(IRegistryFactory regFactory)
+        public RepositoriesController(IClientFactory regFactory)
         {
-            this.regFactory = regFactory;
+            this.clientFactory = regFactory;
         }
 
         [HttpGet("list")]
-        public IActionResult Get(bool empties = false)
+        public IActionResult Get()
         {
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
+                var client = clientFactory.GetClient(credentials);
 
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
-                var repos = registryApi.GetRepositories(empties).OrderBy(r => r.Name);
+                var repos = client.GetRepositories().OrderBy(r => r.Name);
 
                 return Ok(repos);
             }
@@ -70,7 +70,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
+                var registryApi = clientFactory.GetClient(credentials);
                 var permissions = registryApi.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 

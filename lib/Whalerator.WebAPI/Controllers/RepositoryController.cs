@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Ocsp;
 using Whalerator.Content;
 using Whalerator.Model;
 using Whalerator.Queue;
@@ -40,15 +41,17 @@ namespace Whalerator.WebAPI.Controllers
     {
         private IClientFactory clientFactory;
         private ILogger<RepositoryController> logger;
+        private readonly IIndexStore indexStore;
+        private readonly IWorkQueue<IndexRequest> indexQueue;
         private ISecurityScanner secScanner;
-        private IContentScanner contentScanner;
 
-        public RepositoryController(IClientFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner secScanner = null, IContentScanner contentScanner = null)
+        public RepositoryController(IClientFactory clientFactory, ILogger<RepositoryController> logger, IIndexStore indexStore, IWorkQueue<IndexRequest> indexQueue, ISecurityScanner secScanner = null)
         {
-            this.clientFactory = regFactory;
+            this.clientFactory = clientFactory;
             this.logger = logger;
+            this.indexStore = indexStore;
+            this.indexQueue = indexQueue;
             this.secScanner = secScanner;
-            this.contentScanner = contentScanner;
         }
 
         string Validate(string digest)
@@ -123,63 +126,83 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="repository">Registry repo to search</param>
         /// <param name="digest">Manifest digest</param>
         /// <param name="maxDepth">Maximum number of layers to descend</param>
+        /// <param name="path">Optional target path. Indexing will halt if the target is found, and return only those layers needed to reach the target.</param>
         /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
-        public IActionResult GetFiles(string repository, string digest) => GetFile(repository, digest, null);
-
-        [HttpGet("file/{digest}/{*repository}")]
-        public IActionResult GetFile(string repository, string digest, string path)
+        public IActionResult GetFiles(string repository, string digest, string path)
         {
             var credentials = User.ToRegistryCredentials();
             if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-            if (string.IsNullOrEmpty(digest)) { return BadRequest("An image identifier (digest or single-platform tag) is required."); }
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
 
             digest = Validate(digest);
             if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
 
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var imageSet = registryApi.GetImageSet(repository, digest);
+                var client = clientFactory.GetClient(credentials);
+                var imageSet = client.GetImageSet(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
-                var result = contentScanner.GetPath(imageSet.Images.First(), path);
-
-                if (result == null)
+                // if we have a complete index, return it
+                if (indexStore.IndexExists(digest))
                 {
-                    contentScanner.Queue.TryPush(new Whalerator.Content.Request
+                    return Ok(indexStore.GetIndex(digest));
+                }
+                // otherwise, if they've requested a targeted index, look for that
+                else if (indexStore.IndexExists(digest, path))
+                {
+                    return Ok(indexStore.GetIndex(digest, path));
+                }
+                // no dice, queue an indexing request
+                else
+                {
+                    var request = new IndexRequest
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
                         TargetRepo = repository,
                         TargetDigest = digest,
-                        Path = path,
-                    });
+                        TargetPath = path
+                    };
+                    if (!indexQueue.Contains(request)) { indexQueue.Push(request); }
 
                     return StatusCode(202, new Content.Result { Status = RequestStatus.Pending });
                 }
-                else
-                {
-                    if (!result.Exists)
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        if (result.Content != null)
-                        {
-                            Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
-                            Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                            return File(result.Content, "application/octet-stream");
-                        }
-                        else
-                        {
-                            return Ok(result.Children);
-                        }
-                    }
-                }
+            }
+            catch (Client.NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Client.AuthenticationException)
+            {
+                return Unauthorized();
+            }
+        }
 
+        [HttpGet("file/{digest}/{*repository}")]
+        public IActionResult GetFile(string repository, string digest, string path)
+        {
+            var credentials = User.ToRegistryCredentials();
+            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("A layer digest is required."); }
+
+            digest = Validate(digest);
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+
+            try
+            {
+                var client = clientFactory.GetClient(credentials);
+
+#warning need to validate repo permissions? Or is the client doing this for us?
+
+                var layer = client.GetLayer(digest);
+                var result = client.GetFile(layer, path);
+
+                Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
+                Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                return File(result, "application/octet-stream");
             }
             catch (Client.NotFoundException)
             {

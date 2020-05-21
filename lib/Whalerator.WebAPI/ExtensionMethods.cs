@@ -214,6 +214,7 @@ namespace Whalerator.WebAPI
             services.AddScoped<IAufsFilter, AufsFilter>();
             services.AddScoped<ILayerExtractor, LayerExtractor>();
             services.AddScoped<IDockerClient, LocalDockerClient>();
+            services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.ContentScanner.LayerCache });
 
             if (contentWorker)
             {
@@ -221,7 +222,7 @@ namespace Whalerator.WebAPI
                 {
                     logger.LogCritical("No layer cache specified, this worker will not be able to index content.");
                 }
-                services.AddHostedService<ContentScanWorker>();
+                services.AddHostedService<IndexWorker>();
             }
 
             if (contentUI)
@@ -232,16 +233,16 @@ namespace Whalerator.WebAPI
 
             if (contentWorker || contentUI)
             {
-                services.AddSingleton<IContentScanner, Content.ContentScanner>();
+                //services.AddSingleton<IContentScanner, Content.ContentScanner>();
                 if (string.IsNullOrEmpty(config.Cache.Redis))
                 {
-                    services.AddSingleton<IWorkQueue<Content.Request>, MemQueue<Content.Request>>();
+                    services.AddSingleton<IWorkQueue<IndexRequest>, MemQueue<IndexRequest>>();
                 }
                 else
                 {
-                    services.AddScoped<IWorkQueue<Content.Request>>(p => new RedQueue<Content.Request>(p.GetRequiredService<IConnectionMultiplexer>(),
-                        p.GetRequiredService<ILogger<RedQueue<Content.Request>>>(),
-                        Content.Request.WorkQueueKey));
+                    services.AddScoped<IWorkQueue<IndexRequest>>(p => new RedQueue<IndexRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
+                        p.GetRequiredService<ILogger<RedQueue<IndexRequest>>>(),
+                        IndexRequest.WorkQueueKey));
                 }
             }
 
