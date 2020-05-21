@@ -22,10 +22,10 @@ using System.Text;
 
 namespace Whalerator.Content
 {
-    public class Result : ResultBase
+    public class LayerIndex
     {
-        public bool Exists { get; set; }
-        public byte[] Content { get; set; }
-        public List<LayerIndex> Children { get; set; }
+        public string Digest { get; set; }
+        public int Depth { get; set; }
+        public IEnumerable<string> Files { get; set; }
     }
 }

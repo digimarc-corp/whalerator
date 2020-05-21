@@ -36,15 +36,15 @@ namespace Whalerator.WebAPI
         protected ILogger logger;
         protected ConfigRoot config;
         protected IWorkQueue<T> queue;
-        protected IRegistryFactory registryFactory;
+        protected IClientFactory registryFactory;
         private Timer timer;
 
-        protected QueueWorker(ILogger logger, ConfigRoot config, IWorkQueue<T> queue, IRegistryFactory regFactory)
+        protected QueueWorker(ILogger logger, ConfigRoot config, IWorkQueue<T> queue, IClientFactory clientFactory)
         {
             this.logger = logger;
             this.config = config;
             this.queue = queue;
-            registryFactory = regFactory;
+            registryFactory = clientFactory;
         }
 
         void StartTimer() => timer.Change(5000, 5000);

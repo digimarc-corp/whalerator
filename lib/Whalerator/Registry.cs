@@ -32,6 +32,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
+using Whalerator.Content;
 
 namespace Whalerator
 {
@@ -112,7 +113,7 @@ namespace Whalerator
         string RepoTagsKey(string repository) => $"volatile:{DistributionClient.Host}:repos:{repository}:tags";
         string ImageDigestKey(string digest) => $"static:image:{digest}";
         string ImageTagKey(string repository, string tag) => $"volatile:{DistributionClient.Host}:repos:{repository}:tags:{tag}:images";
-        string ImageFilesKey(Image image, int maxDepth) => $"static:image:{image.Digest}:files:{maxDepth}";
+        string ImageFilesKey(Image image) => $"static:image:{image.Digest}:files";
         string ImageLockKey(Image image) => $"static:image:{image.Digest}:lock";
         string LayerFilesKey(Layer layer) => $"static:layer:{layer.Digest}:files";
         string LayerFileKey(Layer layer, string path) => $"static:layer:{layer.Digest}:file:{path}";
@@ -262,9 +263,36 @@ namespace Whalerator
             }
         }
 
-        public IEnumerable<string> GetImageFiles(string repository, Image image, int maxDepth)
+        private Regex whRegex = new Regex(@"^(.*/)\.wh\.([^/]+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private bool MatchWh(string path, out Match match)
         {
-            string key = ImageFilesKey(image, maxDepth);
+            match = whRegex.Match(path);
+            return match.Success;
+        }
+
+        // we treat opq and regular whiteouts the same - we don't care about empty folders
+        private bool IsWhiteout(string path, out string target)
+        {
+            if (path.EndsWith(@".wh..wh..opq"))
+            {
+                target = path[..^12];
+                return true;
+            }
+            else if (MatchWh(path, out var m))
+            {
+                target = string.Join("", m.Groups[1], m.Groups[2]);
+                return true;
+            }
+            else
+            {
+                target = path;
+                return false;
+            }
+        }
+
+        public IEnumerable<LayerIndex> GetLayerIndexes(string repository, Image image)
+        {
+            string key = ImageFilesKey(image);
             string lockKey = ImageLockKey(image);
             var scope = RepoPullScope(repository);
 
@@ -273,19 +301,47 @@ namespace Whalerator
                 using (var lockObj = Settings.CacheFactory.Get<string>().TakeLock(lockKey, new TimeSpan(0, 5, 0), new TimeSpan(0, 5, 0)))
                 {
                     Logger.LogInformation($"Indexing {repository}/{image.Digest}");
-                    var files = new List<string>();
+                    var files = new List<(string name, string digest, int depth)>();
 
                     var layers = image.Layers.Reverse();
                     var depth = 1;
+
+                    var wh = new List<string>();
+
                     foreach (var layer in layers)
                     {
-                        var layerFiles = GetPaths(repository, layer);
-                        files.AddRange(layerFiles.Where(f => !string.IsNullOrWhiteSpace(f.name)).Select(f => f.name));
+                        var layerFiles = GetPaths(repository, layer)
+                            .Where(p => !string.IsNullOrEmpty(p.name))
+                            .Select(p => new
+                            {
+                                p.isDirectory,
+                                isWh = IsWhiteout(p.name, out var n),
+                                path = n,
+                            }
+                        );
+
+                        // add any new files not in a whiteout/opq
+                        files.AddRange(layerFiles
+                            .Where(f => !(f.isWh || f.isDirectory || wh.Any(w => f.path.StartsWith(w)) || files.Any(exf => exf.name.Equals(f.path))))
+                            .Select(f => (f.path, layer.Digest, depth))
+                        );
+
+                        // add any new whiteouts
+                        wh.AddRange(layerFiles.Where(f => f.isWh).Select(f => f.path));
+
                         depth++;
-                        if (depth > maxDepth) { break; }
                     }
 
-                    return files.OrderBy(f => f).ToList();
+                    return files.GroupBy(f => f.digest).Select(g => new LayerIndex
+                    {
+                        Digest = g.Key,
+                        Depth = g.Min(d => d.depth),
+                        Files = g.Select(f => f.name)
+                    });
+
+                    /*files.GroupBy(f => f.digest).Select(g => new LayerIndex { 
+              Depth=g.
+             });*/
                 }
             });
         }

@@ -16,16 +16,15 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Whalerator.Content
 {
-    public class Result : ResultBase
+    public interface IImageSource
     {
-        public bool Exists { get; set; }
-        public byte[] Content { get; set; }
-        public List<LayerIndex> Children { get; set; }
+        string GetLayerPath(string digest);
     }
 }

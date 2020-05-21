@@ -36,8 +36,8 @@ namespace Whalerator.WebAPI
         private IContentScanner scanner;
         private RegistryAuthenticationDecoder authDecoder;
 
-        public ContentScanWorker(ILogger<ContentScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, IContentScanner scanner, IRegistryFactory regFactory,
-            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, regFactory)
+        public ContentScanWorker(ILogger<ContentScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, IContentScanner scanner, IClientFactory clientFactory,
+            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
         {
             this.scanner = scanner;
             authDecoder = decoder;
@@ -55,21 +55,31 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    var registry = registryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
+                    var registry = registryFactory.GetClient(auth.Principal.ToRegistryCredentials());
 
-                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
+                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
+                    throw new NotImplementedException();
+                    /*
                     // if there is no cached result for this image/path, perform an index operation
                     if (scanner.GetPath(imageSet.Images.First(), request.Path) == null)
                     {
-                        scanner.Index(registry, request.TargetRepo, imageSet.Images.First(), request.Path);
-                        logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest}:{request.Path}");
+                        if (string.IsNullOrEmpty(request.Path))
+                        {
+                            scanner.Index(registry, request.TargetRepo, imageSet.Images.First());
+                            logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest}");
+                        }
+                        else
+                        {
+                            scanner.Index(registry, request.TargetRepo, imageSet.Images.First(), request.Path);
+                            logger.LogInformation($"Completed loading {request.TargetRepo}:{request.TargetDigest}:{request.Path}");
+                        }
                     }
                     else
                     {
                         logger.LogInformation($"Request to index {request.TargetDigest}/{request.Path} in {request.TargetRepo} already has a cached result, and is being discarded.");
-                    }
+                    }*/
                 }
             }
             catch (Exception ex)

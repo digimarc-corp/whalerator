@@ -22,10 +22,10 @@ using System.Text;
 
 namespace Whalerator.Content
 {
-    public class Result : ResultBase
+    public class LocalImageSource : IImageSource
     {
-        public bool Exists { get; set; }
-        public byte[] Content { get; set; }
-        public List<LayerIndex> Children { get; set; }
+        public string RepositoryRoot { get; set; }
+
+        public string GetLayerPath(string digest) => string.Join('/', RepositoryRoot, "blobs", digest.ToDigestPath());
     }
 }

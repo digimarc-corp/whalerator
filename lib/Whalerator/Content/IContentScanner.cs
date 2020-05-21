@@ -41,6 +41,7 @@ namespace Whalerator.Content
         /// <param name="repository"></param>
         /// <param name="image"></param>
         void Index(IRegistry registry, string repository, Image image, string path);
+        void Index(IRegistry registry, string repository, Image image);
 
         IWorkQueue<Request> Queue { get; }
     }

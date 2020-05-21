@@ -58,6 +58,15 @@ namespace Whalerator.Content
             return cache.TryGet(key, out var cachedResult) ? cachedResult : null;
         }
 
+        public void Index(IRegistry registry, string repository, Image image)
+        {
+            var cache = cacheFactory.Get<Result>();
+            var key = GetKey(image, "/");
+
+            var indexes = registry.GetLayerIndexes(repository, image).ToList();
+            cache.Set(key, new Result { Exists = true, Children = indexes });
+        }
+
         /// <summary>
         /// Searches a given image for a specific path, and pushes the result into the cache. If the path is a directory,
         /// the result will be a recursive list of all paths under that directory. If the path is a file, the result will be
@@ -78,13 +87,6 @@ namespace Whalerator.Content
             if (layerPath == null)
             {
                 cache.Set(key, new Result { Exists = false });
-            }
-            else if (layerPath.IsDirectory)
-            {
-#warning partially implemented
-                // currently this ignores the path argument and just returns everything in the image
-                var files = registry.GetImageFiles(repository, image, 0).ToList();
-                cache.Set(key, new Result { Exists = true, Children = files });
             }
             else
             {

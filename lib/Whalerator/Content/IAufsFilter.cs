@@ -16,16 +16,16 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
+
 using System.Collections.Generic;
-using System.Text;
+using Whalerator.Model;
 
 namespace Whalerator.Content
 {
-    public class Result : ResultBase
+    public interface IAufsFilter
     {
-        public bool Exists { get; set; }
-        public byte[] Content { get; set; }
-        public List<LayerIndex> Children { get; set; }
+        IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, string target = null);
+        bool IsWhiteout(string path, out string target);
+        bool MatchesAnyWh(string path, IEnumerable<string> wh);
     }
 }

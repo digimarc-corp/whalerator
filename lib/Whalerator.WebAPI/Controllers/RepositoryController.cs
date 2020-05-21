@@ -38,14 +38,14 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoryController : Controller
     {
-        private IRegistryFactory regFactory;
+        private IClientFactory clientFactory;
         private ILogger<RepositoryController> logger;
         private ISecurityScanner secScanner;
         private IContentScanner contentScanner;
 
-        public RepositoryController(IRegistryFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner secScanner = null, IContentScanner contentScanner = null)
+        public RepositoryController(IClientFactory regFactory, ILogger<RepositoryController> logger, ISecurityScanner secScanner = null, IContentScanner contentScanner = null)
         {
-            this.regFactory = regFactory;
+            this.clientFactory = regFactory;
             this.logger = logger;
             this.secScanner = secScanner;
             this.contentScanner = contentScanner;
@@ -80,8 +80,8 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
-                var imageSet = registryApi.GetImageSet(repository, digest, true);
+                var registryApi = clientFactory.GetClient(credentials);
+                var imageSet = registryApi.GetImageSet(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -139,8 +139,8 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
-                var imageSet = registryApi.GetImageSet(repository, digest, true);
+                var registryApi = clientFactory.GetClient(credentials);
+                var imageSet = registryApi.GetImageSet(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -199,7 +199,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
+                var registryApi = clientFactory.GetClient(credentials);
                 var tags = registryApi.GetTags(repository);
                 var permissions = registryApi.GetPermissions(repository);
 
@@ -224,8 +224,8 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
-                var imageSet = registryApi.GetImageSet(repository, tag, false);
+                var registryApi = clientFactory.GetClient(credentials);
+                var imageSet = registryApi.GetImageSet(repository, tag);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
             }
@@ -254,7 +254,7 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
+                var registryApi = clientFactory.GetClient(credentials);
                 var permissions = registryApi.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
@@ -290,8 +290,8 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = regFactory.GetRegistry(credentials);
-                var imageSet = registryApi.GetImageSet(repository, tag, false);
+                var registryApi = clientFactory.GetClient(credentials);
+                var imageSet = registryApi.GetImageSet(repository, tag);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet.SetDigest);
             }

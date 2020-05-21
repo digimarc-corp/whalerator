@@ -36,7 +36,18 @@ namespace Whalerator
                    Permissions.None;
         }
 
-        public static string ToImageSetDigest(this IEnumerable<Model.Image> images) {
+        public static string ToDigestPath(this string digest)
+        {
+            var parts = digest?.Split(':');
+            if (parts == null || parts.Length != 2) { throw new FormatException("Could not parse as a digest string"); }
+            else
+            {
+                return Path.Combine(parts[0], parts[1][..2], parts[1]);
+            }
+        }
+
+        public static string ToImageSetDigest(this IEnumerable<Model.Image> images)
+        {
             return string.Join(":", images.Select(i => i.Digest));
         }
 
@@ -67,6 +78,6 @@ namespace Whalerator
             var opqWhiteout = string.IsNullOrEmpty(folder) ? ".wh..wh.opq" : $"{folder}/.wh..wh.opq";
 
             return (search, fileWhiteout, opqWhiteout);
-        }       
+        }
     }
 }

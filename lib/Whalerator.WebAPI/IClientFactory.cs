@@ -16,16 +16,16 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Whalerator.Client;
 
-namespace Whalerator.Content
+namespace Whalerator.WebAPI
 {
-    public class Result : ResultBase
+    public interface IClientFactory
     {
-        public bool Exists { get; set; }
-        public byte[] Content { get; set; }
-        public List<LayerIndex> Children { get; set; }
+        ILogger<Registry> Logger { get; }
+        RegistrySettings Settings { get; }
+
+        IDockerClient GetClient(RegistryCredentials credentials);
     }
 }

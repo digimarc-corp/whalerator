@@ -24,11 +24,25 @@ using System.Text;
 using Whalerator.Client;
 using Whalerator.Support;
 using Xunit;
+using System.Xml.Serialization;
 
 namespace Whalerator.Test
 {
     public class Paths
     {
+        [Theory]
+        [InlineData("sha256:056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c", "sha256/05/056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c")]
+        [InlineData("mydigest:abcd123", "mydigest/ab/abcd123")]
+        public void CanParseDigestPath(string digest, string path) =>
+            Assert.Equal(path.Replace('/', System.IO.Path.DirectorySeparatorChar), digest.ToDigestPath());
+
+        [Theory]
+        [InlineData("notadigest")]
+        [InlineData((string)null)]
+        [InlineData("")]
+        public void CanDetectBadDigest(string badDigest) =>
+            Assert.Throws<FormatException>(() => _ =badDigest.ToDigestPath());
+
         [Fact]
         public void CanParseUriPathToScope()
         {

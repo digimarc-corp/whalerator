@@ -36,8 +36,8 @@ namespace Whalerator.WebAPI
         private ISecurityScanner scanner;
         private RegistryAuthenticationDecoder authDecoder;
 
-        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, ISecurityScanner scanner, IRegistryFactory regFactory,
-            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, regFactory)
+        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, ISecurityScanner scanner, IClientFactory clientFactory,
+            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
         {
             this.scanner = scanner;
             authDecoder = decoder;
@@ -55,9 +55,9 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    var registry = registryFactory.GetRegistry(auth.Principal.ToRegistryCredentials());
+                    var registry = registryFactory.GetClient(auth.Principal.ToRegistryCredentials());
 
-                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest, true);
+                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
                     var scanResult = scanner.GetScan(imageSet.Images.First());
@@ -70,9 +70,12 @@ namespace Whalerator.WebAPI
                         }
                         else
                         {
+                            throw new NotImplementedException();
+                            /*
                             scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
                             logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
                             request.Submitted = true;
+                            */
                         }
                         queue.Push(request);
                     }

@@ -17,6 +17,7 @@
 */
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -79,12 +80,13 @@ namespace Whalerator.WebAPI
                 factory = (host, handler) => new LocalDistributionClient(config);
             }
 
-            services.AddScoped<IRegistryFactory>(p =>
+
+            services.AddSingleton(p =>
             {
                 var catalogHandler = string.IsNullOrEmpty(config.Catalog?.User?.Username) ? null : p.GetService<IAuthHandler>();
                 catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
 
-                var settings = new RegistrySettings
+                return new RegistrySettings
                 {
                     DistributionFactory = factory,
                     AuthHandler = p.GetService<IAuthHandler>(),
@@ -96,9 +98,10 @@ namespace Whalerator.WebAPI
                     StaticTtl = staticTtl,
                     VolatileTtl = volatileTtl
                 };
-
-                return new RegistryFactory(settings, p.GetRequiredService<ILogger<Registry>>());
             });
+
+            services.AddScoped<IClientFactory, ClientFactory>();
+
 
             uiConfig.Registry = config.Catalog?.Registry;
             uiConfig.AutoLogin = config.Catalog?.AutoLogin ?? false;
@@ -207,6 +210,10 @@ namespace Whalerator.WebAPI
         {
             bool contentWorker = config.ContentScanner != null;
             bool contentUI = (config.Search?.Filelists?.Count ?? 0) > 0;
+
+            services.AddScoped<IAufsFilter, AufsFilter>();
+            services.AddScoped<ILayerExtractor, LayerExtractor>();
+            services.AddScoped<IDockerClient, LocalDockerClient>();
 
             if (contentWorker)
             {
