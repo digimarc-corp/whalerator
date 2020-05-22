@@ -47,7 +47,15 @@ namespace Whalerator.WebAPI
                 credentials.Registry = Registry.DockerHub;
             }
 
-            return new LocalDockerClient(indexer, extractor) { RegistryRoot = Settings.LayerCache };
+
+            if (string.IsNullOrEmpty(Settings.RegistryRoot))
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                return new LocalDockerClient(indexer, extractor) { RegistryRoot = Settings.RegistryRoot };
+            }
         }
 
         public RegistrySettings Settings { get; }

@@ -61,15 +61,13 @@ namespace Whalerator.WebAPI
             return identity;
         }
 
-        public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ConfigRoot config, PublicConfig uiConfig, ILogger logger)
+        public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig, ILogger logger)
         {
-            var staticTtl = config.Cache.StaticTtl == 0 ? (TimeSpan?)null : new TimeSpan(0, 0, config.Cache.StaticTtl);
-            var volatileTtl = new TimeSpan(0, 0, config.Cache.VolatileTtl);
-            logger?.LogInformation($"Cache lifetime for static registry objects: {(staticTtl == null ? "unlimited" : staticTtl.ToString())}");
+            var volatileTtl = new TimeSpan(0, 0, config.CacheTtl);
             logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
             Func<string, IAuthHandler, IDistributionClient> factory;
-            if (string.IsNullOrEmpty(config.Catalog.RegistryRoot))
+            if (string.IsNullOrEmpty(config.RegistryRoot))
             {
                 services.AddScoped<IDistributionClient, DistributionClient>();
                 factory = (host, handler) => new DistributionClient(handler) { Host = host };
@@ -83,8 +81,8 @@ namespace Whalerator.WebAPI
 
             services.AddSingleton(p =>
             {
-                var catalogHandler = string.IsNullOrEmpty(config.Catalog?.User?.Username) ? null : p.GetService<IAuthHandler>();
-                catalogHandler?.Login(config.Catalog.Registry, config.Catalog.User.Username, config.Catalog.User.Password);
+                var catalogHandler = string.IsNullOrEmpty(config.RegistryUser) ? null : p.GetService<IAuthHandler>();
+                catalogHandler?.Login(config.Registry, config.RegistryUser, config.RegistryPassword);
 
                 return new RegistrySettings
                 {
@@ -92,10 +90,10 @@ namespace Whalerator.WebAPI
                     AuthHandler = p.GetService<IAuthHandler>(),
                     CacheFactory = p.GetService<ICacheFactory>(),
                     CatalogAuthHandler = catalogHandler,
-                    HiddenRepos = config.Catalog?.Hidden,
-                    LayerCache = config.ContentScanner?.LayerCache,
-                    StaticRepos = config.Catalog?.Repositories,
-                    StaticTtl = staticTtl,
+                    HiddenRepos = config.HiddenRepositories,
+                    LayerCache = config.RegistryCache,
+                    RegistryRoot = config.RegistryRoot,
+                    StaticRepos = config.Repositories,
                     VolatileTtl = volatileTtl
                 };
             });
@@ -103,8 +101,8 @@ namespace Whalerator.WebAPI
             services.AddScoped<IClientFactory, ClientFactory>();
 
 
-            uiConfig.Registry = config.Catalog?.Registry;
-            uiConfig.AutoLogin = config.Catalog?.AutoLogin ?? false;
+            uiConfig.Registry = config.Registry;
+            uiConfig.AutoLogin = config.AutoLogin;
 
             return services;
         }
@@ -121,13 +119,13 @@ namespace Whalerator.WebAPI
             return services;
         }
 
-        public static IServiceCollection AddWhaleCrypto(this IServiceCollection services, ConfigRoot config, ILogger logger)
+        public static IServiceCollection AddWhaleCrypto(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
             RSA crypto;
-            var keyFile = config.Security?.PrivateKey;
+            var keyFile = config.AuthTokenKey;
             if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
-                logger?.LogInformation($"Loading private key from {config.Security.PrivateKey}.");
+                logger?.LogInformation($"Loading private key from {config.AuthTokenKey}.");
                 crypto = new RSA(File.ReadAllText(keyFile));
             }
             else
@@ -156,9 +154,9 @@ namespace Whalerator.WebAPI
             return services;
         }
 
-        public static IServiceCollection AddWhaleCache(this IServiceCollection services, ConfigRoot config, ILogger logger)
+        public static IServiceCollection AddWhaleCache(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
-            if (string.IsNullOrEmpty(config.Cache.Redis))
+            if (string.IsNullOrEmpty(config.RedisCache))
             {
                 logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
@@ -166,20 +164,20 @@ namespace Whalerator.WebAPI
             }
             else
             {
-                logger?.LogInformation($"Using Redis cache ({config.Cache.Redis})");
+                logger?.LogInformation($"Using Redis cache ({config.RedisCache})");
                 var ready = false;
                 var retryTime = 15;
                 while (!ready)
                 {
                     try
                     {
-                        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.Cache.Redis));
+                        services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(config.RedisCache));
                         ready = true;
                     }
                     catch (Exception ex)
                     {
                         logger?.LogWarning($"Could not connect to redis instance. Retrying in {retryTime}s.");
-                        logger?.LogInformation($"Connection string: {config.Cache.Redis}");
+                        logger?.LogInformation($"Connection string: {config.RedisCache}");
                         logger?.LogInformation(ex, "Error:");
                         System.Threading.Thread.Sleep(TimeSpan.FromSeconds(retryTime));
                     }
@@ -206,21 +204,21 @@ namespace Whalerator.WebAPI
             return services;
         }
 
-        public static IServiceCollection AddWhaleDocuments(this IServiceCollection services, ConfigRoot config, PublicConfig uiConfig, ILogger logger)
+        public static IServiceCollection AddWhaleDocuments(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig, ILogger logger)
         {
-            bool contentWorker = config.ContentScanner != null;
-            bool contentUI = (config.Search?.Filelists?.Count ?? 0) > 0;
+            bool contentWorker = config.IndexWorker;
+            bool contentUI = (config.Documents?.Count ?? 0) > 0;
 
             services.AddScoped<IAufsFilter, AufsFilter>();
-            services.AddScoped<ILayerExtractor, LayerExtractor>();
-            services.AddScoped<IDockerClient, LocalDockerClient>();
-            services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.ContentScanner.LayerCache });
+            services.AddScoped<ILayerExtractor, LayerExtractor>();            
+
+            services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.IndexFolder });
 
             if (contentWorker)
             {
-                if (string.IsNullOrEmpty(config.ContentScanner?.LayerCache))
+                if (string.IsNullOrEmpty(config.RegistryCache) && string.IsNullOrEmpty(config.RegistryRoot))
                 {
-                    logger.LogCritical("No layer cache specified, this worker will not be able to index content.");
+                    logger.LogCritical("No layer cache or local registry data specified, this worker will not be able to index content.");
                 }
                 services.AddHostedService<IndexWorker>();
             }
@@ -228,13 +226,13 @@ namespace Whalerator.WebAPI
             if (contentUI)
             {
                 uiConfig.DocScanner = true;
-                uiConfig.SearchLists = config.Search?.Filelists?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)));
+                uiConfig.SearchLists = config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)));
             }
 
             if (contentWorker || contentUI)
             {
                 //services.AddSingleton<IContentScanner, Content.ContentScanner>();
-                if (string.IsNullOrEmpty(config.Cache.Redis))
+                if (string.IsNullOrEmpty(config.RedisCache))
                 {
                     services.AddSingleton<IWorkQueue<IndexRequest>, MemQueue<IndexRequest>>();
                 }
@@ -249,16 +247,16 @@ namespace Whalerator.WebAPI
             return services;
         }
 
-        public static IServiceCollection AddWhaleVulnerabilities(this IServiceCollection services, ConfigRoot config, PublicConfig uiConfig)
+        public static IServiceCollection AddWhaleVulnerabilities(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig)
         {
-            bool clairWorker = config.ClairScanner != null;
-            bool vulnUi = config.Search?.Vulnerabilities ?? false;
+            bool clairWorker = config.ClairWorker;
+            bool vulnUi = config.Vulnerabilities;
 
             uiConfig.SecScanner = vulnUi;
 
             if (clairWorker)
             {
-                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.ClairScanner.ClairApi));
+                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.ClairApi));
                 services.AddHostedService<SecurityScanWorker>();
             }
 
@@ -269,7 +267,7 @@ namespace Whalerator.WebAPI
                     p.GetService<IClairAPI>(),
                     p.GetRequiredService<ICacheFactory>(),
                     p.GetRequiredService<IWorkQueue<Security.Request>>()));
-                if (string.IsNullOrEmpty(config.Cache.Redis))
+                if (string.IsNullOrEmpty(config.RedisCache))
                 {
                     services.AddSingleton<IWorkQueue<Security.Request>, MemQueue<Security.Request>>();
                 }

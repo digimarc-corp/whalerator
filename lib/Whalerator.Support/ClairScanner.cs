@@ -35,13 +35,13 @@ namespace Whalerator.Support
     public class ClairScanner : ISecurityScanner
     {
         private ILogger logger;
-        private ConfigRoot config;
+        private ServiceConfig config;
         private IClairAPI clair;
         private ICacheFactory cacheFactory;
 
         public IWorkQueue<Request> Queue { get; private set; }
 
-        public ClairScanner(ILogger<ClairScanner> logger, ConfigRoot config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
+        public ClairScanner(ILogger<ClairScanner> logger, ServiceConfig config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
         {
             this.logger = logger;
             this.config = config;
@@ -119,8 +119,9 @@ namespace Whalerator.Support
                     {
                         if (!CheckLayerScanned(layer))
                         {
-                            var aliases = config.ClairScanner?.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
-                            var proxy = registry.GetLayerProxyInfo(repository, layer, aliases);
+#warning needs attn
+                            //var aliases = config.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
+                            var proxy = registry.GetLayerProxyInfo(repository, layer, null);// aliases);
 
                             var request = new ClairLayerRequest
                             {

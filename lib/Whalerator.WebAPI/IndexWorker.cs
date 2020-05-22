@@ -31,7 +31,7 @@ namespace Whalerator.WebAPI
         private readonly IIndexStore indexStore;
         private RegistryAuthenticationDecoder authDecoder;
 
-        public IndexWorker(ILogger<IndexWorker> logger, ConfigRoot config, IWorkQueue<IndexRequest> queue, IClientFactory clientFactory, IIndexStore indexStore,
+        public IndexWorker(ILogger<IndexWorker> logger, ServiceConfig config, IWorkQueue<IndexRequest> queue, IClientFactory clientFactory, IIndexStore indexStore,
            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
         {
             this.indexStore = indexStore;

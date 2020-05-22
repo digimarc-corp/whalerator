@@ -39,9 +39,9 @@ namespace Whalerator.WebAPI.Controllers
         private ICache<Authorization> cache;
 
         public ILogger<TokenController> Logger { get; }
-        public ConfigRoot Config { get; }
+        public ServiceConfig Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ConfigRoot config)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ServiceConfig config)
         {
             this.crypto = crypto;
             this.cache = cache;
@@ -56,7 +56,7 @@ namespace Whalerator.WebAPI.Controllers
             if (string.IsNullOrEmpty(credentials.Registry)) { return Unauthorized(); }
 
             // deny requests for foreign instances, if configured
-            if (!string.IsNullOrEmpty(Config.Catalog?.Registry) && credentials.Registry.ToLowerInvariant() != Config.Catalog.Registry.ToLowerInvariant())
+            if (!string.IsNullOrEmpty(Config.Registry) && credentials.Registry.ToLowerInvariant() != Config.Registry.ToLowerInvariant())
             {
                 return Unauthorized();
             }
@@ -76,7 +76,7 @@ namespace Whalerator.WebAPI.Controllers
                         Usr = credentials.Username,
                         Reg = credentials.Registry,
                         Iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.Security.TokenLifetime
+                        Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime
                     }, crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256)
                 });
             }

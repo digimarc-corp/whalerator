@@ -16,15 +16,15 @@ namespace Whalerator.Client
 {
     public class LocalDistributionClient : DistributionClientBase
     {
-        public LocalDistributionClient(ConfigRoot config)
+        public LocalDistributionClient(ServiceConfig config)
         {
             Config = config;
         }
 
         public override string Host { get; set; } = Registry.DockerHub;
-        public ConfigRoot Config { get; }
+        public ServiceConfig Config { get; }
 
-        string registryRoot => Config.Catalog.RegistryRoot;
+        string registryRoot => Config.RegistryRoot;
         string repositoriesRoot => Path.Combine(registryRoot, "docker/registry/v2/repositories");
         string blobsRoot => Path.Combine(registryRoot, "docker/registry/v2/blobs");
 

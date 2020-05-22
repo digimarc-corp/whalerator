@@ -46,6 +46,7 @@ namespace Whalerator
         public List<string> HiddenRepos { get; set; }
 
         public string LayerCache { get; set; }
+        public string RegistryRoot { get; set; }
 
 
         public TimeSpan? StaticTtl { get; set; } = null;

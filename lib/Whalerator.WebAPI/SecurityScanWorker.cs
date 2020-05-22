@@ -36,7 +36,7 @@ namespace Whalerator.WebAPI
         private ISecurityScanner scanner;
         private RegistryAuthenticationDecoder authDecoder;
 
-        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ConfigRoot config, IWorkQueue<Request> queue, ISecurityScanner scanner, IClientFactory clientFactory,
+        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ServiceConfig config, IWorkQueue<Request> queue, ISecurityScanner scanner, IClientFactory clientFactory,
             RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
         {
             this.scanner = scanner;
