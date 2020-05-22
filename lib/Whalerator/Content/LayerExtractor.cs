@@ -36,27 +36,34 @@ namespace Whalerator.Content
             var gzipStream = new GZipInputStream(stream);
             var tarStream = new TarInputStream(gzipStream);
 
-            Stream foundStream = null;
-            var entry = tarStream.GetNextEntry();
-            while (entry != null)
+            try
             {
-                if (entry.Name.Equals(path))
+                Stream foundStream = null;
+                var entry = tarStream.GetNextEntry();
+                while (entry != null)
                 {
-                    foundStream = new SubStream(tarStream, entry.Size);
-                    break;
+                    if (entry.Name.Equals(path))
+                    {
+                        foundStream = new SubStream(tarStream, entry.Size);
+                        break;
+                    }
+                    entry = tarStream.GetNextEntry();
                 }
-                entry = tarStream.GetNextEntry();
-            }
 
-            if (foundStream != null)
-            {
-                return foundStream;
+                if (foundStream != null)
+                {
+                    return foundStream;
+                }
+                else
+                {
+                    // tarStream will dispose the entire chain for us
+                    tarStream.Dispose();
+                    throw new FileNotFoundException();
+                }
             }
-            else
+            catch (GZipException)
             {
-                // tarStream will dispose the entire chain for us
-                tarStream.Dispose();
-                throw new FileNotFoundException();
+                throw new ArgumentException($"Layer appears invalid");
             }
         }
 

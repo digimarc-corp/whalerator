@@ -219,12 +219,11 @@ export class RepositoryComponent implements OnInit {
                 i.tags = [tag];
                 this.images[setDigest] = i;
                 this.tagMap[tag] = this.images[setDigest];
-                // if this tag is currently selected, set the active image and start loading documents
+                // if this tag is currently selected, set the active image and let the document view start loading details
                 if (tag === this.selectedTag) {
                   this.selectedImageSet = this.images[setDigest];
                   this.selectedImage = this.images[setDigest].images[0];
                   this.selectedPlatform = this.images[setDigest].images[0].platform;
-                  // this.getDocuments(this.selectedImageSet, this.selectedImageSet.platforms[0], next);
                 }
                 if (next) {
                   next();

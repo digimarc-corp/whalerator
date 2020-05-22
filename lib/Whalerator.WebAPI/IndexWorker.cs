@@ -56,7 +56,7 @@ namespace Whalerator.WebAPI
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
                     var image = imageSet.Images.First();
 
-                    var indexes = client.GetIndexes(image, request.TargetPath);
+                    var indexes = client.GetIndexes(request.TargetRepo, image, request.TargetPath);
                     indexStore.SetIndex(indexes, image.Digest, request.TargetPath);
                     logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest} {(string.IsNullOrEmpty(request.TargetPath) ? "" : $"({request.TargetPath})")}");
                 }

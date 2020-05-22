@@ -36,6 +36,8 @@ namespace Whalerator
                    Permissions.None;
         }
 
+        public static bool IsDigest(this string str) => str.StartsWith("sha256:");
+
         public static string ToDigestPath(this string digest)
         {
             var parts = digest?.Split(':');

@@ -29,23 +29,39 @@ using Whalerator.Model;
 
 namespace Whalerator.Client
 {
-    public class LocalDockerClient : IDockerClient
+    public class LocalDockerClient : ILocalDockerClient
     {
         public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor)
         {
             this.filter = filter;
             this.extractor = extractor;
+
+            RecurseClient = this;
         }
 
         private readonly IAufsFilter filter;
         private readonly ILayerExtractor extractor;
+
+        /// <summary>
+        /// When making recursive/chained calls to the API, they will be funnelled through this instance.
+        /// </summary>
+        public IDockerClient RecurseClient { get; set; }
 
         public string RegistryRoot { get; set; }
         string repositoriesRoot => Path.Combine(RegistryRoot, "docker/registry/v2/repositories");
         string blobsRoot => Path.Combine(RegistryRoot, "docker/registry/v2/blobs");
         private const string tagsFolder = "_manifests/tags";
 
-        ImageConfig GetImageConfig(string repository, string digest)
+        public string BlobPath(string digest)=> Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
+
+        private string TagLinkPath(string repository, string tag)
+        {
+            var repoRoot = Path.Combine(repositoriesRoot, repository);
+            var tagLink = Path.Combine(repoRoot, tagsFolder, tag, "current/link");
+            return tagLink;
+        }
+
+        public ImageConfig GetImageConfig(string repository, string digest)
         {
             var result = GetBlob(repository, digest);
             var json = new StreamReader(result).ReadToEnd();
@@ -65,23 +81,20 @@ namespace Whalerator.Client
             throw new NotImplementedException();
         }
 
-        public Stream GetFile(Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
+        public Stream GetFile(string repository, Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
 
         public ImageSet GetImageSet(string repository, string tag)
         {
             string digest;
-            if (tag.StartsWith("sha256:"))
+            if (tag.IsDigest())
             {
                 digest = tag;
             }
             else
             {
-                var repoRoot = Path.Combine(repositoriesRoot, repository);
-                var tagLink = Path.Combine(repoRoot, tagsFolder, tag, "current/link");
-                digest = File.ReadAllText(tagLink).Trim();
+                digest = GetTagDigest(repository, tag);
             }
-
-            var manifestPath = Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
+            string manifestPath = BlobPath(digest);
             var manifest = File.ReadAllText(manifestPath);
             var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
@@ -95,7 +108,7 @@ namespace Whalerator.Client
                 var fatManifest = JsonConvert.DeserializeObject<FatManifest>(manifest);
                 foreach (var subManifest in fatManifest.Manifests)
                 {
-                    images.Add(GetImageSet(repository, subManifest.Digest).Images.First());
+                    images.Add(RecurseClient.GetImageSet(repository, subManifest.Digest).Images.First());
                 }
 
                 imageSet = new ImageSet
@@ -109,7 +122,7 @@ namespace Whalerator.Client
             else if (mediaType.StartsWith("application/vnd.docker.distribution.manifest.v2"))
             {
                 var thinManifest = JsonConvert.DeserializeObject<ManifestV2>(manifest);
-                var config = GetImageConfig(repository, thinManifest.Config.Digest);
+                var config = RecurseClient.GetImageConfig(repository, thinManifest.Config.Digest);
                 if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
                 var image = new Image
                 {
@@ -141,7 +154,7 @@ namespace Whalerator.Client
             return imageSet;
         }
 
-        public IEnumerable<LayerIndex> GetIndexes(Image image, string targetPath) => filter.FilterLayers(GetLayers(image), targetPath);
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target) => filter.FilterLayers(GetRawIndexes(repository, image), target);
 
         /// <summary>
         /// Extracts raw file indexes from each layer in an image, working from the top down.
@@ -149,13 +162,13 @@ namespace Whalerator.Client
         /// <param name="image"></param>
         /// <param name="maxDepth">Maximum layers down to search. If 0, searches all layers</param>
         /// <returns></returns>
-        public IEnumerable<LayerIndex> GetLayers(Image image, int maxDepth = 0)
+        IEnumerable<LayerIndex> GetRawIndexes(string repository, Image image, int maxDepth = 0)
         {
             var layers = image.Layers.Reverse();
             var depth = 1;
             foreach (var layer in layers)
             {
-                var layerStream = GetLayerArchive(layer.Digest);
+                var layerStream = RecurseClient.GetLayerArchive(repository, layer.Digest);
                 yield return new LayerIndex
                 {
                     Depth = depth++,
@@ -185,7 +198,6 @@ namespace Whalerator.Client
                 Tags = GetTags(r).Count(),
                 Permissions = Permissions.Pull
             });
-
 
         private IEnumerable<string> GetRepositories(string path)
         {
@@ -226,16 +238,19 @@ namespace Whalerator.Client
             return list;
         }
 
-        public Stream GetLayerArchive(string digest) => new FileStream(Path.Combine(blobsRoot, digest.ToDigestPath(), "data"), FileMode.Open, FileAccess.Read, FileShare.Read);
+        public Stream GetLayerArchive(string repository, string digest) => new FileStream(BlobPath(digest), FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        public Layer GetLayer(string layerDigest)
+        public Layer GetLayer(string repository, string layerDigest)
         {
-            var info = new FileInfo(Path.Combine(blobsRoot, layerDigest.ToDigestPath(), "data"));
+            var info = new FileInfo(BlobPath(layerDigest));
             return new Layer
             {
                 Digest = layerDigest,
                 Size = info.Length
             };
         }
+
+        public string GetTagDigest(string repository, string tag) =>
+            File.ReadAllText(TagLinkPath(repository, tag)).Trim();
     }
 }

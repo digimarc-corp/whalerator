@@ -197,8 +197,8 @@ namespace Whalerator.WebAPI.Controllers
 
 #warning need to validate repo permissions? Or is the client doing this for us?
 
-                var layer = client.GetLayer(digest);
-                var result = client.GetFile(layer, path);
+                var layer = client.GetLayer(repository, digest);
+                var result = client.GetFile(repository, layer, path);
 
                 Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
@@ -207,6 +207,10 @@ namespace Whalerator.WebAPI.Controllers
             catch (Client.NotFoundException)
             {
                 return NotFound();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Client.AuthenticationException)
             {
@@ -222,9 +226,9 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var tags = registryApi.GetTags(repository);
-                var permissions = registryApi.GetPermissions(repository);
+                var client = clientFactory.GetClient(credentials);
+                var tags = client.GetTags(repository);
+                var permissions = client.GetPermissions(repository);
 
                 return Ok(new TagSet { Tags = tags, Permissions = permissions });
             }
@@ -247,8 +251,8 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var imageSet = registryApi.GetImageSet(repository, tag);
+                var client = clientFactory.GetClient(credentials);
+                var imageSet = client.GetImageSet(repository, tag);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
             }
@@ -313,10 +317,10 @@ namespace Whalerator.WebAPI.Controllers
 
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var imageSet = registryApi.GetImageSet(repository, tag);
+                var client = clientFactory.GetClient(credentials);
+                var digest = client.GetTagDigest(repository, tag);
 
-                return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet.SetDigest);
+                return string.IsNullOrEmpty(digest) ? (IActionResult)NotFound() : Ok(digest);
             }
             catch (Client.NotFoundException)
             {

@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,21 +16,20 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
+export class FileListing {
+    constructor(obj?: any) {
+        Object.assign(this, obj);
+    }
 
-namespace Whalerator.Client
-{
-    public class RegistryException : Exception
-    {
-        public RegistryException() { }
+    public digest: string;
+    public depth: string;
+    public files: string[];
 
-        public RegistryException(string message) : base(message) { }
-
-        public RegistryException(string message, Exception innerException) : base(message, innerException) { }
-
-        protected RegistryException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    public static From(obj: any): FileListing {
+        const list = new FileListing();
+        list.depth = obj.depth;
+        list.digest = obj.digest;
+        list.files = obj.files;
+        return list;
     }
 }

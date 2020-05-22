@@ -29,14 +29,16 @@ namespace Whalerator.Client
     {
         IEnumerable<Repository> GetRepositories();
         IEnumerable<string> GetTags(string repository);
+        string GetTagDigest(string repository, string tag);
         ImageSet GetImageSet(string repository, string tag);
+        Data.ImageConfig GetImageConfig(string repository, string digest);
         LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases);
-        Stream GetFile(Layer layer, string path);
-        Layer GetLayer(string layerDigest);
-        IEnumerable<LayerIndex> GetIndexes(Image image, string target = null);
+        Stream GetFile(string repository, Layer layer, string path);
+        Layer GetLayer(string repository, string layerDigest);
+        IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null);
         Permissions GetPermissions(string repository);
         void DeleteImage(string repository, string imageDigest);
         void DeleteRepository(string repository);
-        Stream GetLayerArchive(string layerDigest);
+        Stream GetLayerArchive(string repository, string layerDigest);
     }
 }
