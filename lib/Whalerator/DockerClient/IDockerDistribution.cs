@@ -42,6 +42,10 @@ namespace Whalerator.DockerClient
         [Headers("Authorization: Bearer", "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
         Task<ApiResponse<object>> GetTagDigest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
+        [Delete("/{repository}/manifests/{tag}")]
+        [QueryUriFormat(UriFormat.Unescaped)]
+        Task<ApiResponse<object>> DeleteManifest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
+
         // manifest format is unpredictable, so we get it as a plain string here and parse it out later
         [Get("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]

@@ -19,6 +19,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,9 +56,9 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    var registry = clientFactory.GetClient(auth.Principal.ToRegistryCredentials());
+                    var client = clientFactory.GetClient(auth.Principal.ToRegistryCredentials());
 
-                    var imageSet = registry.GetImageSet(request.TargetRepo, request.TargetDigest);
+                    var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
                     var scanResult = scanner.GetScan(imageSet.Images.First());
@@ -70,12 +71,9 @@ namespace Whalerator.WebAPI
                         }
                         else
                         {
-                            throw new NotImplementedException();
-                            /*
-                            scanner.RequestScan(registry, request.TargetRepo, imageSet.Images.First());
+                            scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), this.config.RegistryAlias?? this.config.Registry, request.Authorization);
                             logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
-                            request.Submitted = true;
-                            */
+                            request.Submitted = true;                            
                         }
                         queue.Push(request);
                     }

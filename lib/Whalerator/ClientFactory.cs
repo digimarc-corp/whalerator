@@ -25,27 +25,31 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Content;
 using Whalerator.DockerClient;
 
-namespace Whalerator.WebAPI
+namespace Whalerator
 {
     public class ClientFactory : IClientFactory
     {
+        private readonly ServiceConfig config;
+        private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger<ClientFactory> logger;
         private readonly IAufsFilter indexer;
         private readonly ILayerExtractor extractor;
         private readonly ICacheFactory cacheFactory;
+        private readonly IAuthHandler auth;
 
-        public RegistrySettings Settings { get; }
-        public ILogger<Registry> Logger { get; }
-
-        public ClientFactory(RegistrySettings settings, ILogger<Registry> logger, IAufsFilter indexer, ILayerExtractor extractor, ICacheFactory cacheFactory)
+        public ClientFactory(ServiceConfig config, ILoggerFactory loggerFactory, IAufsFilter indexer, ILayerExtractor extractor, ICacheFactory cacheFactory, IAuthHandler auth)
         {
-            Settings = settings;
-            Logger = logger;
+            this.config = config;
+            this.loggerFactory = loggerFactory;
+            logger = loggerFactory.CreateLogger<ClientFactory>();
             this.indexer = indexer;
             this.extractor = extractor;
             this.cacheFactory = cacheFactory;
+            this.auth = auth;
         }
 
         public IDockerClient GetClient(RegistryCredentials credentials)
@@ -56,11 +60,9 @@ namespace Whalerator.WebAPI
                 credentials.Registry = DockerHub;
             }
 
-
-            var auth = Settings.UserAuthHandlerFactory();
             auth.Login(credentials.Registry, credentials.Username, credentials.Password);
 
-            if (string.IsNullOrEmpty(Settings.RegistryRoot))
+            if (string.IsNullOrEmpty(config.RegistryRoot))
             {
                 async Task<string> GetToken(HttpRequestMessage message)
                 {
@@ -74,17 +76,17 @@ namespace Whalerator.WebAPI
 
                 var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(GetToken)) { BaseAddress = new Uri(HostToEndpoint(credentials.Registry)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
-                var localClient = new LocalDockerClient(indexer, extractor, auth) { RegistryRoot = Settings.LayerCache };
-                var remoteClient = new RemoteDockerClient(auth, service, localClient);
+                var localClient = new LocalDockerClient(indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = credentials.Registry };
+                var remoteClient = new RemoteDockerClient(auth, service, localClient) { Host = credentials.Registry };
                 localClient.RecurseClient = remoteClient;
 
-                var cachedClient = new CachedDockerClient(remoteClient, cacheFactory, auth);
+                var cachedClient = new CachedDockerClient(remoteClient, cacheFactory, auth) { Host = credentials.Registry };
 
                 return cachedClient;
             }
             else
             {
-                return new LocalDockerClient(indexer, extractor, auth) { RegistryRoot = Settings.RegistryRoot };
+                return new LocalDockerClient(indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryRoot };
             }
         }
 
@@ -110,7 +112,7 @@ namespace Whalerator.WebAPI
         static Regex hostWithScheme = new Regex(@"\w+:\/\/.+", RegexOptions.Compiled);
         static Regex hostWithPort = new Regex(@".+:\d+$", RegexOptions.Compiled);
 
-        public static string HostToEndpoint(string host)
+        public static string HostToEndpoint(string host, string resource = null)
         {
             host = DeAliasDockerHub(host);
 
@@ -122,7 +124,7 @@ namespace Whalerator.WebAPI
                 scheme = hostWithPort.IsMatch(host) ? "http://" : "https://";
             }
 
-            return $"{scheme}{host.TrimEnd('/')}/v2";
+            return $"{scheme}{host.TrimEnd('/')}/v2{(string.IsNullOrEmpty(resource) ? "" : "/")}";
         }
 
         #endregion

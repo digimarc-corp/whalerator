@@ -51,7 +51,6 @@ namespace Whalerator.Client
         public string Service { get; private set; }
         public string Realm { get; private set; }
 
-#warning needs to respect token exp 
         public TimeSpan AuthTtl { get; set; } = TimeSpan.FromMinutes(20);
 
         /// <summary>
@@ -76,7 +75,7 @@ namespace Whalerator.Client
             Username = username;
             Password = password ?? string.Empty;
             RegistryHost = registryHost;
-            RegistryEndpoint = Registry.HostToEndpoint(registryHost);
+            RegistryEndpoint = ClientFactory.HostToEndpoint(registryHost);
 
             var key = GetKey(null, granted: true);
 
@@ -95,11 +94,11 @@ namespace Whalerator.Client
 
                     // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
                     // but we can set some known values
-                    if (registryHost == Registry.DockerHub)
+                    if (registryHost == ClientFactory.DockerHub)
                     {
                         DockerHub = true;
-                        Realm = Registry.DockerRealm;
-                        Service = Registry.DockerService;
+                        Realm = ClientFactory.DockerRealm;
+                        Service = ClientFactory.DockerService;
                         return;
                     }
 
@@ -253,10 +252,12 @@ namespace Whalerator.Client
                     var payload = Jose.JWT.Payload(token);
                     var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
 
+                    var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+
                     var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
                     if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
                     {
-                        authCache.Set(GetKey(scope, granted: true), authorization, AuthTtl);
+                        authCache.Set(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
                         return true;
                     }
                     else

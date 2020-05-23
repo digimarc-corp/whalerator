@@ -30,6 +30,6 @@ namespace Whalerator
         public string Username { get; set; }
         public string Password { get; set; }
 
-        public void DeAliasRegistry() => Registry = Whalerator.Registry.DeAliasDockerHub(Registry);
+        public void DeAliasRegistry() => Registry = ClientFactory.DeAliasDockerHub(Registry);
     }
 }

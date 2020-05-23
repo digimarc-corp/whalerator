@@ -40,10 +40,8 @@ namespace Whalerator.DockerClient
 
         T Exec<T>(string scope, string key, Func<T> func) where T : class => cacheFactory.Get<T>().Exec(scope, key, AuthHandler, func);
 
-        public LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases) => throw new NotImplementedException();
-
         public IEnumerable<Model.Repository> GetRepositories() =>
-            Exec(AuthHandler.CatalogScope(), CatalogKey("bob"), () => innerClient.GetRepositories());
+            Exec(AuthHandler.CatalogScope(), CatalogKey(), () => innerClient.GetRepositories());
 
         public string GetTagDigest(string repository, string tag) =>
             Exec(AuthHandler.RepoPullScope(repository), RepoTagDigestKey(repository, tag), () => innerClient.GetTagDigest(repository, tag));
@@ -51,11 +49,29 @@ namespace Whalerator.DockerClient
         public IEnumerable<string> GetTags(string repository) =>
             Exec(AuthHandler.RepoPullScope(repository), RepoTagsKey(repository), () => innerClient.GetTags(repository));
 
+        public void DeleteImage(string repository, string imageDigest)
+        {
+            // we're only deleting, so we don't care about a type arg
+            var cache = cacheFactory.Get<object>();
+            
+            cache.TryDelete(CatalogKey());
+            cache.TryDelete(RepoTagsKey(repository));            
+
+            innerClient.DeleteImage(repository, imageDigest);
+        }
+
+        public void DeleteRepository(string repository)
+        {
+            // we're only deleting, so we don't care about a type arg
+            var cache = cacheFactory.Get<object>();
+
+            cache.TryDelete(CatalogKey());
+            cache.TryDelete(RepoTagsKey(repository));
+
+            innerClient.DeleteRepository(repository);
+        }
+
         #region passthrough methods
-
-        public void DeleteImage(string repository, string imageDigest) => innerClient.DeleteImage(repository, imageDigest);
-
-        public void DeleteRepository(string repository) => innerClient.DeleteRepository(repository);
 
         public Stream GetFile(string repository, Layer layer, string path) => innerClient.GetFile(repository, layer, path);
 

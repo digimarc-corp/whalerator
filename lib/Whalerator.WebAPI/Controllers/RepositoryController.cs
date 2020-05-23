@@ -168,7 +168,7 @@ namespace Whalerator.WebAPI.Controllers
                     };
                     if (!indexQueue.Contains(request)) { indexQueue.Push(request); }
 
-                    return StatusCode(202, new Content.Result { Status = RequestStatus.Pending });
+                    return StatusCode(202, new { Status = RequestStatus.Pending });
                 }
             }
             catch (Client.NotFoundException)

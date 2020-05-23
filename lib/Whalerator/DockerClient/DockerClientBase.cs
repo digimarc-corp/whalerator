@@ -34,7 +34,7 @@ namespace Whalerator.DockerClient
         protected readonly IAuthHandler AuthHandler;
         public string Host { get; set; }
 
-        protected string CatalogKey(string user) => $"{(string.IsNullOrEmpty(AuthHandler.Username) ? "anon" : AuthHandler.Username)}:{Host}:catalog";
+        protected string CatalogKey() => $"{(string.IsNullOrEmpty(AuthHandler.Username) ? "anon" : AuthHandler.Username)}:{Host}:catalog";
 
         protected string RepoTagsKey(string repository) => $"{Host}:repository:{repository}:tags";
         protected string RepoTagDigestKey(string repository, string tag) => $"{Host}:repository:{repository}:{tag}";

@@ -16,6 +16,8 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using ICSharpCode.SharpZipLib;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -32,16 +34,17 @@ namespace Whalerator.DockerClient
 {
     public class LocalDockerClient : DockerClientBase, ILocalDockerClient
     {
-        public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor, IAuthHandler auth) : base(auth)
+        public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor, IAuthHandler auth, ILogger<LocalDockerClient> logger) : base(auth)
         {
             this.filter = filter;
             this.extractor = extractor;
-
+            this.logger = logger;
             RecurseClient = this;
         }
 
         private readonly IAufsFilter filter;
         private readonly ILayerExtractor extractor;
+        private readonly ILogger<LocalDockerClient> logger;
 
         /// <summary>
         /// When making recursive/chained calls to the API, they will be funnelled through this instance.
@@ -54,13 +57,10 @@ namespace Whalerator.DockerClient
         private const string tagsFolder = "_manifests/tags";
 
         public string BlobPath(string digest) => Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
+        public string RepoPath(string repository) => Path.Combine(repositoriesRoot, repository);
+        public string TagPath(string repository, string tag) => Path.Combine(RepoPath(repository), tagsFolder, tag);
 
-        private string TagLinkPath(string repository, string tag)
-        {
-            var repoRoot = Path.Combine(repositoriesRoot, repository);
-            var tagLink = Path.Combine(repoRoot, tagsFolder, tag, "current/link");
-            return tagLink;
-        }
+        private string TagLinkPath(string repository, string tag) => Path.Combine(TagPath(repository, tag), "current/link");
 
         public ImageConfig GetImageConfig(string repository, string digest)
         {
@@ -74,13 +74,12 @@ namespace Whalerator.DockerClient
 
         public void DeleteImage(string repository, string digest)
         {
-            throw new NotImplementedException();
+            var tags = GetTags(repository).Where(t => GetTagDigest(repository, t).Equals(digest)).ToList();
+            tags.ForEach(t => Directory.Delete(TagPath(repository, t), true));
         }
 
-        public void DeleteRepository(string repository)
-        {
-            throw new NotImplementedException();
-        }
+        public void DeleteRepository(string repository) =>
+            File.Delete(RepoPath(repository));
 
         public Stream GetFile(string repository, Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
 
@@ -170,20 +169,26 @@ namespace Whalerator.DockerClient
             foreach (var layer in layers)
             {
                 var layerStream = RecurseClient.GetLayerArchive(repository, layer.Digest);
+                List<string> files;
+                try
+                {
+                    files = extractor.ExtractFiles(layerStream).ToList();
+                }
+                catch (SharpZipBaseException ex)
+                {
+                    logger.LogError("Encountered corrupt layer archive, halting index.", ex);
+                    break;
+                }
+
                 yield return new LayerIndex
                 {
                     Depth = depth++,
                     Digest = layer.Digest,
-                    Files = extractor.ExtractFiles(layerStream).ToList()
+                    Files = files
                 };
 
                 if (maxDepth > 0 && depth > maxDepth) { break; }
             }
-        }
-
-        public LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases)
-        {
-            throw new NotImplementedException();
         }
 
         public IEnumerable<Model.Repository> GetRepositories() => GetRepositories(repositoriesRoot)
@@ -222,7 +227,7 @@ namespace Whalerator.DockerClient
 
         public IEnumerable<string> GetTags(string repository)
         {
-            var repoRoot = Path.Combine(repositoriesRoot, repository);
+            var repoRoot = RepoPath(repository);
             var tagsRoot = Path.Combine(repoRoot, tagsFolder);
 
             var list = new List<string>();

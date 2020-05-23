@@ -24,8 +24,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using Whalerator.Client;
 using Whalerator.Config;
+using Whalerator.DockerClient;
 using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
@@ -50,7 +50,7 @@ namespace Whalerator.Support
             Queue = queue;
         }
 
-        private string GetKey(Image image) => $"volatile:scans:{image.Digest}";
+        private string GetKey(Image image) => $"clair:scans:{image.Digest}";
 
         /// <summary>
         /// Tries to get a summary of vulnerabilities from Clair. Returns null if the image has not been scanned yet.
@@ -93,7 +93,7 @@ namespace Whalerator.Support
                 }
             }
         }
-
+      
         /// <summary>
         /// Submits all layers of an image to Clair for scanning. If a layer has been scanned previously, it will be skipped.
         /// Repository info is necessary to download blobs for scanning, but once scanned from any repository blobs do not need to
@@ -102,7 +102,7 @@ namespace Whalerator.Support
         /// <param name="registry"></param>
         /// <param name="repository"></param>
         /// <param name="image"></param>
-        public void RequestScan(IRegistry registry, string repository, Image image)
+        public void RequestScan(string repository, Image image, string host, string authorization)
         {
             var cache = cacheFactory.Get<Result>();
             var lockTime = new TimeSpan(0, 5, 0);
@@ -119,9 +119,7 @@ namespace Whalerator.Support
                     {
                         if (!CheckLayerScanned(layer))
                         {
-#warning needs attn
-                            //var aliases = config.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
-                            var proxy = registry.GetLayerProxyInfo(repository, layer, null);// aliases);
+                            var uri = new Uri(ClientFactory.HostToEndpoint(host, $"{repository}/blobs/{layer.Digest}"));
 
                             var request = new ClairLayerRequest
                             {
@@ -129,14 +127,10 @@ namespace Whalerator.Support
                                 {
                                     Name = layer.Digest,
                                     ParentName = previousLayer?.Digest,
-                                    Path = proxy.LayerUrl
+                                    Path = uri.ToString(),
+                                    Headers = string.IsNullOrEmpty(authorization) ? null : new ClairLayerRequest.LayerRequest.LayerRequestHeaders { Authorization = authorization }
                                 }
                             };
-
-                            if (!string.IsNullOrWhiteSpace(proxy.LayerAuthorization))
-                            {
-                                request.Layer.Headers = new ClairLayerRequest.LayerRequest.LayerRequestHeaders { Authorization = proxy.LayerAuthorization };
-                            }
 
                             try
                             {

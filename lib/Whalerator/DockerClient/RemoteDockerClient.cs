@@ -101,14 +101,40 @@ namespace Whalerator.DockerClient
             }
         }
 
-        public void DeleteImage(string repository, string imageDigest)
-        {
-            throw new NotImplementedException();
-        }
+        public void DeleteImage(string repository, string imageDigest) => _ =
+            dockerDistribution.DeleteManifest(repository, imageDigest, AuthHandler.RepoAdminScope(repository)).Result;
+
 
         public void DeleteRepository(string repository)
         {
-            throw new NotImplementedException();
+            // there is no official Docker Distribution API to delete an entire repo. Instead, we
+            // delete all tags from the repo via the API, then remove the (now empty) local folder
+
+            var scope = AuthHandler.RepoAdminScope(repository);
+
+            if (AuthHandler.Authorize(scope))
+            {
+                var key = RepoTagsKey(repository);
+
+                // coerce to list before deleting to avoid deleting a tag out from under ourselves                
+                var imageDigests = GetTags(repository).Select(t => GetTagDigest(repository, t)).Distinct().ToList();
+                if (imageDigests.Any(d => d == null))
+                {
+                    //Logger.LogError($"Encountered at least one unreadable tag in {repository}, aborting");
+                    return;
+                }
+
+                foreach (var digest in imageDigests)
+                {
+                    DeleteImage(repository, digest);
+                }
+
+                localClient.DeleteRepository(repository);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException();
+            }
         }
 
         public Stream GetFile(string repository, Layer layer, string path)
@@ -177,11 +203,6 @@ namespace Whalerator.DockerClient
             FetchBlob(repository, layerDigest, AuthHandler.RepoPullScope(repository));
 
             return localClient.GetLayerArchive(repository, layerDigest);
-        }
-
-        public LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases)
-        {
-            throw new NotImplementedException();
         }
 
         public string GetTagDigest(string repository, string tag)

@@ -66,44 +66,7 @@ namespace Whalerator.WebAPI
             var volatileTtl = new TimeSpan(0, 0, config.CacheTtl);
             logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
-            /*
-            Func<string, IAuthHandler, IDistributionClient> factory;
-            if (string.IsNullOrEmpty(config.RegistryRoot))
-            {
-                services.AddScoped<IDistributionClient, DistributionClient>();
-                factory = (host, handler) => new DistributionClient(handler) { Host = host };
-            }
-            else
-            {
-                services.AddScoped<IDistributionClient, LocalDistributionClient>();
-                factory = (host, handler) => new LocalDistributionClient(config);
-            }
-            */
-
-
-            services.AddSingleton(p =>
-            {
-                var catalogHandler = string.IsNullOrEmpty(config.RegistryUser) ? null : p.GetService<IAuthHandler>();
-                catalogHandler?.Login(config.Registry, config.RegistryUser, config.RegistryPassword);
-
-                return new RegistrySettings
-                {
-                    //DistributionFactory = factory,
-                    UserAuthHandlerFactory = () => p.GetService<IAuthHandler>(),
-                    Registry = config.Registry,
-                    AuthHandler = p.GetService<IAuthHandler>(),
-                    CacheFactory = p.GetService<ICacheFactory>(),
-                    CatalogAuthHandler = catalogHandler,
-                    HiddenRepos = config.HiddenRepositories,
-                    LayerCache = config.RegistryCache,
-                    RegistryRoot = config.RegistryRoot,
-                    StaticRepos = config.Repositories,
-                    VolatileTtl = volatileTtl
-                };
-            });
-
             services.AddScoped<IClientFactory, ClientFactory>();
-
 
             uiConfig.Registry = config.Registry;
             uiConfig.AutoLogin = config.AutoLogin;

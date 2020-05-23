@@ -96,7 +96,7 @@ export class DocumentComponent implements OnInit {
     if (this.image.scanResult.status === 'Succeeded') {
       const components = this.image.scanResult.vulnerableComponents == null ?
         0 : this.image.scanResult.vulnerableComponents.length;
-      return components === 0 ? '"No known issues' : components === 1 ? '1 known issue' : `${components} known issues`;
+      return components === 0 ? 'No known issues' : components === 1 ? '1 known issue' : `${components} known issues`;
     } else if (this.image.scanResult.status === 'Pending') {
       return 'Scan pending';
     } else {
@@ -140,17 +140,18 @@ export class DocumentComponent implements OnInit {
     this.changeDetector.detectChanges();
   }
 
-  pushDocument(document: Document) {
-    if (this.image.documents) {
-      if (!this.image.documents.some((d) => d.name === document.name)) {
-        this.image.documents.push(document);
+  pushDocument(image: Image, document: Document) {
+    if (image.documents) {
+      if (!image.documents.some((d) => d.name === document.name)) {
+        image.documents.push(document);
       }
     } else {
-      this.image.documents = [document];
-      if (!this.selected) {
+      image.documents = [document];
+      if (this.image === image && !this.selected) {
         this.selected = document;
       }
     }
+    this.rotateSearchStatus(0);
     this.changeDetector.detectChanges();
   }
 
@@ -172,14 +173,6 @@ export class DocumentComponent implements OnInit {
         } else {
           console.error('Indexing failed');
         }
-        // if (isHttpResponse<FileListing[]>(r)) {
-        /*if (r.status === 200) {
-          console.log("HIII");
-        } else if (r.status === 202) {
-          console.log(`Search pending for ${filename}`);
-        } else {
-          console.error(`Unexpected service response ${r.status}`);
-        }*/
       }
     });
   }
@@ -193,66 +186,20 @@ export class DocumentComponent implements OnInit {
   }
 
   loadDocument(image: Image, layer: string, path: string) {
+    const document = new Document();
+    document.name = path;
+    document.content = `*Loading ${path}...*\n\n\n\n\n \`${layer}\``;
+
+    this.pushDocument(image, document);
     this.catalog.getFile(this.repository, layer, path).subscribe(r => {
       if (isError(r)) {
         console.error(`Couldn't load ${path}`);
       } else if (isHttpString(r)) {
         if (r.status === 200) {
-          const document = new Document();
-          document.name = path;
           document.content = r.body;
-          this.pushDocument(document);
         }
       }
     });
-  }
-
-  /*
-  // translate search lists into stacks of documents to search for
-  getDocuments() {
-    if (this.configService.config.searchLists.length > 0) {
-      // start a searcher observable for each potential stack of documents
-      this.configService.config.searchLists.forEach(list => {
-        const obv = new Observable<string>((o) => {
-          // searchStack will actually remove items from the list as it processes them, so use map() to clone the original
-          this.searchStack(list.map(d => d), o);
-        });
-        this.addSearch(obv);
-        obv.subscribe(r => console.log(r), err => console.error(err), () => this.removeSearch(obv));
-      });
-
-      // start rotating the search status mussage
-      this.rotateSearchStatus(0);
-
-    } else {
-      this.image.documents = [];
-    }
-  }*/
-
-  addSearch(o: Observable<string>) {
-    this.searching.push(o);
-  }
-
-  removeSearch(o: Observable<string>) {
-    this.remove(this.searching, o);
-    if (this.searching.length === 0 && !this.image.documents) {
-      this.searchStatus = 'No docs found';
-      if (!this.selected) {
-        this.selected = this.image.history;
-      }
-      this.changeDetector.detectChanges();
-    }
-  }
-
-  remove<T>(list: T[], item: T) {
-    const index = list.indexOf(item, 0);
-    if (index > -1) {
-      list.splice(index, 1);
-    }
-  }
-
-  removeAll<T>(list: T[]) {
-    list.splice(0, list.length);
   }
 
   rotateSearchStatus(spin: number) {

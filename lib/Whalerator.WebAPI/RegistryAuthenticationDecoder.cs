@@ -55,7 +55,7 @@ namespace Whalerator.WebAPI
                 var json = crypto.Decrypt(token.Crd);
                 var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
 
-                if (!string.IsNullOrEmpty(config.Registry) && Registry.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
+                if (!string.IsNullOrEmpty(config.Registry) && ClientFactory.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
                 {
                     return Task.FromResult(AuthenticateResult.Fail("{ error: \"The supplied token is for an unsupported registry.\" }"));
                 }

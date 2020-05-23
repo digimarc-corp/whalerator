@@ -16,16 +16,13 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Whalerator.DockerClient;
 
-namespace Whalerator.Content
+namespace Whalerator
 {
-    public class LocalImageSource : IImageSource
+    public interface IClientFactory
     {
-        public string RepositoryRoot { get; set; }
-
-        public string GetLayerPath(string digest) => string.Join('/', RepositoryRoot, "blobs", digest.ToDigestPath());
+        IDockerClient GetClient(RegistryCredentials credentials);
     }
 }

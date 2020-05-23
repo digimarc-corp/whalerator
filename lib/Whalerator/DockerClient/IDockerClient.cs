@@ -16,26 +16,28 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Whalerator.Content;
 using Whalerator.Model;
 
-namespace Whalerator
+namespace Whalerator.DockerClient
 {
-    public interface IRegistry
+    public interface IDockerClient
     {
-        IEnumerable<Repository> GetRepositories(bool empties = false);
+        IEnumerable<Repository> GetRepositories();
         IEnumerable<string> GetTags(string repository);
-        ImageSet GetImageSet(string repository, string tag, bool isDigest);
-        Stream GetLayer(string repository, Layer layer);
-        LayerProxyInfo GetLayerProxyInfo(string repository, Layer layer, IEnumerable<(string External, string Internal)> aliases);
-        IEnumerable<(string name, bool isDirectory)> GetPaths(string repository, Layer layer);
-        byte[] GetFile(string repository, Layer layer, string path, bool ignoreCase = true);
-        LayerPath FindPath(string repository, Image image, string filename, int maxDepth = 0, bool ignoreCase = true);
-        IEnumerable<LayerIndex> GetLayerIndexes(string repository, Image image);
+        string GetTagDigest(string repository, string tag);
+        ImageSet GetImageSet(string repository, string tag);
+        Data.ImageConfig GetImageConfig(string repository, string digest);
+        Stream GetFile(string repository, Layer layer, string path);
+        Layer GetLayer(string repository, string layerDigest);
+        IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null);
         Permissions GetPermissions(string repository);
-        void DeleteImage(string repository, string digest);
+        void DeleteImage(string repository, string imageDigest);
         void DeleteRepository(string repository);
+        Stream GetLayerArchive(string repository, string layerDigest);
     }
 }
