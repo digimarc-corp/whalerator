@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Whalerator.Client;
 
 namespace Whalerator.Support
 {
@@ -33,6 +34,35 @@ namespace Whalerator.Support
         public MemCache(IMemoryCache memCache)
         {
             this.memCache = memCache;
+        }
+
+        public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
+
+        /// <inheritdoc/>
+        public T Exec(string scope, string key, IAuthHandler authHandler, Func<T> func) =>
+            Exec(scope, key, Ttl, authHandler, func);
+
+        /// <inheritdoc/>
+        public T Exec(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<T> func)
+        {
+            T result;
+            if (authHandler.Authorize(scope))
+            {
+                if (TryGet(key, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    result = func();
+                    Set(key, result, ttl);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
         }
 
         /// <inheritdoc/>
@@ -99,13 +129,13 @@ namespace Whalerator.Support
         #endregion
 
         /// <inheritdoc/>
-        public void Set(string key, T value) => Set(key, value, null);
+        public void Set(string key, T value) => Set(key, value, Ttl);
 
         /// <inheritdoc/>
-        public bool Exists(string key) => memCache.TryGetValue(key, out var discard);
+        public bool Exists(string key) => memCache.TryGetValue(key, out var _);
 
         /// <inheritdoc/>
-        public void Set(string key, T value, TimeSpan? ttl)
+        public void Set(string key, T value, TimeSpan ttl)
         {
             var json = JsonConvert.SerializeObject(value);
             if (ttl == null) { memCache.Set(key, json); }

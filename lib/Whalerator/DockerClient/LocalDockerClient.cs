@@ -23,15 +23,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Whalerator.Client;
 using Whalerator.Content;
 using Whalerator.Data;
 using Whalerator.Model;
 
-namespace Whalerator.Client
+namespace Whalerator.DockerClient
 {
-    public class LocalDockerClient : ILocalDockerClient
+    public class LocalDockerClient : DockerClientBase, ILocalDockerClient
     {
-        public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor)
+        public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor, IAuthHandler auth) : base(auth)
         {
             this.filter = filter;
             this.extractor = extractor;
@@ -52,7 +53,7 @@ namespace Whalerator.Client
         string blobsRoot => Path.Combine(RegistryRoot, "docker/registry/v2/blobs");
         private const string tagsFolder = "_manifests/tags";
 
-        public string BlobPath(string digest)=> Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
+        public string BlobPath(string digest) => Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
 
         private string TagLinkPath(string repository, string tag)
         {
@@ -185,18 +186,13 @@ namespace Whalerator.Client
             throw new NotImplementedException();
         }
 
-        public Permissions GetPermissions(string repository)
-        {
-            throw new NotImplementedException();
-        }
-
         public IEnumerable<Model.Repository> GetRepositories() => GetRepositories(repositoriesRoot)
             .Select(r => r.Replace('\\', '/'))
             .Select(r => new Model.Repository
             {
                 Name = r,
                 Tags = GetTags(r).Count(),
-                Permissions = Permissions.Pull
+                Permissions = GetPermissions(r)
             });
 
         private IEnumerable<string> GetRepositories(string path)

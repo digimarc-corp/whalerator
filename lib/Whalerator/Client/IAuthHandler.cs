@@ -24,6 +24,12 @@ namespace Whalerator.Client
 {
     public interface IAuthHandler
     {
+        string CatalogScope();
+        string RepoPullScope(string repository);
+        string RepoPushScope(string repository);
+        string RepoAdminScope(string repository);
+
+        public string RegistryEndpoint { get; }
         bool AnonymousMode { get; }
         AuthenticationHeaderValue GetAuthorization(string scope);
         bool Authorize(string scope);

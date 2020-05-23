@@ -24,34 +24,38 @@ using System.Text;
 using System.Threading.Tasks;
 using Whalerator.Data;
 
-namespace Whalerator.Client
+namespace Whalerator.DockerClient
 {
     public interface IDockerDistribution
     {
         [Get("/_catalog")]
-        Task<RepositoryList> GetRepositoryListAsync();
+        [Headers("Authorization: Bearer")]
+        Task<RepositoryList> GetRepositoryListAsync([Header("X-Docker-Scope")] string scope);
 
         [Get("/{repository}/tags/list")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        Task<TagList> GetTagListAsync(string repository);
+        [Headers("Authorization: Bearer")]
+        Task<TagList> GetTagListAsync(string repository, [Header("X-Docker-Scope")] string scope);
 
         [Head("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        [Headers("Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
-        Task<ApiResponse<object>> GetTagDigest(string repository, string tag);
+        [Headers("Authorization: Bearer", "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
+        Task<ApiResponse<object>> GetTagDigest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
         // manifest format is unpredictable, so we get it as a plain string here and parse it out later
         [Get("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        [Headers("Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
-        Task<string> GetManifest(string repository, string tag);
+        [Headers("Authorization: Bearer", "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
+        Task<string> GetManifest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
         [Get("/{repository}/blobs/{digest}")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        Task<string> GetStringBlob(string repository, string digest);
-        
+        [Headers("Authorization: Bearer")]
+        Task<string> GetStringBlob(string repository, string digest, [Header("X-Docker-Scope")] string scope);
+
         [Get("/{repository}/blobs/{digest}")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        Task<Stream> GetStreamBlob(string repository, string digest);
+        [Headers("Authorization: Bearer")]
+        Task<Stream> GetStreamBlob(string repository, string digest, [Header("X-Docker-Scope")] string scope);
     }
 }

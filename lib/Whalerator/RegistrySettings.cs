@@ -25,7 +25,7 @@ namespace Whalerator
 {
     public class RegistrySettings
     {
-        public Func<string, IAuthHandler, IDistributionClient> DistributionFactory { get; set; } = (host, handler) => new DistributionClient(handler) { Host = host };
+        //public Func<string, IAuthHandler, IDistributionClient> DistributionFactory { get; set; } = (host, handler) => new DistributionClient(handler) { Host = host };
         public ICacheFactory CacheFactory { get; set; }
         public IAuthHandler AuthHandler { get; set; }
 
@@ -51,5 +51,7 @@ namespace Whalerator
 
         public TimeSpan? StaticTtl { get; set; } = null;
         public TimeSpan VolatileTtl { get; set; }
+        public string Registry { get; set; }
+        public Func<IAuthHandler> UserAuthHandlerFactory { get; set; }
     }
 }

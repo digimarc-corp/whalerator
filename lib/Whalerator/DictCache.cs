@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Client;
 
 namespace Whalerator
 {
@@ -30,16 +31,35 @@ namespace Whalerator
     {
         public Dictionary<string, T> Cache { get; set; } = new Dictionary<string, T>();
 
-        public TimeSpan VolatileTtl { get; set; }
+        public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
 
-        public TimeSpan? StaticTtl { get; set; } = null;
+        public T Exec(string scope, string key, IAuthHandler authHandler, Func<T> func) => Exec(scope, key, Ttl, authHandler, func);
+        public T Exec(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<T> func)
+        {
+            T result;
+            if (authHandler.Authorize(scope))
+            {
+                if (TryGet(key, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    result = func();
+                    Set(key, result, ttl);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
+        }
 
         public bool Exists(string key) => Cache.ContainsKey(key);
         public void Set(string key, T value) => Cache[key] = value;
 
-        public void Set(string key, T value, TimeSpan? ttl) => Set(key, value);
-
-        public void Set(string key, T value, bool isVolatile) => Set(key, value);
+        public void Set(string key, T value, TimeSpan ttl) => Set(key, value);
 
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan timeout) => throw new NotImplementedException();
 

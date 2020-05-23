@@ -24,96 +24,26 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Whalerator.Client;
 using Whalerator.Content;
 using Whalerator.Model;
 
-namespace Whalerator.Client
+namespace Whalerator.DockerClient
 {
-    public class RemoteDockerClient : IDockerClient
+    public class RemoteDockerClient : DockerClientBase, IDockerClient
     {
-        private readonly RegistryCredentials credentials;
+        private readonly IAuthHandler auth;
         private readonly IDockerDistribution dockerDistribution;
         private readonly ILocalDockerClient localClient;
 
-        public RemoteDockerClient(RegistryCredentials credentials, IDockerDistribution dockerDistribution, ILocalDockerClient localClient)
+        public RemoteDockerClient(IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient) : base(auth)
         {
-            this.credentials = credentials;
+            this.auth = auth;
             this.dockerDistribution = dockerDistribution;
             this.localClient = localClient;
         }
 
-        IDockerDistribution api => RestService.For<IDockerDistribution>(credentials.Registry);
-
-        public void DeleteImage(string repository, string imageDigest)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void DeleteRepository(string repository)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Stream GetFile(string repository, Layer layer, string path)
-        {
-            FetchBlob(repository, layer.Digest);
-
-            return localClient.GetFile(repository, layer, path);
-        }
-
-        public ImageSet GetImageSet(string repository, string tag)
-        {
-            string digest = tag.IsDigest() ? tag : GetTagDigest(repository, tag);
-
-            var path = localClient.BlobPath(digest);
-            var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
-
-            if (!File.Exists(path))
-            {
-                LockFile(path, () =>
-                {
-                    if (!File.Exists(path))
-                    {
-                        var result = dockerDistribution.GetManifest(repository, digest).Result;
-                        Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        File.WriteAllText(path, result);
-                    }
-                }, tokenSource.Token);
-            }
-
-            return localClient.GetImageSet(repository, digest);
-        }
-
-        public Data.ImageConfig GetImageConfig(string repository, string digest)
-        {
-            var path = localClient.BlobPath(digest);
-            var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
-            if (!File.Exists(path))
-            {
-                LockFile(path, () =>
-                {
-                    if (!File.Exists(path))
-                    {
-                        var result = dockerDistribution.GetStringBlob(repository, digest).Result;
-                        Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        File.WriteAllText(path, result);
-                    }
-                }, tokenSource.Token);
-            }
-
-            return localClient.GetImageConfig(repository, digest);
-        }
-
-        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null) => localClient.GetIndexes(repository, image, target);
-
-        public Layer GetLayer(string repository, string layerDigest)
-        {
-            FetchBlob(repository, layerDigest);
-
-            return localClient.GetLayer(repository, layerDigest);
-        }
+        IDockerDistribution api => RestService.For<IDockerDistribution>(auth.RegistryEndpoint);
 
         private void LockFile(string path, Action action, CancellationToken token)
         {
@@ -149,7 +79,7 @@ namespace Whalerator.Client
             }
         }
 
-        private void FetchBlob(string repository, string layerDigest)
+        private void FetchBlob(string repository, string layerDigest, string scope)
         {
             var path = localClient.BlobPath(layerDigest);
             var tokenSource = new CancellationTokenSource();
@@ -160,7 +90,7 @@ namespace Whalerator.Client
                 {
                     if (!File.Exists(path))
                     {
-                        var result = dockerDistribution.GetStreamBlob(repository, layerDigest).Result;
+                        var result = dockerDistribution.GetStreamBlob(repository, layerDigest, scope).Result;
                         Directory.CreateDirectory(Path.GetDirectoryName(path));
                         using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                         {
@@ -171,9 +101,80 @@ namespace Whalerator.Client
             }
         }
 
+        public void DeleteImage(string repository, string imageDigest)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteRepository(string repository)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Stream GetFile(string repository, Layer layer, string path)
+        {
+            FetchBlob(repository, layer.Digest, AuthHandler.RepoPullScope(repository));
+
+            return localClient.GetFile(repository, layer, path);
+        }
+
+        public ImageSet GetImageSet(string repository, string tag)
+        {
+            string digest = tag.IsDigest() ? tag : GetTagDigest(repository, tag);
+
+            var path = localClient.BlobPath(digest);
+            var tokenSource = new CancellationTokenSource();
+            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
+
+            if (!File.Exists(path))
+            {
+                LockFile(path, () =>
+                {
+                    if (!File.Exists(path))
+                    {
+                        var result = dockerDistribution.GetManifest(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
+                        Directory.CreateDirectory(Path.GetDirectoryName(path));
+                        File.WriteAllText(path, result);
+                    }
+                }, tokenSource.Token);
+            }
+
+            return localClient.GetImageSet(repository, digest);
+        }
+
+        public Data.ImageConfig GetImageConfig(string repository, string digest)
+        {
+            var path = localClient.BlobPath(digest);
+            var tokenSource = new CancellationTokenSource();
+            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
+            if (!File.Exists(path))
+            {
+                LockFile(path, () =>
+                {
+                    if (!File.Exists(path))
+                    {
+                        var result = dockerDistribution.GetStringBlob(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
+                        Directory.CreateDirectory(Path.GetDirectoryName(path));
+                        File.WriteAllText(path, result);
+                    }
+                }, tokenSource.Token);
+            }
+
+            return localClient.GetImageConfig(repository, digest);
+        }
+
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null) => localClient.GetIndexes(repository, image, target);
+
+        public Layer GetLayer(string repository, string layerDigest)
+        {
+            FetchBlob(repository, layerDigest, AuthHandler.RepoPullScope(repository));
+
+            return localClient.GetLayer(repository, layerDigest);
+        }
+
         public Stream GetLayerArchive(string repository, string layerDigest)
         {
-            FetchBlob(repository, layerDigest);
+            FetchBlob(repository, layerDigest, AuthHandler.RepoPullScope(repository));
 
             return localClient.GetLayerArchive(repository, layerDigest);
         }
@@ -183,29 +184,25 @@ namespace Whalerator.Client
             throw new NotImplementedException();
         }
 
-        public Permissions GetPermissions(string repository)
-        {
-#warning stubbed
-            return Permissions.Pull;
-        }
-
         public string GetTagDigest(string repository, string tag)
         {
-            var result = dockerDistribution.GetTagDigest(repository, tag).Result;
+            var result = dockerDistribution.GetTagDigest(repository, tag, AuthHandler.RepoPullScope(repository)).Result;
             return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
         }
 
-        public IEnumerable<Repository> GetRepositories() => dockerDistribution.GetRepositoryListAsync().Result.Repositories.Select(r => new Repository
-        {
-            Name = r,
-            Tags = GetTags(r)?.Count() ?? 0
-        });
+        public IEnumerable<Repository> GetRepositories() => dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope())
+            .Result.Repositories.Select(r => new Repository
+            {
+                Name = r,
+                Tags = GetTags(r)?.Count() ?? 0,
+                Permissions = GetPermissions(r)
+            });
 
         public IEnumerable<string> GetTags(string repository)
         {
             try
             {
-                return dockerDistribution.GetTagListAsync(repository).Result.Tags;
+                return dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result.Tags;
             }
             catch (AggregateException ex)
             {

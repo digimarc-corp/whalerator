@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Whalerator.Client;
 
 namespace Whalerator.Support
 {
@@ -34,18 +35,47 @@ namespace Whalerator.Support
             mux = redisMux;
         }
 
+        public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
+
+        /// <inheritdoc/>
+        public T Exec(string scope, string key, IAuthHandler authHandler, Func<T> func) =>
+            Exec(scope, key, Ttl, authHandler, func);
+
+        /// <inheritdoc/>
+        public T Exec(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<T> func)
+        {
+            T result;
+            if (authHandler.Authorize(scope))
+            {
+                if (TryGet(key, out result))
+                {
+                    return result;
+                }
+                else
+                {
+                    result = func();
+                    Set(key, result, ttl);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
+        }
+
         /// <inheritdoc/>
         public bool Exists(string key) => mux.GetDatabase().KeyExists(key);
 
         /// <inheritdoc/>
-        public void Set(string key, T value, TimeSpan? ttl)
+        public void Set(string key, T value, TimeSpan ttl)
         {
             var json = JsonConvert.SerializeObject(value);
             mux.GetDatabase().StringSet(key, json, ttl);
         }
 
         /// <inheritdoc/>
-        public void Set(string key, T value) => Set(key, value, null);
+        public void Set(string key, T value) => Set(key, value, Ttl);
 
         /// <inheritdoc/>
         public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)

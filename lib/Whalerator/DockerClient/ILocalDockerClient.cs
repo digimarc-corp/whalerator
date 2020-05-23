@@ -19,8 +19,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Whalerator.Client;
 
-namespace Whalerator.Client
+namespace Whalerator.DockerClient
 {
     public interface ILocalDockerClient : IDockerClient
     {

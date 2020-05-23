@@ -95,8 +95,8 @@ namespace Whalerator
             Settings = config;
             Logger = logger;
             Settings.AuthHandler.Login(credentials.Registry, credentials.Username, credentials.Password);
-            DistributionClient = Settings.DistributionFactory(credentials.Registry, Settings.AuthHandler);
-            CatalogClient = Settings.DistributionFactory(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
+            //DistributionClient = Settings.DistributionFactory(credentials.Registry, Settings.AuthHandler);
+            //CatalogClient = Settings.DistributionFactory(credentials.Registry, Settings.CatalogAuthHandler ?? Settings.AuthHandler);
         }
 
         #endregion
@@ -524,7 +524,7 @@ namespace Whalerator
                 {
                     Logger?.LogDebug($"Cache miss {key}");
                     result = func();
-                    cache?.Set(key, result, ttl);
+                    cache?.Set(key, result);
                     return result;
                 }
             }

@@ -66,6 +66,7 @@ namespace Whalerator.WebAPI
             var volatileTtl = new TimeSpan(0, 0, config.CacheTtl);
             logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
 
+            /*
             Func<string, IAuthHandler, IDistributionClient> factory;
             if (string.IsNullOrEmpty(config.RegistryRoot))
             {
@@ -77,6 +78,7 @@ namespace Whalerator.WebAPI
                 services.AddScoped<IDistributionClient, LocalDistributionClient>();
                 factory = (host, handler) => new LocalDistributionClient(config);
             }
+            */
 
 
             services.AddSingleton(p =>
@@ -86,7 +88,9 @@ namespace Whalerator.WebAPI
 
                 return new RegistrySettings
                 {
-                    DistributionFactory = factory,
+                    //DistributionFactory = factory,
+                    UserAuthHandlerFactory = () => p.GetService<IAuthHandler>(),
+                    Registry = config.Registry,
                     AuthHandler = p.GetService<IAuthHandler>(),
                     CacheFactory = p.GetService<ICacheFactory>(),
                     CatalogAuthHandler = catalogHandler,
@@ -210,7 +214,7 @@ namespace Whalerator.WebAPI
             bool contentUI = (config.Documents?.Count ?? 0) > 0;
 
             services.AddScoped<IAufsFilter, AufsFilter>();
-            services.AddScoped<ILayerExtractor, LayerExtractor>();            
+            services.AddScoped<ILayerExtractor, LayerExtractor>();
 
             services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.IndexFolder });
 

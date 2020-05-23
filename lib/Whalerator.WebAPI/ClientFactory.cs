@@ -21,10 +21,12 @@ using Refit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Content;
+using Whalerator.DockerClient;
 
 namespace Whalerator.WebAPI
 {
@@ -32,39 +34,57 @@ namespace Whalerator.WebAPI
     {
         private readonly IAufsFilter indexer;
         private readonly ILayerExtractor extractor;
+        private readonly ICacheFactory cacheFactory;
+
         public RegistrySettings Settings { get; }
         public ILogger<Registry> Logger { get; }
 
-        public ClientFactory(RegistrySettings settings, ILogger<Registry> logger, IAufsFilter indexer, ILayerExtractor extractor)
+        public ClientFactory(RegistrySettings settings, ILogger<Registry> logger, IAufsFilter indexer, ILayerExtractor extractor, ICacheFactory cacheFactory)
         {
             Settings = settings;
             Logger = logger;
             this.indexer = indexer;
             this.extractor = extractor;
+            this.cacheFactory = cacheFactory;
         }
 
         public IDockerClient GetClient(RegistryCredentials credentials)
         {
             credentials.Registry = credentials.Registry.ToLowerInvariant();
-            if (Registry.DockerHubAliases.Contains(credentials.Registry))
+            if (DockerHubAliases.Contains(credentials.Registry))
             {
-                credentials.Registry = Registry.DockerHub;
+                credentials.Registry = DockerHub;
             }
 
+
+            var auth = Settings.UserAuthHandlerFactory();
+            auth.Login(credentials.Registry, credentials.Username, credentials.Password);
 
             if (string.IsNullOrEmpty(Settings.RegistryRoot))
             {
-                var service = RestService.For<IDockerDistribution>(HostToEndpoint(credentials.Registry));
-                var localClient = new LocalDockerClient(indexer, extractor) { RegistryRoot = Settings.LayerCache };
+                async Task<string> GetToken(HttpRequestMessage message)
+                {
+                    var scope = message.Headers.First(h => h.Key.Equals("X-Docker-Scope")).Value.First();
+                    var token = auth.Authorize(scope) ? auth.GetAuthorization(scope).Parameter : null;
+
+                    return token;
+                }
+
 #warning i hate this
-                var remoteClient =  new RemoteDockerClient(credentials, service, localClient);
+
+                var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(GetToken)) { BaseAddress = new Uri(HostToEndpoint(credentials.Registry)) };
+                var service = RestService.For<IDockerDistribution>(httpClient);
+                var localClient = new LocalDockerClient(indexer, extractor, auth) { RegistryRoot = Settings.LayerCache };
+                var remoteClient = new RemoteDockerClient(auth, service, localClient);
                 localClient.RecurseClient = remoteClient;
 
-                return remoteClient;
+                var cachedClient = new CachedDockerClient(remoteClient, cacheFactory, auth);
+
+                return cachedClient;
             }
             else
             {
-                return new LocalDockerClient(indexer, extractor) { RegistryRoot = Settings.RegistryRoot };
+                return new LocalDockerClient(indexer, extractor, auth) { RegistryRoot = Settings.RegistryRoot };
             }
         }
 

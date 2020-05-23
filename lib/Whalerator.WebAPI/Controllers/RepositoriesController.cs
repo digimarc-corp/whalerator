@@ -32,7 +32,7 @@ namespace Whalerator.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/repositories")]
     [Authorize]
-    public class RepositoriesController : Controller
+    public class RepositoriesController : ControllerBase
     {
         private IClientFactory clientFactory;
 
@@ -50,11 +50,8 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 var client = clientFactory.GetClient(credentials);
-
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
-                var repos = client.GetRepositories().OrderBy(r => r.Name);
-
-                return Ok(repos);
+                return Ok(client.GetRepositories().OrderBy(r => r.Name));
             }
             catch (AuthenticationException)
             {

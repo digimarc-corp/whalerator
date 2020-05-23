@@ -17,28 +17,56 @@
 */
 
 using System;
+using Whalerator.Client;
 
 namespace Whalerator
 {
     public interface ICache<T> where T : class
     {
+        public TimeSpan Ttl { get; set; }
+
+        /// <summary>
+        /// Returns a cached result for a Func<typeparamref name="T"/>, or executes the function and caches the new result.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="scope">Security scope to be passed to the IAuthHandler</param>
+        /// <param name="key"></param>
+        /// <param name="ttl"></param>
+        /// <param name="authHandler"></param>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        T Exec(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<T> func);
+
+        /// <summary>
+        /// Returns a cached result for a Func<typeparamref name="T"/>, or executes the function and caches the new result.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="scope">Security scope to be passed to the IAuthHandler</param>
+        /// <param name="key"></param>
+        /// <param name="authHandler"></param>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        T Exec(string scope, string key, IAuthHandler authHandler, Func<T> func);
+
+
         bool Exists(string key);
         bool TryGet(string key, out T value);
 
         /// <summary>
-        /// Stores an object in cache, with no Ttl
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
-        void Set(string key, T value);
-
-        /// <summary>
-        /// Stores an object in cache, using an explicit TTL (or null TTL for non-expiring data)
+        /// Stores an object in cache, using an explicit ttl
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="ttl"></param>
-        void Set(string key, T value, TimeSpan? ttl);
+        void Set(string key, T value, TimeSpan ttl);
+
+        /// <summary>
+        /// Stores an object in cache, using the default ttl
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="ttl"></param>
+        void Set(string key, T value);
 
         /// <summary>
         /// Represents a basic threadsafe locking mechanism. TakeLock will block until it can return a disposable Lock object, or throw if timeout is exceeded.

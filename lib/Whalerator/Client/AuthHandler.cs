@@ -37,15 +37,22 @@ namespace Whalerator.Client
             authCache = cache;
         }
 
+        public string CatalogScope() => "registry:catalog:*";
+        public string RepoPullScope(string repository) => $"repository:{repository}:pull";
+        public string RepoPushScope(string repository) => $"repository:{repository}:push";
+        public string RepoAdminScope(string repository) => $"repository:{repository}:*";
+
 
         public string Username { get; private set; }
         public string Password { get; private set; }
         public string RegistryEndpoint { get; private set; }
+        public string RegistryHost { get; private set; }
 
         public string Service { get; private set; }
         public string Realm { get; private set; }
 
-        public TimeSpan AuthTtl { get; set; } = new TimeSpan(1, 0, 0);
+#warning needs to respect token exp 
+        public TimeSpan AuthTtl { get; set; } = TimeSpan.FromMinutes(20);
 
         /// <summary>
         /// If true, the registry is running in fully open mode, with no Authentication of any kind. Any calls to UpdateAuthorization will be ignored.
@@ -68,6 +75,7 @@ namespace Whalerator.Client
             AnonymousMode = false;
             Username = username;
             Password = password ?? string.Empty;
+            RegistryHost = registryHost;
             RegistryEndpoint = Registry.HostToEndpoint(registryHost);
 
             var key = GetKey(null, granted: true);
