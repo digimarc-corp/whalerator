@@ -20,17 +20,20 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Model;
 
 namespace Whalerator.DockerClient
 {
     public abstract class DockerClientBase
     {
-        public DockerClientBase(IAuthHandler auth)
+        public DockerClientBase(ServiceConfig config, IAuthHandler auth)
         {
+            this.Config = config;
             this.AuthHandler = auth;
         }
 
+        protected readonly ServiceConfig Config;
         protected readonly IAuthHandler AuthHandler;
         public string Host { get; set; }
 

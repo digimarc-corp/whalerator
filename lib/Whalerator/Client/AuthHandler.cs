@@ -157,7 +157,7 @@ namespace Whalerator.Client
 
         public bool Authorize(string scope)
         {
-            return HasAuthorization(scope) || UpdateAuthorization(scope) || (DockerHub && scope == "registry:catalog:*");
+            return HasAuthorization(scope) || UpdateAuthorization(scope); // || (DockerHub && scope == "registry:catalog:*");
         }
 
         public bool HasAuthorization(string scope)

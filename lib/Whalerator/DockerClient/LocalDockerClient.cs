@@ -26,6 +26,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Content;
 using Whalerator.Data;
 using Whalerator.Model;
@@ -34,7 +35,7 @@ namespace Whalerator.DockerClient
 {
     public class LocalDockerClient : DockerClientBase, ILocalDockerClient
     {
-        public LocalDockerClient(IAufsFilter filter, ILayerExtractor extractor, IAuthHandler auth, ILogger<LocalDockerClient> logger) : base(auth)
+        public LocalDockerClient(ServiceConfig config, IAufsFilter filter, ILayerExtractor extractor, IAuthHandler auth, ILogger<LocalDockerClient> logger) : base(config, auth)
         {
             this.filter = filter;
             this.extractor = extractor;
@@ -95,7 +96,12 @@ namespace Whalerator.DockerClient
                 digest = GetTagDigest(repository, tag);
             }
             string manifestPath = BlobPath(digest);
-            var manifest = File.ReadAllText(manifestPath);
+            string manifest;
+            using (var fs = new FileStream(manifestPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var sr = new StreamReader(fs))
+            {
+                manifest = sr.ReadToEnd();
+            }
             var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
             ImageSet imageSet;

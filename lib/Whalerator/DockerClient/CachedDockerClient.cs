@@ -19,8 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Content;
 using Whalerator.Data;
 using Whalerator.Model;
@@ -32,7 +34,7 @@ namespace Whalerator.DockerClient
         private readonly IDockerClient innerClient;
         private readonly ICacheFactory cacheFactory;
 
-        public CachedDockerClient(IDockerClient innerClient, ICacheFactory cacheFactory, IAuthHandler auth) : base(auth)
+        public CachedDockerClient(ServiceConfig config, IDockerClient innerClient, ICacheFactory cacheFactory, IAuthHandler auth) : base(config, auth)
         {
             this.innerClient = innerClient;
             this.cacheFactory = cacheFactory;
@@ -40,8 +42,22 @@ namespace Whalerator.DockerClient
 
         T Exec<T>(string scope, string key, Func<T> func) where T : class => cacheFactory.Get<T>().Exec(scope, key, AuthHandler, func);
 
-        public IEnumerable<Model.Repository> GetRepositories() =>
-            Exec(AuthHandler.CatalogScope(), CatalogKey(), () => innerClient.GetRepositories());
+        public IEnumerable<Model.Repository> GetRepositories()
+        {
+            if (AuthHandler.Authorize(AuthHandler.CatalogScope()))
+            {
+                return Exec(AuthHandler.CatalogScope(), CatalogKey(), () => innerClient.GetRepositories());
+            }
+            else
+            {
+                return Config.Repositories?.Select(r => new Model.Repository
+                {
+                    Name = r,
+                    Permissions = GetPermissions(r),
+                    Tags = GetTags(r).Count()
+                });
+            }
+        }
 
         public string GetTagDigest(string repository, string tag) =>
             Exec(AuthHandler.RepoPullScope(repository), RepoTagDigestKey(repository, tag), () => innerClient.GetTagDigest(repository, tag));
@@ -53,9 +69,9 @@ namespace Whalerator.DockerClient
         {
             // we're only deleting, so we don't care about a type arg
             var cache = cacheFactory.Get<object>();
-            
+
             cache.TryDelete(CatalogKey());
-            cache.TryDelete(RepoTagsKey(repository));            
+            cache.TryDelete(RepoTagsKey(repository));
 
             innerClient.DeleteImage(repository, imageDigest);
         }

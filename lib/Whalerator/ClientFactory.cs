@@ -76,17 +76,17 @@ namespace Whalerator
 
                 var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(GetToken)) { BaseAddress = new Uri(HostToEndpoint(credentials.Registry)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
-                var localClient = new LocalDockerClient(indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = credentials.Registry };
-                var remoteClient = new RemoteDockerClient(auth, service, localClient) { Host = credentials.Registry };
+                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = credentials.Registry };
+                var remoteClient = new RemoteDockerClient(config, auth, service, localClient) { Host = credentials.Registry };
                 localClient.RecurseClient = remoteClient;
 
-                var cachedClient = new CachedDockerClient(remoteClient, cacheFactory, auth) { Host = credentials.Registry };
+                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = credentials.Registry };
 
                 return cachedClient;
             }
             else
             {
-                return new LocalDockerClient(indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryRoot };
+                return new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryRoot };
             }
         }
 
@@ -97,6 +97,7 @@ namespace Whalerator
         public static HashSet<string> DockerHubAliases = new HashSet<string> {
             "docker.io",
             "hub.docker.io",
+            "hub.docker.com",
             "registry.docker.io",
             "registry-1.docker.io"
         };

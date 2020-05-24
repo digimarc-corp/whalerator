@@ -25,7 +25,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Content;
+using Whalerator.Data;
 using Whalerator.Model;
 
 namespace Whalerator.DockerClient
@@ -36,7 +38,9 @@ namespace Whalerator.DockerClient
         private readonly IDockerDistribution dockerDistribution;
         private readonly ILocalDockerClient localClient;
 
-        public RemoteDockerClient(IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient) : base(auth)
+        public TimeSpan DownloadTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+        public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient) : base(config, auth)
         {
             this.auth = auth;
             this.dockerDistribution = dockerDistribution;
@@ -51,8 +55,17 @@ namespace Whalerator.DockerClient
             var @lock = path + ".lock";
             while (File.Exists(@lock))
             {
-                Thread.Sleep(500);
-                token.ThrowIfCancellationRequested();
+                // if the lock is stale enough, kill it
+                var info = new FileInfo(@lock);
+                if (DateTime.UtcNow - info.CreationTimeUtc > TimeSpan.FromMinutes(5))
+                {
+                    File.Delete(@lock);
+                }
+                else
+                {
+                    Thread.Sleep(500);
+                    token.ThrowIfCancellationRequested();
+                }
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -83,7 +96,7 @@ namespace Whalerator.DockerClient
         {
             var path = localClient.BlobPath(layerDigest);
             var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
+            tokenSource.CancelAfter(DownloadTimeout);
             if (!File.Exists(path))
             {
                 LockFile(path, () =>
@@ -211,13 +224,27 @@ namespace Whalerator.DockerClient
             return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
         }
 
-        public IEnumerable<Repository> GetRepositories() => dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope())
-            .Result.Repositories.Select(r => new Repository
+        public IEnumerable<Model.Repository> GetRepositories() => GetAuthorizedRepositories()
+            .Union(Config.Repositories)
+            .Distinct()
+            .Select(r => new Model.Repository
             {
                 Name = r,
                 Tags = GetTags(r)?.Count() ?? 0,
                 Permissions = GetPermissions(r)
             });
+
+        IEnumerable<string> GetAuthorizedRepositories()
+        {
+            try
+            {
+                return dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope()).Result.Repositories;
+            }
+            catch (AuthenticationException)
+            {
+                return new string[0];
+            }
+        }
 
         public IEnumerable<string> GetTags(string repository)
         {
