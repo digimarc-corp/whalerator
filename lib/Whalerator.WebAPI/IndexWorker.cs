@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Queue;
 
@@ -29,13 +30,15 @@ namespace Whalerator.WebAPI
     public class IndexWorker : QueueWorker<IndexRequest>
     {
         private readonly IIndexStore indexStore;
-        private RegistryAuthenticationDecoder authDecoder;
+        private readonly RegistryAuthenticationDecoder authDecoder;
+        private readonly IAuthHandler authHandler;
 
         public IndexWorker(ILogger<IndexWorker> logger, ServiceConfig config, IWorkQueue<IndexRequest> queue, IClientFactory clientFactory, IIndexStore indexStore,
-           RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
+           RegistryAuthenticationDecoder authDecoder, IAuthHandler authHandler) : base(logger, config, queue, clientFactory)
         {
             this.indexStore = indexStore;
-            authDecoder = decoder;
+            this.authDecoder = authDecoder;
+            this.authHandler = authHandler;
         }
 
 
@@ -43,14 +46,15 @@ namespace Whalerator.WebAPI
         {
             try
             {
-                var auth = authDecoder.AuthenticateAsync(request.Authorization).Result;
-                if (!auth.Succeeded)
+                var authResult = authDecoder.AuthenticateAsync(request.Authorization).Result;
+                if (!authResult.Succeeded)
                 {
-                    logger.LogWarning(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
+                    logger.LogWarning(authResult.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
                 }
                 else
                 {
-                    var client = clientFactory.GetClient(auth.Principal.ToRegistryCredentials());
+                    authHandler.Login(authResult.Principal.ToRegistryCredentials());
+                    var client = clientFactory.GetClient(authHandler);
 
                     var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }

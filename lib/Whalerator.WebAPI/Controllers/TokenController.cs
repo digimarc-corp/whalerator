@@ -62,7 +62,7 @@ namespace Whalerator.WebAPI.Controllers
             }
             try
             {
-                credentials.DeAliasRegistry();
+                credentials.Registry = RegistryCredentials.DeAliasDockerHub(credentials.Registry);
                 var handler = new AuthHandler(cache);
                 handler.Login(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);

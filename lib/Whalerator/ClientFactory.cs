@@ -39,9 +39,8 @@ namespace Whalerator
         private readonly IAufsFilter indexer;
         private readonly ILayerExtractor extractor;
         private readonly ICacheFactory cacheFactory;
-        private readonly IAuthHandler auth;
 
-        public ClientFactory(ServiceConfig config, ILoggerFactory loggerFactory, IAufsFilter indexer, ILayerExtractor extractor, ICacheFactory cacheFactory, IAuthHandler auth)
+        public ClientFactory(ServiceConfig config, ILoggerFactory loggerFactory, IAufsFilter indexer, ILayerExtractor extractor, ICacheFactory cacheFactory)
         {
             this.config = config;
             this.loggerFactory = loggerFactory;
@@ -49,38 +48,32 @@ namespace Whalerator
             this.indexer = indexer;
             this.extractor = extractor;
             this.cacheFactory = cacheFactory;
-            this.auth = auth;
         }
 
-        public IDockerClient GetClient(RegistryCredentials credentials)
+        Func<HttpRequestMessage, Task<string>> ClientTokenCallback(IAuthHandler auth) => (message) =>
         {
-            credentials.Registry = credentials.Registry.ToLowerInvariant();
-            if (DockerHubAliases.Contains(credentials.Registry))
-            {
-                credentials.Registry = DockerHub;
-            }
+            // the Refit interface must set this header for each request, so we know what kind of token to get here.
+            var scope = message.Headers.First(h => h.Key.Equals("X-Docker-Scope")).Value.First();            
+            var token = auth.TokensRequired && auth.Authorize(scope) ? auth.GetAuthorization(scope).Parameter : null;
 
-            auth.Login(credentials.Registry, credentials.Username, credentials.Password);
+            return Task.FromResult(token);
+        };
 
+        public IDockerClient GetClient(IAuthHandler auth)
+        {
             if (string.IsNullOrEmpty(config.RegistryRoot))
             {
-                async Task<string> GetToken(HttpRequestMessage message)
-                {
-                    var scope = message.Headers.First(h => h.Key.Equals("X-Docker-Scope")).Value.First();
-                    var token = auth.Authorize(scope) ? auth.GetAuthorization(scope).Parameter : null;
+                /* this is convoluted. The local client needs to call back to the remote client to fetch layers or other blobs as needed, but the remote client needs to call down 
+                 * to the local client to actually load data, interperet manifests, etc. So, a circular dependency exists. Still waiting on an epiphany to make it cleaner.
+                 */
 
-                    return token;
-                }
-
-#warning i hate this
-
-                var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(GetToken)) { BaseAddress = new Uri(HostToEndpoint(credentials.Registry)) };
+                var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(ClientTokenCallback(auth))) { BaseAddress = new Uri(RegistryCredentials.HostToEndpoint(auth.RegistryHost)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
-                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = credentials.Registry };
-                var remoteClient = new RemoteDockerClient(config, auth, service, localClient) { Host = credentials.Registry };
+                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = auth.RegistryHost };
+                var remoteClient = new RemoteDockerClient(config, auth, service, localClient) { Host = auth.RegistryHost };
                 localClient.RecurseClient = remoteClient;
 
-                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = credentials.Registry };
+                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = auth.RegistryHost };
 
                 return cachedClient;
             }
@@ -89,45 +82,5 @@ namespace Whalerator
                 return new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryRoot };
             }
         }
-
-        #region Host Parsing
-
-        // Docker uses some nonstandard names for Docker Hub
-        public const string DockerHub = "registry-1.docker.io";
-        public static HashSet<string> DockerHubAliases = new HashSet<string> {
-            "docker.io",
-            "hub.docker.io",
-            "hub.docker.com",
-            "registry.docker.io",
-            "registry-1.docker.io"
-        };
-
-        // when working anonymously against docker hub, it's helpful to know the Realm and Service ahead of time
-        public const string DockerRealm = "https://auth.docker.io/token";
-        public const string DockerService = "registry.docker.io";
-
-        // If this is a Docker hub alias, replace it with the canonical registry name.
-        public static string DeAliasDockerHub(string host) =>
-            DockerHubAliases.Contains(host.ToLowerInvariant()) ? DockerHub : host;
-
-        static Regex hostWithScheme = new Regex(@"\w+:\/\/.+", RegexOptions.Compiled);
-        static Regex hostWithPort = new Regex(@".+:\d+$", RegexOptions.Compiled);
-
-        public static string HostToEndpoint(string host, string resource = null)
-        {
-            host = DeAliasDockerHub(host);
-
-            string scheme = null;
-            // if the supplied hostname is missing the scheme, add one
-            if (!hostWithScheme.IsMatch(host))
-            {
-                // if the hostname appears to include a port, assume plain http, otherwise assume https
-                scheme = hostWithPort.IsMatch(host) ? "http://" : "https://";
-            }
-
-            return $"{scheme}{host.TrimEnd('/')}/v2{(string.IsNullOrEmpty(resource) ? "" : "/")}";
-        }
-
-        #endregion
     }
 }

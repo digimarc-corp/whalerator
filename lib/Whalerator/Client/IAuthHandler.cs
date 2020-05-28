@@ -29,11 +29,15 @@ namespace Whalerator.Client
         string RepoPushScope(string repository);
         string RepoAdminScope(string repository);
 
+        public RegistryCredentials RegistryCredentials { get; }
         public string RegistryEndpoint { get; }
+        public string RegistryHost { get; }
         bool AnonymousMode { get; }
+        bool TokensRequired { get; }
         AuthenticationHeaderValue GetAuthorization(string scope);
         bool Authorize(string scope);
         bool HasAuthorization(string scope);
+        void Login(RegistryCredentials registryCredentials);
         void Login(string registryHost, string username = null, string password = null);
         string ParseScope(Uri uri);
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);

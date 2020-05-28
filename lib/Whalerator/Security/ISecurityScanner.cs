@@ -40,6 +40,6 @@ namespace Whalerator.Security
         /// <param name="image"></param>
         void RequestScan(string repository, Image image, string host, string authorization);
 
-        IWorkQueue<Request> Queue { get; }
+        IWorkQueue<ScanRequest> Queue { get; }
     }
 }

@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Model;
 using Whalerator.Queue;
@@ -32,54 +33,66 @@ using Whalerator.Security;
 
 namespace Whalerator.WebAPI
 {
-    public class SecurityScanWorker : QueueWorker<Request>
+    public class SecurityScanWorker : QueueWorker<ScanRequest>
     {
         private ISecurityScanner scanner;
+        private readonly IAuthHandler authHandler;
         private RegistryAuthenticationDecoder authDecoder;
 
-        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ServiceConfig config, IWorkQueue<Request> queue, ISecurityScanner scanner, IClientFactory clientFactory,
-            RegistryAuthenticationDecoder decoder) : base(logger, config, queue, clientFactory)
+        public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ServiceConfig config, IWorkQueue<ScanRequest> queue, ISecurityScanner scanner, IClientFactory clientFactory,
+            RegistryAuthenticationDecoder authDecoder, IAuthHandler authHandler) : base(logger, config, queue, clientFactory)
         {
             this.scanner = scanner;
-            authDecoder = decoder;
+            this.authDecoder = authDecoder;
+            this.authHandler = authHandler;
         }
 
 
-        public override void DoRequest(Request request)
+        public override void DoRequest(ScanRequest request)
         {
             try
             {
-                var auth = authDecoder.AuthenticateAsync(request.Authorization).Result;
-                if (!auth.Succeeded)
+                var authResult = authDecoder.AuthenticateAsync(request.Authorization).Result;
+                if (!authResult.Succeeded)
                 {
-                    logger.LogError(auth.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
+                    logger.LogError(authResult.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
                 }
                 else
                 {
-                    var client = clientFactory.GetClient(auth.Principal.ToRegistryCredentials());
-
-                    var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
-                    if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
-
-                    var scanResult = scanner.GetScan(imageSet.Images.First());
-                    if (scanResult == null)
+                    authHandler.Login(authResult.Principal.ToRegistryCredentials());
+                    var scope = authHandler.RepoPullScope(request.TargetRepo);
+                    if (authHandler.Authorize(scope))
                     {
-                        if (request.Submitted)
+                        var proxyAuth = authHandler.TokensRequired ? $"Bearer {authHandler.GetAuthorization(scope).Parameter}" : string.Empty;
+                        var client = clientFactory.GetClient(authHandler);
+
+                        var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
+                        if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
+
+                        var scanResult = scanner.GetScan(imageSet.Images.First());
+                        if (scanResult == null)
                         {
-                            // we've already submitted this one to the scanner, just sleep on it for a few seconds
-                            System.Threading.Thread.Sleep(2000);
+                            if (request.Submitted)
+                            {
+                                // we've already submitted this one to the scanner, just sleep on it for a few seconds
+                                System.Threading.Thread.Sleep(2000);
+                            }
+                            else
+                            {
+                                scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), this.config.RegistryAlias ?? this.config.Registry, proxyAuth);
+                                logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
+                                request.Submitted = true;
+                            }
+                            queue.Push(request);
                         }
                         else
                         {
-                            scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), this.config.RegistryAlias?? this.config.Registry, request.Authorization);
-                            logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
-                            request.Submitted = true;                            
+                            logger.LogInformation($"Got latest {scanner.GetType().Name} scan for {request.TargetRepo}:{request.TargetDigest}");
                         }
-                        queue.Push(request);
                     }
                     else
                     {
-                        logger.LogInformation($"Got latest {scanner.GetType().Name} scan for {request.TargetRepo}:{request.TargetDigest}");
+                        logger.LogError($"Failed to get pull authorization for {request.TargetRepo}");
                     }
                 }
             }

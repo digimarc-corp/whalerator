@@ -44,9 +44,9 @@ namespace Whalerator.WebAPI
         {
             return new RegistryCredentials
             {
-                Registry = principal.Claims.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Registry)))?.Value,
-                Username = principal.Claims.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Username)))?.Value,
-                Password = principal.Claims.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Password)))?.Value
+                Registry = principal?.Claims?.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Registry)))?.Value,
+                Username = principal?.Claims?.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Username)))?.Value,
+                Password = principal?.Claims?.FirstOrDefault(c => c.Type.Equals(nameof(RegistryCredentials.Password)))?.Value
             };
         }
 
@@ -89,7 +89,7 @@ namespace Whalerator.WebAPI
         public static IServiceCollection AddWhaleCrypto(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
             RSA crypto;
-            var keyFile = config.AuthTokenKey;
+             var keyFile = config.AuthTokenKey;
             if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
                 logger?.LogInformation($"Loading private key from {config.AuthTokenKey}.");
@@ -233,16 +233,16 @@ namespace Whalerator.WebAPI
                     config,
                     p.GetService<IClairAPI>(),
                     p.GetRequiredService<ICacheFactory>(),
-                    p.GetRequiredService<IWorkQueue<Security.Request>>()));
+                    p.GetRequiredService<IWorkQueue<Security.ScanRequest>>()));
                 if (string.IsNullOrEmpty(config.RedisCache))
                 {
-                    services.AddSingleton<IWorkQueue<Security.Request>, MemQueue<Security.Request>>();
+                    services.AddSingleton<IWorkQueue<Security.ScanRequest>, MemQueue<Security.ScanRequest>>();
                 }
                 else
                 {
-                    services.AddScoped<IWorkQueue<Security.Request>>(p => new RedQueue<Security.Request>(p.GetRequiredService<IConnectionMultiplexer>(),
-                        p.GetRequiredService<ILogger<RedQueue<Security.Request>>>(),
-                        Security.Request.WorkQueueKey));
+                    services.AddScoped<IWorkQueue<Security.ScanRequest>>(p => new RedQueue<Security.ScanRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
+                        p.GetRequiredService<ILogger<RedQueue<Security.ScanRequest>>>(),
+                        Security.ScanRequest.WorkQueueKey));
                 }
             }
 

@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.DockerClient;
 using Whalerator.Model;
@@ -38,10 +39,11 @@ namespace Whalerator.Support
         private ServiceConfig config;
         private IClairAPI clair;
         private ICacheFactory cacheFactory;
+        private readonly IAuthHandler auth;
 
-        public IWorkQueue<Request> Queue { get; private set; }
+        public IWorkQueue<ScanRequest> Queue { get; private set; }
 
-        public ClairScanner(ILogger<ClairScanner> logger, ServiceConfig config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
+        public ClairScanner(ILogger<ClairScanner> logger, ServiceConfig config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<ScanRequest> queue)
         {
             this.logger = logger;
             this.config = config;
@@ -119,7 +121,7 @@ namespace Whalerator.Support
                     {
                         if (!CheckLayerScanned(layer))
                         {
-                            var uri = new Uri(ClientFactory.HostToEndpoint(host, $"{repository}/blobs/{layer.Digest}"));
+                            var uri = new Uri(RegistryCredentials.HostToEndpoint(host, $"{repository}/blobs/{layer.Digest}"));
 
                             var request = new ClairLayerRequest
                             {

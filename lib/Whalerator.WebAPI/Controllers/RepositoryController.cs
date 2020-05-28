@@ -27,6 +27,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Ocsp;
+using StackExchange.Redis;
+using Whalerator.Client;
 using Whalerator.Content;
 using Whalerator.Model;
 using Whalerator.Queue;
@@ -37,7 +39,7 @@ namespace Whalerator.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/repository")]
     [Authorize]
-    public class RepositoryController : Controller
+    public class RepositoryController : WhaleratorControllerBase
     {
         private IClientFactory clientFactory;
         private ILogger<RepositoryController> logger;
@@ -45,23 +47,14 @@ namespace Whalerator.WebAPI.Controllers
         private readonly IWorkQueue<IndexRequest> indexQueue;
         private ISecurityScanner secScanner;
 
-        public RepositoryController(IClientFactory clientFactory, ILogger<RepositoryController> logger, IIndexStore indexStore, IWorkQueue<IndexRequest> indexQueue, ISecurityScanner secScanner = null)
+        public RepositoryController(ILoggerFactory logFactory, IAuthHandler auth, IClientFactory clientFactory, IIndexStore indexStore, IWorkQueue<IndexRequest> indexQueue, ISecurityScanner secScanner = null) :
+            base(logFactory, auth)
         {
             this.clientFactory = clientFactory;
-            this.logger = logger;
+            this.logger = logFactory.CreateLogger<RepositoryController>();
             this.indexStore = indexStore;
             this.indexQueue = indexQueue;
             this.secScanner = secScanner;
-        }
-
-        string Validate(string digest)
-        {
-            var validated = digest;
-            var digestParts = digest.Trim(':').Split(':');
-            if (digestParts.Length == 1 && digestParts[0].Length == 64) { validated = $"sha256:{digestParts[0]}"; }
-            else if (digestParts.Length != 2) { validated = null; }
-
-            return validated;
         }
 
         /// <summary>
@@ -75,16 +68,15 @@ namespace Whalerator.WebAPI.Controllers
         {
             if (secScanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
 
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
-            digest = Validate(digest);
-            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
+            if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
 
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var imageSet = registryApi.GetImageSet(repository, digest);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
+                var imageSet = client.GetImageSet(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -92,7 +84,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 if (scanResult == null)
                 {
-                    secScanner.Queue.TryPush(new Security.Request
+                    secScanner.Queue.TryPush(new Security.ScanRequest
                     {
                         Authorization = Request.Headers["Authorization"],
                         CreatedTime = DateTime.UtcNow,
@@ -105,6 +97,10 @@ namespace Whalerator.WebAPI.Controllers
                 {
                     return Ok(scanResult);
                 }
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (HttpRequestException)
             {
@@ -131,16 +127,14 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("files/{digest}/{*repository}")]
         public IActionResult GetFiles(string repository, string digest, string path)
         {
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
-
-            digest = Validate(digest);
-            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+            if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
 
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
                 var imageSet = client.GetImageSet(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
@@ -171,6 +165,10 @@ namespace Whalerator.WebAPI.Controllers
                     return StatusCode(202, new { Status = RequestStatus.Pending });
                 }
             }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
+            }
             catch (Client.NotFoundException)
             {
                 return NotFound();
@@ -184,18 +182,14 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("file/{digest}/{*repository}")]
         public IActionResult GetFile(string repository, string digest, string path)
         {
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-            if (string.IsNullOrEmpty(digest)) { return BadRequest("A layer digest is required."); }
-
-            digest = Validate(digest);
-            if (string.IsNullOrEmpty(digest)) { return BadRequest("Digest appears invalid."); }
+            if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
+            if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
 
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
-#warning need to validate repo permissions? Or is the client doing this for us?
+                var client = clientFactory.GetClient(AuthHandler);
 
                 var layer = client.GetLayer(repository, digest);
                 var result = client.GetFile(repository, layer, path);
@@ -203,6 +197,10 @@ namespace Whalerator.WebAPI.Controllers
                 Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
                 Response.Headers.Add("X-Content-Type-Options", "nosniff");
                 return File(result, "application/octet-stream");
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (Client.NotFoundException)
             {
@@ -221,16 +219,19 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("tags/list/{*repository}")]
         public IActionResult GetTags(string repository)
         {
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
                 var tags = client.GetTags(repository);
                 var permissions = client.GetPermissions(repository);
 
                 return Ok(new TagSet { Tags = tags, Permissions = permissions });
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (Client.NotFoundException)
             {
@@ -240,21 +241,28 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return Unauthorized();
             }
+            catch (Exception ex)
+            {
+                return StatusCode(555);
+            }
         }
 
         [HttpGet("tag/{tag}/{*repository}")]
         public IActionResult GetImages(string repository, string tag)
         {
-            if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
                 var imageSet = client.GetImageSet(repository, tag);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (Client.NotFoundException)
             {
@@ -275,18 +283,21 @@ namespace Whalerator.WebAPI.Controllers
         [HttpDelete("digest/{digest}/{*repository}")]
         public IActionResult DeleteImageSet(string repository, string digest)
         {
-            logger.LogInformation($"Preparing to delete {repository}/{digest}");
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
-                var permissions = registryApi.GetPermissions(repository);
+                logger.LogInformation($"Preparing to delete {repository}/{digest}");
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
+                var permissions = client.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
-                registryApi.DeleteImage(repository, digest);
+                client.DeleteImage(repository, digest);
                 return Ok();
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (Client.RegistryException ex)
             {
@@ -311,16 +322,19 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("digest/{tag}/{*repository}")]
         public IActionResult GetImagesDigest(string repository, string tag)
         {
-            if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(tag)) { return BadRequest("A tag is required."); }
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
                 var digest = client.GetTagDigest(repository, tag);
 
                 return string.IsNullOrEmpty(digest) ? (IActionResult)NotFound() : Ok(digest);
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (Client.NotFoundException)
             {

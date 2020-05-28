@@ -43,10 +43,16 @@ namespace Whalerator.Client
         public string RepoAdminScope(string repository) => $"repository:{repository}:*";
 
 
-        public string Username { get; private set; }
-        public string Password { get; private set; }
+        public string Username => RegistryCredentials.Username;
+        public string Password => RegistryCredentials.Password;
         public string RegistryEndpoint { get; private set; }
-        public string RegistryHost { get; private set; }
+        public string RegistryHost => RegistryCredentials.Registry;
+        public RegistryCredentials RegistryCredentials { get; private set; }
+
+        /// <summary>
+        /// If true, the current registry requires some form of token authentication
+        /// </summary>
+        public bool TokensRequired => DockerHub || !AnonymousMode;
 
         public string Service { get; private set; }
         public string Realm { get; private set; }
@@ -66,16 +72,17 @@ namespace Whalerator.Client
         /// <summary>
         /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
         /// </summary>
-        /// <param name="registryHost">Actual registry host, i.e. myregistry.io</param>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
-        public void Login(string registryHost, string username = null, string password = null)
+        public void Login(string registry, string username, string password) =>
+            Login(new RegistryCredentials { Registry = registry, Username = username, Password = password });
+
+        /// <summary>
+        /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
+        /// </summary>
+        public void Login(RegistryCredentials credentials)
         {
             AnonymousMode = false;
-            Username = username;
-            Password = password ?? string.Empty;
-            RegistryHost = registryHost;
-            RegistryEndpoint = ClientFactory.HostToEndpoint(registryHost);
+            RegistryCredentials = credentials;
+            RegistryEndpoint = RegistryCredentials.HostToEndpoint(RegistryHost);
 
             var key = GetKey(null, granted: true);
 
@@ -90,20 +97,20 @@ namespace Whalerator.Client
             {
                 using (var client = new HttpClient())
                 {
-                    AnonymousMode = (string.IsNullOrEmpty(username) && string.IsNullOrEmpty(password));
+                    AnonymousMode = (string.IsNullOrEmpty(Username) && string.IsNullOrEmpty(Password));
 
                     // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
                     // but we can set some known values
-                    if (registryHost == ClientFactory.DockerHub)
+                    if (RegistryHost == RegistryCredentials.DockerHub)
                     {
                         DockerHub = true;
-                        Realm = ClientFactory.DockerRealm;
-                        Service = ClientFactory.DockerService;
+                        Realm = RegistryCredentials.DockerRealm;
+                        Service = RegistryCredentials.DockerService;
                         return;
                     }
 
-                    // first try an anonymous get for the registry catalog - if that succeeds but we're in anonymous mode, throw
-                    var preLogin = client.GetAsync(RegistryEndpoint).Result;
+                    // first try an anonymous get for the registry catalog - if that succeeds but we're not in anonymous mode, throw
+                    var preLogin = client.GetAsync(RegistryEndpoint + "/").Result;
                     if (preLogin.IsSuccessStatusCode)
                     {
                         if (!AnonymousMode)
@@ -125,7 +132,7 @@ namespace Whalerator.Client
                         if (UpdateAuthorization(null))
                         {
                             client.DefaultRequestHeaders.Authorization = GetAuthorization(null);
-                            var confirmation = client.GetAsync(RegistryEndpoint).Result;
+                            var confirmation = client.GetAsync(RegistryEndpoint + "/").Result;
 
                             if (!confirmation.IsSuccessStatusCode)
                             {

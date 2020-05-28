@@ -23,6 +23,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 using Whalerator.Client;
 using Whalerator.Model;
 using Whalerator.Support;
@@ -32,11 +34,11 @@ namespace Whalerator.WebAPI.Controllers
     [Produces("application/json")]
     [Route("api/repositories")]
     [Authorize]
-    public class RepositoriesController : ControllerBase
+    public class RepositoriesController : WhaleratorControllerBase
     {
         private IClientFactory clientFactory;
 
-        public RepositoriesController(IClientFactory regFactory)
+        public RepositoriesController(ILoggerFactory logFactory, IAuthHandler auth, IClientFactory regFactory) : base(logFactory, auth)
         {
             this.clientFactory = regFactory;
         }
@@ -44,14 +46,17 @@ namespace Whalerator.WebAPI.Controllers
         [HttpGet("list")]
         public IActionResult Get()
         {
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var client = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var client = clientFactory.GetClient(AuthHandler);
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
                 return Ok(client.GetRepositories().OrderBy(r => r.Name));
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (AuthenticationException)
             {
@@ -62,17 +67,20 @@ namespace Whalerator.WebAPI.Controllers
         [HttpDelete("{*repository}")]
         public IActionResult Delete(string repository)
         {
-            var credentials = User.ToRegistryCredentials();
-            if (string.IsNullOrEmpty(credentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
-
             try
             {
-                var registryApi = clientFactory.GetClient(credentials);
+                if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var registryApi = clientFactory.GetClient(AuthHandler);
                 var permissions = registryApi.GetPermissions(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
                 registryApi.DeleteRepository(repository);
                 return Ok();
+            }
+            catch (RedisConnectionException)
+            {
+                return StatusCode(503, "Cannot access cache");
             }
             catch (RegistryException ex)
             {

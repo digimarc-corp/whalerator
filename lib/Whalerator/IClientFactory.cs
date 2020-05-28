@@ -17,12 +17,13 @@
 */
 
 using Microsoft.Extensions.Logging;
+using Whalerator.Client;
 using Whalerator.DockerClient;
 
 namespace Whalerator
 {
     public interface IClientFactory
     {
-        IDockerClient GetClient(RegistryCredentials credentials);
+        IDockerClient GetClient(IAuthHandler auth);
     }
 }
