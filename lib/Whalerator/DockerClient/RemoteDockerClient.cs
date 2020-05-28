@@ -173,12 +173,21 @@ namespace Whalerator.DockerClient
                     {
                         var result = dockerDistribution.GetManifest(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
                         Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        File.WriteAllText(path, result);
+                        WriteString(path, result);
                     }
                 }, tokenSource.Token);
             }
 
             return localClient.GetImageSet(repository, digest);
+        }
+
+        private void WriteString(string path, string value)
+        {
+            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (var sw = new StreamWriter(stream))
+            {
+                sw.Write(value);
+            }
         }
 
         public Data.ImageConfig GetImageConfig(string repository, string digest)
@@ -194,7 +203,7 @@ namespace Whalerator.DockerClient
                     {
                         var result = dockerDistribution.GetStringBlob(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
                         Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        File.WriteAllText(path, result);
+                        WriteString(path, result);
                     }
                 }, tokenSource.Token);
             }

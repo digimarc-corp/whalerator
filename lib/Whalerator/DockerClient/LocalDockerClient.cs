@@ -65,9 +65,11 @@ namespace Whalerator.DockerClient
 
         public ImageConfig GetImageConfig(string repository, string digest)
         {
-            var result = GetBlob(repository, digest);
-            var json = new StreamReader(result).ReadToEnd();
-            return JsonConvert.DeserializeObject<ImageConfig>(json);
+            using (var stream = GetBlob(repository, digest))
+            using (var sr = new StreamReader(stream))
+            {
+                return JsonConvert.DeserializeObject<ImageConfig>(sr.ReadToEnd());
+            }
         }
 
         public Stream GetBlob(string repository, string digest) =>
@@ -174,16 +176,18 @@ namespace Whalerator.DockerClient
             var depth = 1;
             foreach (var layer in layers)
             {
-                var layerStream = RecurseClient.GetLayerArchive(repository, layer.Digest);
                 List<string> files;
-                try
+                using (var layerStream = RecurseClient.GetLayerArchive(repository, layer.Digest))
                 {
-                    files = extractor.ExtractFiles(layerStream).ToList();
-                }
-                catch (SharpZipBaseException ex)
-                {
-                    logger.LogError("Encountered corrupt layer archive, halting index.", ex);
-                    break;
+                    try
+                    {
+                        files = extractor.ExtractFiles(layerStream).ToList();
+                    }
+                    catch (SharpZipBaseException ex)
+                    {
+                        logger.LogError("Encountered corrupt layer archive, halting index.", ex);
+                        break;
+                    }
                 }
 
                 yield return new LayerIndex
@@ -258,6 +262,15 @@ namespace Whalerator.DockerClient
         }
 
         public string GetTagDigest(string repository, string tag) =>
-            File.ReadAllText(TagLinkPath(repository, tag)).Trim();
+            ReadFile(TagLinkPath(repository, tag)).Trim();
+
+        private string ReadFile(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var sr = new StreamReader(fs))
+            {
+                return sr.ReadToEnd();
+            }
+        }
     }
 }
