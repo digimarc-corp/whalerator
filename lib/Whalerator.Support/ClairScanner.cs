@@ -39,7 +39,6 @@ namespace Whalerator.Support
         private ServiceConfig config;
         private IClairAPI clair;
         private ICacheFactory cacheFactory;
-        private readonly IAuthHandler auth;
 
         public IWorkQueue<ScanRequest> Queue { get; private set; }
 

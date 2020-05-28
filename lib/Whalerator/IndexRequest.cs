@@ -26,7 +26,7 @@ namespace Whalerator
     {
         public override string WorkItemKey => $"workitem:content:{TargetDigest}";
 
-        public string TargetPath { get; set; }
+        public IEnumerable<string> TargetPaths { get; set; }
 
         public const string WorkQueueKey = "workitems:queue:index";
     }

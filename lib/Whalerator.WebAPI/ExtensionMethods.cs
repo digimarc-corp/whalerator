@@ -89,7 +89,7 @@ namespace Whalerator.WebAPI
         public static IServiceCollection AddWhaleCrypto(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
             RSA crypto;
-             var keyFile = config.AuthTokenKey;
+            var keyFile = config.AuthTokenKey;
             if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
                 logger?.LogInformation($"Loading private key from {config.AuthTokenKey}.");
@@ -176,7 +176,7 @@ namespace Whalerator.WebAPI
             bool contentWorker = config.IndexWorker;
             bool contentUI = (config.Documents?.Count ?? 0) > 0;
 
-            services.AddScoped<IAufsFilter, AufsFilter>();
+            services.AddScoped<IAufsFilter>(p => new AufsFilter() { CaseInsensitiveSearch = config.CaseInsensitive });
             services.AddScoped<ILayerExtractor, LayerExtractor>();
 
             services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.IndexFolder });

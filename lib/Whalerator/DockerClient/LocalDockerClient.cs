@@ -98,12 +98,7 @@ namespace Whalerator.DockerClient
                 digest = GetTagDigest(repository, tag);
             }
             string manifestPath = BlobPath(digest);
-            string manifest;
-            using (var fs = new FileStream(manifestPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var sr = new StreamReader(fs))
-            {
-                manifest = sr.ReadToEnd();
-            }
+            string manifest = ReadFile(manifestPath);
             var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
             ImageSet imageSet;
@@ -162,7 +157,7 @@ namespace Whalerator.DockerClient
             return imageSet;
         }
 
-        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target) => filter.FilterLayers(GetRawIndexes(repository, image), target);
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => filter.FilterLayers(GetRawIndexes(repository, image), targets);
 
         /// <summary>
         /// Extracts raw file indexes from each layer in an image, working from the top down.

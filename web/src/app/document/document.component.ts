@@ -30,6 +30,7 @@ import { Observable, Subscriber } from 'rxjs';
 import { delay } from 'q';
 import { FileListing } from '../models/fileListing';
 import { HttpResponse } from '@angular/common/http';
+import { stringify } from 'querystring';
 
 @Component({
   selector: 'app-document',
@@ -157,7 +158,8 @@ export class DocumentComponent implements OnInit {
 
   getFileListing(image: Image) {
     console.log(`Requesting file index`);
-    this.catalog.getFileList(this.repository, this.image.digest, null).subscribe(r => {
+    const targets = this.configService.config.searchLists.flat().join(';');
+    this.catalog.getFileList(this.repository, this.image.digest, targets).subscribe(r => {
       if (isError(r)) {
         // indexing failed for some reason.
         console.error('Unable to get file index from service.');

@@ -34,7 +34,7 @@ namespace Whalerator.DockerClient
         Data.ImageConfig GetImageConfig(string repository, string digest);
         Stream GetFile(string repository, Layer layer, string path);
         Layer GetLayer(string repository, string layerDigest);
-        IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null);
+        IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets);
         Permissions GetPermissions(string repository);
         void DeleteImage(string repository, string imageDigest);
         void DeleteRepository(string repository);

@@ -108,8 +108,8 @@ export class CatalogService extends WebService {
     );
   }
 
-  getFileList(repo: string, digest: string, path: string): Observable<FileListing[] | HttpResponse<FileListing[]> | ServiceError> {
-    const filesUrl = this.apiBase + `/repository/${repo}/files/${digest}`;
+  getFileList(repo: string, digest: string, targets: string): Observable<FileListing[] | HttpResponse<FileListing[]> | ServiceError> {
+    const filesUrl = this.apiBase + `/repository/${repo}/files/${digest}?targets=${targets}`;
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<FileListing[]>(filesUrl, { headers: headers, observe: 'response' }).pipe(

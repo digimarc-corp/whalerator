@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Whalerator.Content;
 
@@ -28,7 +29,7 @@ namespace Whalerator
     /* the index store does save some work re-indexing layers, but more importantly
      * it is the relay point for the indexer workers and the api - if there's a record in the
      * store, the api can return it immediately. If not, it needs to queue a request,
-     * and a worker will build an index and push in here.
+     * and a worker will build an index and push it here.
      */
     public class IndexStore : IIndexStore
     {
@@ -36,19 +37,21 @@ namespace Whalerator
 
         string indexRoot => Path.Combine(StoreFolder, "whalerator/v1/indexes");
 
-        string GetPath(string digest, string target) =>
-            Path.Combine(indexRoot, digest.ToDigestPath() + ".json", string.IsNullOrEmpty(target) ? "full" : target.Trim('/'));
-
-
-        public IEnumerable<LayerIndex> GetIndex(string digest, string target) =>
-            JsonConvert.DeserializeObject<List<LayerIndex>>(File.ReadAllText(GetPath(digest, target)));
-
-        public bool IndexExists(string digest, string target) =>
-            File.Exists(GetPath(digest, target));
-
-        public void SetIndex(IEnumerable<LayerIndex> index, string digest, string target)
+        string GetPath(string digest, params string[] targets)
         {
-            var path = GetPath(digest, target);
+            var idxName = (targets.Length == 0 ? "full" : string.Join('-', targets.OrderBy(t => t).Select(t => t.Trim('/'))));
+            return Path.Combine(indexRoot, digest.ToDigestPath(), $"{idxName}.json");
+        }
+
+        public IEnumerable<LayerIndex> GetIndex(string digest, params string[] targets) =>
+            JsonConvert.DeserializeObject<List<LayerIndex>>(File.ReadAllText(GetPath(digest, targets)));
+
+        public bool IndexExists(string digest, params string[] targets) =>
+            File.Exists(GetPath(digest, targets));
+
+        public void SetIndex(IEnumerable<LayerIndex> index, string digest, params string[] targets)
+        {
+            var path = GetPath(digest, targets);
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             File.WriteAllText(path, JsonConvert.SerializeObject(index));
         }

@@ -26,8 +26,8 @@ namespace Whalerator
 {
     public interface IIndexStore
     {
-        IEnumerable<LayerIndex> GetIndex(string digest, string targetPath = null);
-        bool IndexExists(string digest, string targetPath = null);
-        void SetIndex(IEnumerable<LayerIndex> index, string digest, string targetPath = null);
+        IEnumerable<LayerIndex> GetIndex(string digest, params string[] targetPaths);
+        bool IndexExists(string digest, params string[] targetPaths);
+        void SetIndex(IEnumerable<LayerIndex> index, string digest, params string[] targetPaths);
     }
 }

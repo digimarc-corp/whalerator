@@ -95,7 +95,7 @@ namespace Whalerator.DockerClient
 
         public ImageSet GetImageSet(string repository, string tag) => innerClient.GetImageSet(repository, tag);
 
-        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null) => innerClient.GetIndexes(repository, image, target);
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => innerClient.GetIndexes(repository, image, targets);
 
         public Layer GetLayer(string repository, string layerDigest) => innerClient.GetLayer(repository, layerDigest);
 

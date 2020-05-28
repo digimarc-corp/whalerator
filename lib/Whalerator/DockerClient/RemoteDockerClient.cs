@@ -37,81 +37,31 @@ namespace Whalerator.DockerClient
         private readonly IAuthHandler auth;
         private readonly IDockerDistribution dockerDistribution;
         private readonly ILocalDockerClient localClient;
+        private readonly ICacheFactory cacheFactory;
 
         public TimeSpan DownloadTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
-        public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient) : base(config, auth)
+        public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient, ICacheFactory cacheFactory) : base(config, auth)
         {
             this.auth = auth;
             this.dockerDistribution = dockerDistribution;
             this.localClient = localClient;
+            this.cacheFactory = cacheFactory;
         }
 
         IDockerDistribution api => RestService.For<IDockerDistribution>(auth.RegistryEndpoint);
 
-        private void LockFile(string path, Action action, CancellationToken token)
-        {
-            var key = Guid.NewGuid().ToString();
-            var @lock = path + ".lock";
-            while (File.Exists(@lock))
-            {
-                // if the lock is stale enough, kill it
-                var info = new FileInfo(@lock);
-                if (DateTime.UtcNow - info.CreationTimeUtc > TimeSpan.FromMinutes(5))
-                {
-                    File.Delete(@lock);
-                }
-                else
-                {
-                    Thread.Sleep(500);
-                    token.ThrowIfCancellationRequested();
-                }
-            }
-
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
-            File.WriteAllText(@lock, key);
-            var readKey = File.ReadAllText(@lock);
-            if (readKey == key)
-            {
-                try
-                {
-                    action();
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    File.Delete(@lock);
-                }
-            }
-            else
-            {
-                throw new Exception($"Could not get lock for {path}");
-            }
-        }
-
         private void FetchBlob(string repository, string layerDigest, string scope)
         {
             var path = localClient.BlobPath(layerDigest);
-            var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(DownloadTimeout);
-            if (!File.Exists(path))
+            LockedPathExec(path, () =>
             {
-                LockFile(path, () =>
+                var result = dockerDistribution.GetStreamBlob(repository, layerDigest, scope).Result;
+                using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 {
-                    if (!File.Exists(path))
-                    {
-                        var result = dockerDistribution.GetStreamBlob(repository, layerDigest, scope).Result;
-                        Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                        {
-                            result.CopyTo(stream);
-                        }
-                    }
-                }, tokenSource.Token);
-            }
+                    result.CopyTo(stream);
+                }
+            });
         }
 
         public void DeleteImage(string repository, string imageDigest) => _ =
@@ -157,6 +107,23 @@ namespace Whalerator.DockerClient
             return localClient.GetFile(repository, layer, path);
         }
 
+        // If the path does not exist, execute the given action with a lock
+        private void LockedPathExec(string path, Action action)
+        {
+            if (!File.Exists(path))
+            {
+                using (var @lock = cacheFactory.Get<object>().TakeLock($"dl:{path}", DownloadTimeout, DownloadTimeout))
+                {
+                    // double check the path wasn't created while we waited for a lock
+                    if (!File.Exists(path))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(path));
+                        action();
+                    }
+                }
+            }
+        }
+
         public ImageSet GetImageSet(string repository, string tag)
         {
             string digest = tag.IsDigest() ? tag : GetTagDigest(repository, tag);
@@ -165,18 +132,11 @@ namespace Whalerator.DockerClient
             var tokenSource = new CancellationTokenSource();
             tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
 
-            if (!File.Exists(path))
+            LockedPathExec(path, () =>
             {
-                LockFile(path, () =>
-                {
-                    if (!File.Exists(path))
-                    {
-                        var result = dockerDistribution.GetManifest(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
-                        Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        WriteString(path, result);
-                    }
-                }, tokenSource.Token);
-            }
+                var result = dockerDistribution.GetManifest(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
+                WriteString(path, result);
+            });
 
             return localClient.GetImageSet(repository, digest);
         }
@@ -193,25 +153,17 @@ namespace Whalerator.DockerClient
         public Data.ImageConfig GetImageConfig(string repository, string digest)
         {
             var path = localClient.BlobPath(digest);
-            var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
-            if (!File.Exists(path))
+
+            LockedPathExec(path, () =>
             {
-                LockFile(path, () =>
-                {
-                    if (!File.Exists(path))
-                    {
-                        var result = dockerDistribution.GetStringBlob(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
-                        Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        WriteString(path, result);
-                    }
-                }, tokenSource.Token);
-            }
+                var result = dockerDistribution.GetStringBlob(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
+                WriteString(path, result);
+            });
 
             return localClient.GetImageConfig(repository, digest);
         }
 
-        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, string target = null) => localClient.GetIndexes(repository, image, target);
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => localClient.GetIndexes(repository, image, targets);
 
         public Layer GetLayer(string repository, string layerDigest)
         {

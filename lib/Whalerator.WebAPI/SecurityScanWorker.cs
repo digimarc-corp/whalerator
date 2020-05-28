@@ -79,7 +79,7 @@ namespace Whalerator.WebAPI
                             }
                             else
                             {
-                                scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), this.config.RegistryAlias ?? this.config.Registry, proxyAuth);
+                                scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), authHandler.RegistryHost, proxyAuth);
                                 logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
                                 request.Submitted = true;
                             }

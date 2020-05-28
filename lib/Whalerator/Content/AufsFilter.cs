@@ -18,6 +18,7 @@
 
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Tar;
+using Org.BouncyCastle.Asn1.X509;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -89,10 +90,13 @@ namespace Whalerator.Content
         /// <param name="fileEntries">Enumerable entries. Must be in top-down order.</param>
         /// <param name="target">If set, processing will stop when the target path is found. Only processed layers will be returned</param>
         /// <returns></returns>
-        public IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, string target = null)
+        public IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, params string[] targets)
         {
             var files = new List<(string name, string digest, int depth)>();
-            target = target?.TrimStart('/');
+
+            // prep the list of target paths, if provided
+            if (CaseInsensitiveSearch) { targets = targets?.Select(t => t.ToLowerInvariant())?.ToArray(); }
+            var targetsHash = targets.Length == 0 ? null : new HashSet<string>(targets.Select(t => t.TrimStart('/')));
 
             int currentDepth = 0;
 
@@ -117,11 +121,20 @@ namespace Whalerator.Content
                     .Select(f => (f.path, layer.Digest, layer.Depth)).ToList();
                 files.AddRange(newFiles);
 
-                // check for a target hit
-                if (!string.IsNullOrEmpty(target) &&
-                    newFiles.Any(f => f.path.Equals(target, CaseInsensitiveSearch ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)))
+                // check for target hits
+                if (targetsHash != null)
+                {                    
+                    var hits = newFiles.Select(f => CaseInsensitiveSearch ? f.path.ToLowerInvariant() : f.path).Where(f => targetsHash.Contains(f)).ToHashSet();
+                    targetsHash.RemoveWhere(t => hits.Contains(t));
+
+                    // if we've exhausted the target list, we're done
+                    if (targetsHash.Count == 0) { break; }
+                }
+
+
+                if (targetsHash != null && newFiles.Select(f => CaseInsensitiveSearch ? f.path.ToLowerInvariant() : f.path).Any(f => targetsHash.Contains(f)))
                 {
-                    break;
+
                 }
 
                 // add any new whiteouts

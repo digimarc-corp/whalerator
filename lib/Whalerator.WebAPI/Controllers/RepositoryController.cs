@@ -33,6 +33,7 @@ using Whalerator.Content;
 using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
+using YamlDotNet.Core.Tokens;
 
 namespace Whalerator.WebAPI.Controllers
 {
@@ -122,10 +123,10 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="repository">Registry repo to search</param>
         /// <param name="digest">Manifest digest</param>
         /// <param name="maxDepth">Maximum number of layers to descend</param>
-        /// <param name="path">Optional target path. Indexing will halt if the target is found, and return only those layers needed to reach the target.</param>
+        /// <param name="targets">Optional target paths. Indexing will halt once all targets are found, and return only those layers needed to reach the deepest target.</param>
         /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
-        public IActionResult GetFiles(string repository, string digest, string path)
+        public IActionResult GetFiles(string repository, string digest, string targets)
         {
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
             if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
@@ -133,6 +134,8 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
+
+                var targetList = string.IsNullOrEmpty(targets) ? new string[0] : targets.Split(';');
 
                 var client = clientFactory.GetClient(AuthHandler);
                 var imageSet = client.GetImageSet(repository, digest);
@@ -145,9 +148,9 @@ namespace Whalerator.WebAPI.Controllers
                     return Ok(indexStore.GetIndex(digest));
                 }
                 // otherwise, if they've requested a targeted index, look for that
-                else if (indexStore.IndexExists(digest, path))
+                else if (indexStore.IndexExists(digest, targetList))
                 {
-                    return Ok(indexStore.GetIndex(digest, path));
+                    return Ok(indexStore.GetIndex(digest, targetList));
                 }
                 // no dice, queue an indexing request
                 else
@@ -158,7 +161,7 @@ namespace Whalerator.WebAPI.Controllers
                         CreatedTime = DateTime.UtcNow,
                         TargetRepo = repository,
                         TargetDigest = digest,
-                        TargetPath = path
+                        TargetPaths = targetList
                     };
                     if (!indexQueue.Contains(request)) { indexQueue.Push(request); }
 
@@ -241,10 +244,6 @@ namespace Whalerator.WebAPI.Controllers
             catch (Client.AuthenticationException)
             {
                 return Unauthorized();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(555);
             }
         }
 

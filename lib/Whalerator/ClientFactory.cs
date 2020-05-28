@@ -70,7 +70,7 @@ namespace Whalerator
                 var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(ClientTokenCallback(auth))) { BaseAddress = new Uri(RegistryCredentials.HostToEndpoint(auth.RegistryHost)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
                 var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = auth.RegistryHost };
-                var remoteClient = new RemoteDockerClient(config, auth, service, localClient) { Host = auth.RegistryHost };
+                var remoteClient = new RemoteDockerClient(config, auth, service, localClient, cacheFactory) { Host = auth.RegistryHost };
                 localClient.RecurseClient = remoteClient;
 
                 var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = auth.RegistryHost };
