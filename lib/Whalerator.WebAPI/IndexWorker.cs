@@ -55,7 +55,7 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    authHandler.Login(authResult.Principal.ToRegistryCredentials());
+                    await authHandler.LoginAsync(authResult.Principal.ToRegistryCredentials());
                     var client = clientFactory.GetClient(authHandler);
 
                     var imageSet = await client.GetImageSetAsync(request.TargetRepo, request.TargetDigest);

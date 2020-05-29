@@ -46,7 +46,7 @@ namespace Whalerator.Support
         public async Task<T> ExecAsync(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<Task<T>> func)
         {
             T result;
-            if (authHandler.Authorize(scope))
+            if (await authHandler.AuthorizeAsync(scope))
             {
                 if (await ExistsAsync(key))
                 {

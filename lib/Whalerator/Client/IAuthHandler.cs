@@ -18,6 +18,7 @@
 
 using System;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using Whalerator.Model;
 
 namespace Whalerator.Client
@@ -34,15 +35,16 @@ namespace Whalerator.Client
         public string RegistryHost { get; }
         bool AnonymousMode { get; }
         bool TokensRequired { get; }
-        AuthenticationHeaderValue GetAuthorization(string scope);
-        bool Authorize(string scope);
-        bool HasAuthorization(string scope);
-        void Login(RegistryCredentials registryCredentials);
-        void Login(string registryHost, string username = null, string password = null);
+
+        Task<AuthenticationHeaderValue> GetAuthorizationAsync(string scope);
+        Task<bool> AuthorizeAsync(string scope);
+        Task<bool> HasAuthorizationAsync(string scope);
+        Task LoginAsync(RegistryCredentials registryCredentials);
+        Task LoginAsync(string registryHost, string username = null, string password = null);
         string ParseScope(Uri uri);
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);
         bool TryParseScope(Uri uri, out string scope);
-        bool UpdateAuthorization(string scope, bool force = false);
+        Task<bool> UpdateAuthorizationAsync(string scope, bool force = false);
         string Username { get; }
     }
 }

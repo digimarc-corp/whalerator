@@ -50,7 +50,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpPost]
-        public IActionResult Post([FromBody]RegistryCredentials credentials)
+        public async Task<IActionResult> Post([FromBody]RegistryCredentials credentials)
         {
             // must specify a registry
             if (string.IsNullOrEmpty(credentials.Registry)) { return Unauthorized(); }
@@ -64,7 +64,7 @@ namespace Whalerator.WebAPI.Controllers
             {
                 credentials.Registry = RegistryCredentials.DeAliasDockerHub(credentials.Registry);
                 var handler = new AuthHandler(cache);
-                handler.Login(credentials.Registry, credentials.Username, credentials.Password);
+                await handler.LoginAsync(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = crypto.Encrypt(json);
 

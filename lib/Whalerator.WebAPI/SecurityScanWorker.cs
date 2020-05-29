@@ -59,11 +59,11 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    authHandler.Login(authResult.Principal.ToRegistryCredentials());
+                    await authHandler.LoginAsync(authResult.Principal.ToRegistryCredentials());
                     var scope = authHandler.RepoPullScope(request.TargetRepo);
-                    if (authHandler.Authorize(scope))
+                    if (await authHandler.AuthorizeAsync(scope))
                     {
-                        var proxyAuth = authHandler.TokensRequired ? $"Bearer {authHandler.GetAuthorization(scope).Parameter}" : string.Empty;
+                        var proxyAuth = authHandler.TokensRequired ? $"Bearer {(await authHandler.GetAuthorizationAsync(scope)).Parameter}" : string.Empty;
                         var client = clientFactory.GetClient(authHandler);
 
                         var imageSet = await client.GetImageSetAsync(request.TargetRepo, request.TargetDigest);
@@ -79,7 +79,8 @@ namespace Whalerator.WebAPI
                             }
                             else
                             {
-                                scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), authHandler.RegistryHost, proxyAuth);
+                                var host = config.RegistryAlias ?? authHandler.RegistryHost;
+                                scanner.RequestScan(request.TargetRepo, imageSet.Images.First(), host, proxyAuth);
                                 logger.LogInformation($"Submitted {request.TargetRepo}:{request.TargetDigest} to {scanner.GetType().Name} for analysis.");
                                 request.Submitted = true;
                             }

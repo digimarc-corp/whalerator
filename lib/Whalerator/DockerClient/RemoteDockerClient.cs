@@ -75,7 +75,7 @@ namespace Whalerator.DockerClient
 
             var scope = AuthHandler.RepoAdminScope(repository);
 
-            if (AuthHandler.Authorize(scope))
+            if (await AuthHandler.AuthorizeAsync(scope))
             {
                 var key = RepoTagsKey(repository);
 

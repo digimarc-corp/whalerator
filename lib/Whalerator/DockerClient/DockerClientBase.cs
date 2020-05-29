@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -75,12 +76,20 @@ namespace Whalerator.DockerClient
             }
         }
 
+        public async Task<Permissions> GetPermissionsAsync(string repository) => repository switch
+        {
+            string r when await AuthHandler.AuthorizeAsync(AuthHandler.RepoAdminScope(r)) => Permissions.Admin,
+            string r when await AuthHandler.AuthorizeAsync(AuthHandler.RepoPushScope(r)) => Permissions.Pull,
+            string r when await AuthHandler.AuthorizeAsync(AuthHandler.RepoPullScope(r)) => Permissions.Push,
+            _ => Permissions.None
+        };
+        /*
         public async Task<Permissions> GetPermissionsAsync(string repository)
         {
-            if (AuthHandler.Authorize(AuthHandler.RepoAdminScope(repository))) { return Permissions.Admin; }
-            else if (AuthHandler.Authorize(AuthHandler.RepoPushScope(repository))) { return Permissions.Push; }
-            else if (AuthHandler.Authorize(AuthHandler.RepoPullScope(repository))) { return Permissions.Pull; }
+            if (await AuthHandler.AuthorizeAsync(AuthHandler.RepoAdminScope(repository))) { return Permissions.Admin; }
+            else if (await AuthHandler.AuthorizeAsync(AuthHandler.RepoPushScope(repository))) { return Permissions.Push; }
+            else if (await AuthHandler.AuthorizeAsync(AuthHandler.RepoPullScope(repository))) { return Permissions.Pull; }
             else { return Permissions.None; }
-        }
+        }*/
     }
 }

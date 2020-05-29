@@ -53,8 +53,8 @@ namespace Whalerator
         Func<HttpRequestMessage, Task<string>> ClientTokenCallback(IAuthHandler auth) => (message) =>
         {
             // the Refit interface must set this header for each request, so we know what kind of token to get here.
-            var scope = message.Headers.First(h => h.Key.Equals("X-Docker-Scope")).Value.First();            
-            var token = auth.TokensRequired && auth.Authorize(scope) ? auth.GetAuthorization(scope)?.Parameter : null;
+            var scope = message.Headers.First(h => h.Key.Equals("X-Docker-Scope")).Value.First();
+            var token = auth.TokensRequired && auth.AuthorizeAsync(scope).Result ? auth.GetAuthorizationAsync(scope).Result?.Parameter : null;
 
             return Task.FromResult(token);
         };

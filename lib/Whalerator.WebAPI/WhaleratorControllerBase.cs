@@ -20,7 +20,7 @@ namespace Whalerator.WebAPI
             {
                 var credentials = User.ToRegistryCredentials();
                 credentials.Registry = RegistryCredentials.DockerHubAliases.Contains(credentials.Registry) ? RegistryCredentials.DockerHub : credentials.Registry.ToLowerInvariant();
-                auth.Login(credentials);
+                auth.LoginAsync(credentials).Wait();
                 return auth;
             }, System.Threading.LazyThreadSafetyMode.ExecutionAndPublication);
         }
