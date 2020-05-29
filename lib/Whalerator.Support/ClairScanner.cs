@@ -65,9 +65,9 @@ namespace Whalerator.Support
             var key = GetKey(image);
 
             // if we have a cached scan, return it
-            if (!hard && cache.TryGet(key, out var cachedResult))
+            if (!hard && cache.ExistsAsync(key).Result)
             {
-                return cachedResult;
+                return cache.GetAsync(key).Result;
             }
             // if we don't have a Clair instance handy, return null
             else if (clair == null)
@@ -80,7 +80,7 @@ namespace Whalerator.Support
                 try
                 {
                     var scanResult = clair.GetLayerResult(image.Layers.First().Digest).Result.ToScanResult();
-                    cache.Set(key, scanResult);
+                    cache.SetAsync(key, scanResult).Wait();
 
                     return scanResult;
                 }
@@ -94,7 +94,7 @@ namespace Whalerator.Support
                 }
             }
         }
-      
+
         /// <summary>
         /// Submits all layers of an image to Clair for scanning. If a layer has been scanned previously, it will be skipped.
         /// Repository info is necessary to download blobs for scanning, but once scanned from any repository blobs do not need to
@@ -109,11 +109,11 @@ namespace Whalerator.Support
             var lockTime = new TimeSpan(0, 5, 0);
 
             // if this image is already in cache, skip it entirely
-            if (!cache.Exists(GetKey(image)))
+            if (!cache.ExistsAsync(GetKey(image)).Result)
             {
                 bool layerErrors = false;
                 string lastError = string.Empty;
-                using (var scanlock = cache.TakeLock($"scan:{image.Digest}", lockTime, lockTime))
+                using (var scanlock = cache.TakeLockAsync($"scan:{image.Digest}", lockTime, lockTime).Result)
                 {
                     Layer previousLayer = null;
                     foreach (var layer in image.Layers.Reverse())
@@ -165,11 +165,11 @@ namespace Whalerator.Support
                     // if any layers failed above, check that we can get a valid result, and if not set an error entry so we can avoid further attempts for now
                     if (layerErrors && !CheckLayerScanned(image.Layers.First()))
                     {
-                        cache.Set(GetKey(image), new Result
+                        cache.SetAsync(GetKey(image), new Result
                         {
                             Status = RequestStatus.Failed,
                             Message = lastError ?? "At least one layer of the image could not be scanned."
-                        });
+                        }).Wait();
                     }
                 }
             }

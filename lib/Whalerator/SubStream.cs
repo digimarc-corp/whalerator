@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 
 namespace Whalerator
 {
-    public class SubStream : Stream
+    public class SubStream : Stream, IDisposable, IAsyncDisposable
     {
         private readonly long offset;
         private readonly long length;
@@ -70,10 +70,21 @@ namespace Whalerator
 
         public override void Write(byte[] buffer, int offset, int count) => throw new ReadOnlyException();
 
-        public override ValueTask DisposeAsync()
+        // ASP.NET Core runtime won't actually use the async dispose below, so we need to implement both versions
+        protected override void Dispose(bool disposing)
         {
-            if (OwnInnerStream) { InnerStream.Dispose(); }
-            return base.DisposeAsync();
+            if (disposing)
+            {
+                if (OwnInnerStream) { InnerStream.Dispose(); }
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            
+            if (OwnInnerStream) { await InnerStream.DisposeAsync(); }
+            await base.DisposeAsync();
         }
     }
 }

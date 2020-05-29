@@ -44,7 +44,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public IActionResult Get()
+        public async Task<IActionResult> GetAsync()
         {
             try
             {
@@ -65,17 +65,17 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpDelete("{*repository}")]
-        public IActionResult Delete(string repository)
+        public async Task<IActionResult> DeleteAsync(string repository)
         {
             try
             {
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
-                var registryApi = clientFactory.GetClient(AuthHandler);
-                var permissions = registryApi.GetPermissions(repository);
+                var client = clientFactory.GetClient(AuthHandler);
+                var permissions = await client.GetPermissionsAsync(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
-                registryApi.DeleteRepository(repository);
+                await client.DeleteRepositoryAsync(repository);
                 return Ok();
             }
             catch (RedisConnectionException)

@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Content;
@@ -40,66 +41,69 @@ namespace Whalerator.DockerClient
             this.cacheFactory = cacheFactory;
         }
 
-        T Exec<T>(string scope, string key, Func<T> func) where T : class => cacheFactory.Get<T>().Exec(scope, key, AuthHandler, func);
+        Task<T> ExecAsync<T>(string scope, string key, Func<Task<T>> func) where T : class => cacheFactory.Get<T>().ExecAsync(scope, key, AuthHandler, func);
 
         public IEnumerable<Model.Repository> GetRepositories()
         {
             if (AuthHandler.Authorize(AuthHandler.CatalogScope()))
             {
-                return Exec(AuthHandler.CatalogScope(), CatalogKey(), () => innerClient.GetRepositories());
+                return ExecAsync(AuthHandler.CatalogScope(), CatalogKey(), () => Task.FromResult(innerClient.GetRepositories())).Result;
             }
             else
             {
-                return Config.Repositories?.Select(r => new Model.Repository
-                {
-                    Name = r,
-                    Permissions = GetPermissions(r),
-                    Tags = GetTags(r).Count()
-                });
+                // the user doesn't have catalog permissions, but we can try to construct a synthetic catalog from configured static repos
+                var repos = Config.Repositories?.Select(r => new Model.Repository { Name = r, });
+                var perms = repos.Select(async r => r.Permissions = await GetPermissionsAsync(r.Name));
+                Task.WaitAll(perms.ToArray());
+
+                var tags = repos.Where(r => r.Permissions >= Permissions.Pull).Select(async r => r.Tags = GetTags(r.Name).Count());
+                Task.WaitAll(tags.ToArray());
+
+                return repos.Where(r => r.Tags > 0);
             }
         }
 
-        public string GetTagDigest(string repository, string tag) =>
-            Exec(AuthHandler.RepoPullScope(repository), RepoTagDigestKey(repository, tag), () => innerClient.GetTagDigest(repository, tag));
+        public Task<string> GetTagDigestAsync(string repository, string tag) =>
+            ExecAsync(AuthHandler.RepoPullScope(repository), RepoTagDigestKey(repository, tag), () => innerClient.GetTagDigestAsync(repository, tag));
 
         public IEnumerable<string> GetTags(string repository) =>
-            Exec(AuthHandler.RepoPullScope(repository), RepoTagsKey(repository), () => innerClient.GetTags(repository));
+            ExecAsync(AuthHandler.RepoPullScope(repository), RepoTagsKey(repository), () => Task.FromResult(innerClient.GetTags(repository))).Result;
 
-        public void DeleteImage(string repository, string imageDigest)
+        public async Task DeleteImageAsync(string repository, string imageDigest)
         {
             // we're only deleting, so we don't care about a type arg
             var cache = cacheFactory.Get<object>();
 
-            cache.TryDelete(CatalogKey());
-            cache.TryDelete(RepoTagsKey(repository));
+            await cache.TryDeleteAsync(CatalogKey());
+            await cache.TryDeleteAsync(RepoTagsKey(repository));
 
-            innerClient.DeleteImage(repository, imageDigest);
+            await innerClient.DeleteImageAsync(repository, imageDigest);
         }
 
-        public void DeleteRepository(string repository)
+        public async Task DeleteRepositoryAsync(string repository)
         {
             // we're only deleting, so we don't care about a type arg
             var cache = cacheFactory.Get<object>();
 
-            cache.TryDelete(CatalogKey());
-            cache.TryDelete(RepoTagsKey(repository));
+            await cache.TryDeleteAsync(CatalogKey());
+            await cache.TryDeleteAsync(RepoTagsKey(repository));
 
-            innerClient.DeleteRepository(repository);
+            await innerClient.DeleteRepositoryAsync(repository);
         }
 
         #region passthrough methods
 
-        public Stream GetFile(string repository, Layer layer, string path) => innerClient.GetFile(repository, layer, path);
+        public Task<Stream> GetFileAsync(string repository, Layer layer, string path) => innerClient.GetFileAsync(repository, layer, path);
 
-        public ImageConfig GetImageConfig(string repository, string digest) => innerClient.GetImageConfig(repository, digest);
+        public Task<ImageConfig> GetImageConfigAsync(string repository, string digest) => innerClient.GetImageConfigAsync(repository, digest);
 
-        public ImageSet GetImageSet(string repository, string tag) => innerClient.GetImageSet(repository, tag);
+        public Task<ImageSet> GetImageSetAsync(string repository, string tag) => innerClient.GetImageSetAsync(repository, tag);
 
         public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => innerClient.GetIndexes(repository, image, targets);
 
-        public Layer GetLayer(string repository, string layerDigest) => innerClient.GetLayer(repository, layerDigest);
+        public Task<Layer> GetLayerAsync(string repository, string layerDigest) => innerClient.GetLayerAsync(repository, layerDigest);
 
-        public Stream GetLayerArchive(string repository, string layerDigest) => innerClient.GetLayerArchive(repository, layerDigest);
+        public Task<Stream> GetLayerArchiveAsync(string repository, string layerDigest) => innerClient.GetLayerArchiveAsync(repository, layerDigest);
 
         #endregion
     }

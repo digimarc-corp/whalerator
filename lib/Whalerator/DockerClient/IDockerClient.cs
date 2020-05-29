@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Whalerator.Content;
 using Whalerator.Model;
 
@@ -29,15 +30,15 @@ namespace Whalerator.DockerClient
     {
         IEnumerable<Repository> GetRepositories();
         IEnumerable<string> GetTags(string repository);
-        string GetTagDigest(string repository, string tag);
-        ImageSet GetImageSet(string repository, string tag);
-        Data.ImageConfig GetImageConfig(string repository, string digest);
-        Stream GetFile(string repository, Layer layer, string path);
-        Layer GetLayer(string repository, string layerDigest);
         IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets);
-        Permissions GetPermissions(string repository);
-        void DeleteImage(string repository, string imageDigest);
-        void DeleteRepository(string repository);
-        Stream GetLayerArchive(string repository, string layerDigest);
+        Task<string> GetTagDigestAsync(string repository, string tag);
+        Task<ImageSet> GetImageSetAsync(string repository, string tag);
+        Task<Data.ImageConfig> GetImageConfigAsync(string repository, string digest);
+        Task<Stream> GetFileAsync(string repository, Layer layer, string path);
+        Task<Layer> GetLayerAsync(string repository, string layerDigest);
+        Task<Permissions> GetPermissionsAsync(string repository);
+        Task DeleteImageAsync(string repository, string imageDigest);
+        Task DeleteRepositoryAsync(string repository);
+        Task<Stream> GetLayerArchiveAsync(string repository, string layerDigest);
     }
 }

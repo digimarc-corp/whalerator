@@ -39,23 +39,23 @@ namespace Whalerator.Support
         public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
 
         /// <inheritdoc/>
-        public T Exec(string scope, string key, IAuthHandler authHandler, Func<T> func) =>
-            Exec(scope, key, Ttl, authHandler, func);
+        public Task<T> ExecAsync(string scope, string key, IAuthHandler authHandler, Func<Task<T>> func) =>
+            ExecAsync(scope, key, Ttl, authHandler, func);
 
         /// <inheritdoc/>
-        public T Exec(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<T> func)
+        public async Task<T> ExecAsync(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<Task<T>> func)
         {
             T result;
             if (authHandler.Authorize(scope))
             {
-                if (TryGet(key, out result))
+                if (await ExistsAsync(key))
                 {
-                    return result;
+                    return await GetAsync(key);
                 }
                 else
                 {
-                    result = func();
-                    Set(key, result, ttl);
+                    result = await func();
+                    await SetAsync(key, result, ttl);
                     return result;
                 }
             }
@@ -66,22 +66,16 @@ namespace Whalerator.Support
         }
 
         /// <inheritdoc/>
-        public bool TryGet(string key, out T value)
+        public Task<T> GetAsync(string key)
         {
-            string json;
-            if (memCache.TryGetValue(key, out json))
-            {
-                value = JsonConvert.DeserializeObject<T>(json);
-                return true;
-            }
-            else value = null;
-            return false;
+            string json = (string)memCache.Get(key);
+            return Task.FromResult(JsonConvert.DeserializeObject<T>(json));
         }
 
         #region locking
-        bool LockTake(string key, string value, TimeSpan lockTime)
+        async Task<bool> LockTakeAsync(string key, string value, TimeSpan lockTime)
         {
-            if (Exists(key)) { return false; }
+            if (await ExistsAsync(key)) { return false; }
             else
             {
                 memCache.Set(key, value, lockTime);
@@ -90,62 +84,65 @@ namespace Whalerator.Support
             }
         }
 
-        void LockRelease(string key, string value)
+        Task LockReleaseAsync(string key, string value)
         {
             var check = memCache.Get<string>(key);
             if (check == value) { memCache.Remove(key); }
+            return Task.CompletedTask;
         }
 
-        bool LockExtend(string key, string value, TimeSpan time)
+        Task<bool> LockExtend(string key, string value, TimeSpan time)
         {
             var check = memCache.Get<string>(key);
             if (check == value)
             {
                 memCache.Set(key, value, time);
                 check = memCache.Get<string>(key);
-                return check == value;
+                return Task.FromResult(check == value);
             }
             else
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
 
         /// <inheritdoc/>
-        public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
+        public async Task<Lock> TakeLockAsync(string key, TimeSpan lockTime, TimeSpan lockTimeout)
         {
             var value = Guid.NewGuid().ToString();
             var start = DateTime.UtcNow;
-            while (!LockTake(key, value, lockTime))
+            while (!await LockTakeAsync(key, value, lockTime))
             {
                 if (DateTime.Now - start > lockTimeout) { throw new TimeoutException($"Could not get a lock for {key} in the allotted time."); }
                 System.Threading.Thread.Sleep(500);
             }
             return new Lock(
-                releaseAction: () => { LockRelease(key, value); },
-                extendAction: (time) => { return LockExtend(key, value, time); }
+                releaseAction: () => LockReleaseAsync(key, value),
+                extendAction: (time) => LockExtend(key, value, time)
             );
         }
         #endregion
 
         /// <inheritdoc/>
-        public void Set(string key, T value) => Set(key, value, Ttl);
+        public async Task SetAsync(string key, T value) => await SetAsync(key, value, Ttl);
 
         /// <inheritdoc/>
-        public bool Exists(string key) => memCache.TryGetValue(key, out var _);
+        public Task<bool> ExistsAsync(string key) => Task.FromResult(memCache.TryGetValue(key, out var _));
 
         /// <inheritdoc/>
-        public void Set(string key, T value, TimeSpan ttl)
+        public Task SetAsync(string key, T value, TimeSpan ttl)
         {
             var json = JsonConvert.SerializeObject(value);
             if (ttl == null) { memCache.Set(key, json); }
-            else { memCache.Set(key, json, (TimeSpan)ttl); }
+            else { memCache.Set(key, json, ttl); }
+
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
-        public bool TryDelete(string key)
+        public async Task<bool> TryDeleteAsync(string key)
         {
-            if (Exists(key))
+            if (await ExistsAsync(key))
             {
                 memCache.Remove(key);
                 return true;

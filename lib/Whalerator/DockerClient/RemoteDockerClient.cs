@@ -24,6 +24,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Content;
@@ -51,24 +52,23 @@ namespace Whalerator.DockerClient
 
         IDockerDistribution api => RestService.For<IDockerDistribution>(auth.RegistryEndpoint);
 
-        private void FetchBlob(string repository, string layerDigest, string scope)
+        private async Task FetchBlobAsync(string repository, string layerDigest, string scope)
         {
             var path = localClient.BlobPath(layerDigest);
-            LockedPathExec(path, () =>
+            await LockedPathExecAsync(path, async () =>
             {
-                var result = dockerDistribution.GetStreamBlob(repository, layerDigest, scope).Result;
+                var result = await dockerDistribution.GetStreamBlobAsync(repository, layerDigest, scope);
                 using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 {
-                    result.CopyTo(stream);
+                    await result.CopyToAsync(stream);
                 }
             });
         }
 
-        public void DeleteImage(string repository, string imageDigest) => _ =
-            dockerDistribution.DeleteManifest(repository, imageDigest, AuthHandler.RepoAdminScope(repository)).Result;
+        public async Task DeleteImageAsync(string repository, string imageDigest) => _ =
+            await dockerDistribution.DeleteManifestAsync(repository, imageDigest, AuthHandler.RepoAdminScope(repository));
 
-
-        public void DeleteRepository(string repository)
+        public async Task DeleteRepositoryAsync(string repository)
         {
             // there is no official Docker Distribution API to delete an entire repo. Instead, we
             // delete all tags from the repo via the API, then remove the (now empty) local folder
@@ -79,8 +79,9 @@ namespace Whalerator.DockerClient
             {
                 var key = RepoTagsKey(repository);
 
-                // coerce to list before deleting to avoid deleting a tag out from under ourselves                
-                var imageDigests = GetTags(repository).Select(t => GetTagDigest(repository, t)).Distinct().ToList();
+                // coerce to list before deleting to avoid deleting a tag out from under ourselves     
+                var tags = GetTags(repository).ToAsyncEnumerable();
+                var imageDigests = await tags.SelectAwait(async t => await GetTagDigestAsync(repository, t)).Distinct().ToListAsync();
                 if (imageDigests.Any(d => d == null))
                 {
                     //Logger.LogError($"Encountered at least one unreadable tag in {repository}, aborting");
@@ -89,10 +90,10 @@ namespace Whalerator.DockerClient
 
                 foreach (var digest in imageDigests)
                 {
-                    DeleteImage(repository, digest);
+                    await DeleteImageAsync(repository, digest);
                 }
 
-                localClient.DeleteRepository(repository);
+                await localClient.DeleteRepositoryAsync(repository);
             }
             else
             {
@@ -100,110 +101,100 @@ namespace Whalerator.DockerClient
             }
         }
 
-        public Stream GetFile(string repository, Layer layer, string path)
+        public async Task<Stream> GetFileAsync(string repository, Layer layer, string path)
         {
-            FetchBlob(repository, layer.Digest, AuthHandler.RepoPullScope(repository));
+            await FetchBlobAsync(repository, layer.Digest, AuthHandler.RepoPullScope(repository));
 
-            return localClient.GetFile(repository, layer, path);
+            return await localClient.GetFileAsync(repository, layer, path);
         }
 
         // If the path does not exist, execute the given action with a lock
-        private void LockedPathExec(string path, Action action)
+        private async Task LockedPathExecAsync(string path, Func<Task> action)
         {
             if (!File.Exists(path))
             {
-                using (var @lock = cacheFactory.Get<object>().TakeLock($"dl:{path}", DownloadTimeout, DownloadTimeout))
+                using (var @lock = await cacheFactory.Get<object>().TakeLockAsync($"dl:{path}", DownloadTimeout, DownloadTimeout))
                 {
                     // double check the path wasn't created while we waited for a lock
                     if (!File.Exists(path))
                     {
                         Directory.CreateDirectory(Path.GetDirectoryName(path));
-                        action();
+                        await action();
                     }
                 }
             }
         }
 
-        public ImageSet GetImageSet(string repository, string tag)
+        public async Task<ImageSet> GetImageSetAsync(string repository, string tag)
         {
-            string digest = tag.IsDigest() ? tag : GetTagDigest(repository, tag);
+            string digest = tag.IsDigest() ? tag : await GetTagDigestAsync(repository, tag);
 
             var path = localClient.BlobPath(digest);
-            var tokenSource = new CancellationTokenSource();
-            tokenSource.CancelAfter(TimeSpan.FromMinutes(1));
 
-            LockedPathExec(path, () =>
+            await LockedPathExecAsync(path, async () =>
             {
-                var result = dockerDistribution.GetManifest(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
-                WriteString(path, result);
+                var result = await dockerDistribution.GetManifestAsync(repository, digest, AuthHandler.RepoPullScope(repository));
+                await WriteFileAsync(path, result);
             });
 
-            return localClient.GetImageSet(repository, digest);
+            return await localClient.GetImageSetAsync(repository, digest);
         }
 
-        private void WriteString(string path, string value)
-        {
-            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            using (var sw = new StreamWriter(stream))
-            {
-                sw.Write(value);
-            }
-        }
-
-        public Data.ImageConfig GetImageConfig(string repository, string digest)
+        public async Task<Data.ImageConfig> GetImageConfigAsync(string repository, string digest)
         {
             var path = localClient.BlobPath(digest);
 
-            LockedPathExec(path, () =>
+            await LockedPathExecAsync(path, async () =>
             {
-                var result = dockerDistribution.GetStringBlob(repository, digest, AuthHandler.RepoPullScope(repository)).Result;
-                WriteString(path, result);
+                var result = await dockerDistribution.GetStringBlobAsync(repository, digest, AuthHandler.RepoPullScope(repository));
+                await WriteFileAsync(path, result);
             });
 
-            return localClient.GetImageConfig(repository, digest);
+            return await localClient.GetImageConfigAsync(repository, digest);
         }
 
         public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => localClient.GetIndexes(repository, image, targets);
 
-        public Layer GetLayer(string repository, string layerDigest)
+        public async Task<Layer> GetLayerAsync(string repository, string layerDigest)
         {
-            FetchBlob(repository, layerDigest, AuthHandler.RepoPullScope(repository));
+            await FetchBlobAsync(repository, layerDigest, AuthHandler.RepoPullScope(repository));
 
-            return localClient.GetLayer(repository, layerDigest);
+            return await localClient.GetLayerAsync(repository, layerDigest);
         }
 
-        public Stream GetLayerArchive(string repository, string layerDigest)
+        public async Task<Stream> GetLayerArchiveAsync(string repository, string layerDigest)
         {
-            FetchBlob(repository, layerDigest, AuthHandler.RepoPullScope(repository));
+            await FetchBlobAsync(repository, layerDigest, AuthHandler.RepoPullScope(repository));
 
-            return localClient.GetLayerArchive(repository, layerDigest);
+            return await localClient.GetLayerArchiveAsync(repository, layerDigest);
         }
 
-        public string GetTagDigest(string repository, string tag)
+        public async Task<string> GetTagDigestAsync(string repository, string tag)
         {
-            var result = dockerDistribution.GetTagDigest(repository, tag, AuthHandler.RepoPullScope(repository)).Result;
+            var result = await dockerDistribution.GetTagDigestAsync(repository, tag, AuthHandler.RepoPullScope(repository));
             return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
         }
 
-        public IEnumerable<Model.Repository> GetRepositories() => GetAuthorizedRepositories()
-            .Union(Config.Repositories)
-            .Distinct()
-            .Select(r => new Model.Repository
-            {
-                Name = r,
-                Tags = GetTags(r)?.Count() ?? 0,
-                Permissions = GetPermissions(r)
-            });
+        public IEnumerable<Model.Repository> GetRepositories() => GetLiveRepositoriesAsync().Result.Where(r => r.Tags > 0);
 
-        IEnumerable<string> GetAuthorizedRepositories()
+        async Task<IEnumerable<Model.Repository>> GetLiveRepositoriesAsync()
         {
             try
             {
-                return dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope()).Result.Repositories;
+                var repos = (await dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope())).Repositories
+                    .Union(Config.Repositories).Distinct().Select(r => new Model.Repository { Name = r }).ToList();
+
+                var perms = repos.Select(async r => r.Permissions = await GetPermissionsAsync(r.Name));
+                Task.WaitAll(perms.ToArray());
+
+                repos.Where(r => r.Permissions >= Permissions.Pull).ToList().ForEach(r => r.Tags = GetTags(r.Name).Count());
+
+
+                return repos;
             }
             catch (AuthenticationException)
             {
-                return new string[0];
+                return new Model.Repository[0];
             }
         }
 
@@ -211,11 +202,12 @@ namespace Whalerator.DockerClient
         {
             try
             {
-                return dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result.Tags;
+                var result = dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result;
+                return result?.Tags ?? new string[0];
             }
             catch (AggregateException ex)
             {
-                if (ex.InnerExceptions.OfType<ApiException>().Any(e => e.StatusCode == System.Net.HttpStatusCode.NotFound))
+                if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     return new string[0];
                 }
@@ -223,7 +215,18 @@ namespace Whalerator.DockerClient
                 {
                     throw;
                 }
-            }
+            }/*
+            catch (ApiException ex)
+            {
+                if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new string[0];
+                }
+                else
+                {
+                    throw;
+                }
+            }*/
         }
     }
 }

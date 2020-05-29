@@ -22,12 +22,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Whalerator.Content
 {
     public class LayerExtractor : ILayerExtractor
     {
-        public Stream ExtractFile(string layerFile, string path)
+        public Task<Stream> ExtractFileAsync(string layerFile, string path)
         {
             path = path.TrimStart('/');
 
@@ -44,7 +45,7 @@ namespace Whalerator.Content
                 {
                     if (entry.Name.Equals(path))
                     {
-                        foundStream = new SubStream(tarStream, entry.Size);
+                        foundStream = new SubStream(tarStream, entry.Size) { OwnInnerStream = true };
                         break;
                     }
                     entry = tarStream.GetNextEntry();
@@ -52,7 +53,7 @@ namespace Whalerator.Content
 
                 if (foundStream != null)
                 {
-                    return foundStream;
+                    return Task.FromResult(foundStream);
                 }
                 else
                 {
@@ -73,7 +74,7 @@ namespace Whalerator.Content
         /// </summary>
         /// <param name="layerArchive"></param>
         /// <returns></returns>
-        public IEnumerable<string> ExtractFiles(Stream stream)
+        public async IAsyncEnumerable<string> ExtractFilesAsync(Stream stream)
         {
             using (var gzipStream = new GZipInputStream(stream) { IsStreamOwner = false })
             using (var tarStream = new TarInputStream(gzipStream) { IsStreamOwner = false })

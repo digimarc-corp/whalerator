@@ -50,7 +50,7 @@ namespace Whalerator.WebAPI
         void StartTimer() => timer.Change(5000, 5000);
         void PauseTimer() => timer.Change(Timeout.Infinite, 0);
 
-        public abstract void DoRequest(T request);
+        public abstract Task DoRequestAsync(T request);
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -70,7 +70,7 @@ namespace Whalerator.WebAPI
                 var workItem = queue.Pop();
                 while (workItem != null)
                 {
-                    DoRequest(workItem);
+                    DoRequestAsync(workItem).Wait();
 
                     workItem = queue.Pop();
                 }

@@ -48,7 +48,7 @@ namespace Whalerator.WebAPI
         }
 
 
-        public override void DoRequest(ScanRequest request)
+        public override async Task DoRequestAsync(ScanRequest request)
         {
             try
             {
@@ -66,7 +66,7 @@ namespace Whalerator.WebAPI
                         var proxyAuth = authHandler.TokensRequired ? $"Bearer {authHandler.GetAuthorization(scope).Parameter}" : string.Empty;
                         var client = clientFactory.GetClient(authHandler);
 
-                        var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
+                        var imageSet = await client.GetImageSetAsync(request.TargetRepo, request.TargetDigest);
                         if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
 
                         var scanResult = scanner.GetScan(imageSet.Images.First());

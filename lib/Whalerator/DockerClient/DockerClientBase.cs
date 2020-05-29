@@ -18,7 +18,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Model;
@@ -42,7 +45,37 @@ namespace Whalerator.DockerClient
         protected string RepoTagsKey(string repository) => $"{Host}:repository:{repository}:tags";
         protected string RepoTagDigestKey(string repository, string tag) => $"{Host}:repository:{repository}:{tag}";
 
-        public Permissions GetPermissions(string repository)
+        protected async Task<string> ReadFileAsync(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var sr = new StreamReader(fs))
+            {
+                return await sr.ReadToEndAsync();
+            }
+        }
+
+        protected async Task WriteFileAsync(string path, string content)
+        {
+            using (var ms = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(ms, Encoding.UTF8, 4096, true))
+                {
+                    await sw.WriteAsync(content);
+                }
+                ms.Seek(0, SeekOrigin.Begin);
+                await WriteFileAsync(path, ms);
+            }
+        }
+
+        protected async Task WriteFileAsync(string path, Stream stream)
+        {
+            using (var fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await stream.CopyToAsync(fs);
+            }
+        }
+
+        public async Task<Permissions> GetPermissionsAsync(string repository)
         {
             if (AuthHandler.Authorize(AuthHandler.RepoAdminScope(repository))) { return Permissions.Admin; }
             else if (AuthHandler.Authorize(AuthHandler.RepoPushScope(repository))) { return Permissions.Push; }

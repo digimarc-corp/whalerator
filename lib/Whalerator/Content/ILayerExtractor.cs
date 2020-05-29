@@ -18,12 +18,13 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Whalerator.Content
 {
     public interface ILayerExtractor
     {
-        Stream ExtractFile(string layerFile, string path);
-        IEnumerable<string> ExtractFiles(Stream stream);
+        Task<Stream> ExtractFileAsync(string layerFile, string path);
+        IAsyncEnumerable<string> ExtractFilesAsync(Stream stream);
     }
 }

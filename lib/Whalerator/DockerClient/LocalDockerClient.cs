@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Content;
@@ -63,30 +64,35 @@ namespace Whalerator.DockerClient
 
         private string TagLinkPath(string repository, string tag) => Path.Combine(TagPath(repository, tag), "current/link");
 
-        public ImageConfig GetImageConfig(string repository, string digest)
+        public async Task<ImageConfig> GetImageConfigAsync(string repository, string digest)
         {
-            using (var stream = GetBlob(repository, digest))
+            using (var stream = await GetBlobAsync(repository, digest))
             using (var sr = new StreamReader(stream))
             {
-                return JsonConvert.DeserializeObject<ImageConfig>(sr.ReadToEnd());
+                var json = await sr.ReadToEndAsync();
+                return JsonConvert.DeserializeObject<ImageConfig>(json);
             }
         }
 
-        public Stream GetBlob(string repository, string digest) =>
-            new FileStream(Path.Combine(blobsRoot, digest.ToDigestPath(), "data"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        public Task<Stream> GetBlobAsync(string repository, string digest) => Task.FromResult<Stream>(
+            new FileStream(Path.Combine(blobsRoot, digest.ToDigestPath(), "data"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
 
-        public void DeleteImage(string repository, string digest)
+        public Task DeleteImageAsync(string repository, string digest)
         {
-            var tags = GetTags(repository).Where(t => GetTagDigest(repository, t).Equals(digest)).ToList();
-            tags.ForEach(t => Directory.Delete(TagPath(repository, t), true));
+            var tags = GetTags(repository).Where(t => GetTagDigestAsync(repository, t).Equals(digest));
+            tags.ToList().ForEach(t => Directory.Delete(TagPath(repository, t), true));
+            return Task.CompletedTask;
         }
 
-        public void DeleteRepository(string repository) =>
+        public Task DeleteRepositoryAsync(string repository)
+        {
             File.Delete(RepoPath(repository));
+            return Task.CompletedTask;
+        }
 
-        public Stream GetFile(string repository, Layer layer, string path) => extractor.ExtractFile(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
+        public Task<Stream> GetFileAsync(string repository, Layer layer, string path) => extractor.ExtractFileAsync(Path.Combine(blobsRoot, layer.Digest.ToDigestPath(), "data"), path);
 
-        public ImageSet GetImageSet(string repository, string tag)
+        public async Task<ImageSet> GetImageSetAsync(string repository, string tag)
         {
             string digest;
             if (tag.IsDigest())
@@ -95,10 +101,10 @@ namespace Whalerator.DockerClient
             }
             else
             {
-                digest = GetTagDigest(repository, tag);
+                digest = await GetTagDigestAsync(repository, tag);
             }
             string manifestPath = BlobPath(digest);
-            string manifest = ReadFile(manifestPath);
+            string manifest = await ReadFileAsync(manifestPath);
             var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
             ImageSet imageSet;
@@ -111,7 +117,7 @@ namespace Whalerator.DockerClient
                 var fatManifest = JsonConvert.DeserializeObject<FatManifest>(manifest);
                 foreach (var subManifest in fatManifest.Manifests)
                 {
-                    images.Add(RecurseClient.GetImageSet(repository, subManifest.Digest).Images.First());
+                    images.Add((await RecurseClient.GetImageSetAsync(repository, subManifest.Digest)).Images.First());
                 }
 
                 imageSet = new ImageSet
@@ -125,7 +131,7 @@ namespace Whalerator.DockerClient
             else if (mediaType.StartsWith("application/vnd.docker.distribution.manifest.v2"))
             {
                 var thinManifest = JsonConvert.DeserializeObject<ManifestV2>(manifest);
-                var config = RecurseClient.GetImageConfig(repository, thinManifest.Config.Digest);
+                var config = await RecurseClient.GetImageConfigAsync(repository, thinManifest.Config.Digest);
                 if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
                 var image = new Image
                 {
@@ -157,7 +163,8 @@ namespace Whalerator.DockerClient
             return imageSet;
         }
 
-        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => filter.FilterLayers(GetRawIndexes(repository, image), targets);
+        public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) =>
+            filter.FilterLayers(GetRawIndexesAsync(repository, image), targets).ToEnumerable();
 
         /// <summary>
         /// Extracts raw file indexes from each layer in an image, working from the top down.
@@ -165,23 +172,23 @@ namespace Whalerator.DockerClient
         /// <param name="image"></param>
         /// <param name="maxDepth">Maximum layers down to search. If 0, searches all layers</param>
         /// <returns></returns>
-        IEnumerable<LayerIndex> GetRawIndexes(string repository, Image image, int maxDepth = 0)
+        async IAsyncEnumerable<LayerIndex> GetRawIndexesAsync(string repository, Image image, int maxDepth = 0)
         {
             var layers = image.Layers.Reverse();
             var depth = 1;
             foreach (var layer in layers)
             {
                 List<string> files;
-                using (var layerStream = RecurseClient.GetLayerArchive(repository, layer.Digest))
+                using (var layerStream = await RecurseClient.GetLayerArchiveAsync(repository, layer.Digest))
                 {
                     try
                     {
-                        files = extractor.ExtractFiles(layerStream).ToList();
+                        files = await extractor.ExtractFilesAsync(layerStream).ToListAsync();
                     }
                     catch (SharpZipBaseException ex)
                     {
                         logger.LogError("Encountered corrupt layer archive, halting index.", ex);
-                        break;
+                        yield break;
                     }
                 }
 
@@ -202,7 +209,7 @@ namespace Whalerator.DockerClient
             {
                 Name = r,
                 Tags = GetTags(r).Count(),
-                Permissions = GetPermissions(r)
+                Permissions = GetPermissionsAsync(r).Result
             });
 
         private IEnumerable<string> GetRepositories(string path)
@@ -244,28 +251,17 @@ namespace Whalerator.DockerClient
             return list;
         }
 
-        public Stream GetLayerArchive(string repository, string digest) => new FileStream(BlobPath(digest), FileMode.Open, FileAccess.Read, FileShare.Read);
+        public Task<Stream> GetLayerArchiveAsync(string repository, string digest) => Task.FromResult<Stream>(
+            new FileStream(BlobPath(digest), FileMode.Open, FileAccess.Read, FileShare.Read));
 
-        public Layer GetLayer(string repository, string layerDigest)
-        {
-            var info = new FileInfo(BlobPath(layerDigest));
-            return new Layer
+        public Task<Layer> GetLayerAsync(string repository, string layerDigest) =>
+            Task.FromResult(new Layer
             {
                 Digest = layerDigest,
-                Size = info.Length
-            };
-        }
+                Size = new FileInfo(BlobPath(layerDigest)).Length
+            });
 
-        public string GetTagDigest(string repository, string tag) =>
-            ReadFile(TagLinkPath(repository, tag)).Trim();
-
-        private string ReadFile(string path)
-        {
-            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var sr = new StreamReader(fs))
-            {
-                return sr.ReadToEnd();
-            }
-        }
+        public async Task<string> GetTagDigestAsync(string repository, string tag) =>
+            (await ReadFileAsync(TagLinkPath(repository, tag))).Trim();
     }
 }

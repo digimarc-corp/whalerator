@@ -32,17 +32,19 @@ namespace Whalerator.WebAPI
         private readonly IIndexStore indexStore;
         private readonly RegistryAuthenticationDecoder authDecoder;
         private readonly IAuthHandler authHandler;
+        private readonly ICacheFactory cacheFactory;
 
         public IndexWorker(ILogger<IndexWorker> logger, ServiceConfig config, IWorkQueue<IndexRequest> queue, IClientFactory clientFactory, IIndexStore indexStore,
-           RegistryAuthenticationDecoder authDecoder, IAuthHandler authHandler) : base(logger, config, queue, clientFactory)
+           RegistryAuthenticationDecoder authDecoder, IAuthHandler authHandler, ICacheFactory cacheFactory) : base(logger, config, queue, clientFactory)
         {
             this.indexStore = indexStore;
             this.authDecoder = authDecoder;
             this.authHandler = authHandler;
+            this.cacheFactory = cacheFactory;
         }
 
 
-        public override void DoRequest(IndexRequest request)
+        public override async Task DoRequestAsync(IndexRequest request)
         {
             try
             {
@@ -56,13 +58,23 @@ namespace Whalerator.WebAPI
                     authHandler.Login(authResult.Principal.ToRegistryCredentials());
                     var client = clientFactory.GetClient(authHandler);
 
-                    var imageSet = client.GetImageSet(request.TargetRepo, request.TargetDigest);
+                    var imageSet = await client.GetImageSetAsync(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
                     var image = imageSet.Images.First();
 
-                    var indexes = client.GetIndexes(request.TargetRepo, image, request.TargetPaths.ToArray());
-                    indexStore.SetIndex(indexes, image.Digest, request.TargetPaths.ToArray());
-                    logger.LogInformation($"Completed indexing {request.TargetRepo}:{request.TargetDigest} {(request.TargetPaths.Count() == 0 ? "" : $"({request.TargetPaths})")}");
+                    using (var @lock = await cacheFactory.Get<object>().TakeLockAsync($"idx:{image.Digest}", TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)))
+                    {
+                        if (!indexStore.IndexExists(image.Digest, request.TargetPaths.ToArray()))
+                        {
+                            var indexes = client.GetIndexes(request.TargetRepo, image, request.TargetPaths.ToArray());
+                            indexStore.SetIndex(indexes, image.Digest, request.TargetPaths.ToArray());
+                            logger.LogInformation($"Completed indexing {indexes.Max(i => i.Depth)} layer(s) from {request.TargetRepo}:{request.TargetDigest} {(request.TargetPaths.Count() == 0 ? "" : $"({string.Join(", ", request.TargetPaths)})")}");
+                        }
+                        else
+                        {
+                            logger.LogInformation($"Discarding duplicate index request for {request.TargetRepo}:{request.TargetDigest}");
+                        }
+                    }
                 }
             }
             catch (Exception ex)

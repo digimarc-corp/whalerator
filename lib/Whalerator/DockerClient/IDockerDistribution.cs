@@ -40,26 +40,26 @@ namespace Whalerator.DockerClient
         [Head("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]
         [Headers("Authorization: Bearer", "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
-        Task<ApiResponse<object>> GetTagDigest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
+        Task<ApiResponse<object>> GetTagDigestAsync(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
         [Delete("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]
-        Task<ApiResponse<object>> DeleteManifest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
+        Task<ApiResponse<object>> DeleteManifestAsync(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
         // manifest format is unpredictable, so we get it as a plain string here and parse it out later
         [Get("/{repository}/manifests/{tag}")]
         [QueryUriFormat(UriFormat.Unescaped)]
         [Headers("Authorization: Bearer", "Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json")]
-        Task<string> GetManifest(string repository, string tag, [Header("X-Docker-Scope")] string scope);
+        Task<string> GetManifestAsync(string repository, string tag, [Header("X-Docker-Scope")] string scope);
 
         [Get("/{repository}/blobs/{digest}")]
         [QueryUriFormat(UriFormat.Unescaped)]
         [Headers("Authorization: Bearer")]
-        Task<string> GetStringBlob(string repository, string digest, [Header("X-Docker-Scope")] string scope);
+        Task<string> GetStringBlobAsync(string repository, string digest, [Header("X-Docker-Scope")] string scope);
 
         [Get("/{repository}/blobs/{digest}")]
         [QueryUriFormat(UriFormat.Unescaped)]
         [Headers("Authorization: Bearer")]
-        Task<Stream> GetStreamBlob(string repository, string digest, [Header("X-Docker-Scope")] string scope);
+        Task<Stream> GetStreamBlobAsync(string repository, string digest, [Header("X-Docker-Scope")] string scope);
     }
 }

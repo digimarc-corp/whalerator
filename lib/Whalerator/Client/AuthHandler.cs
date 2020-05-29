@@ -86,8 +86,9 @@ namespace Whalerator.Client
 
             var key = GetKey(null, granted: true);
 
-            if (authCache.TryGet(key, out var authorization))
+            if (authCache.ExistsAsync(key).Result)
             {
+                var authorization = authCache.GetAsync(key).Result;
                 Service = authorization.Service;
                 Realm = authorization.Realm;
                 AnonymousMode = authorization.Anonymous;
@@ -140,7 +141,7 @@ namespace Whalerator.Client
                             }
                             else
                             {
-                                authCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service, Anonymous = AnonymousMode }, AuthTtl);
+                                authCache.SetAsync(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service, Anonymous = AnonymousMode }, AuthTtl).Wait();
                             }
                         }
                         else
@@ -159,7 +160,16 @@ namespace Whalerator.Client
         public AuthenticationHeaderValue GetAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return authCache.TryGet(GetKey(scope, granted: true), out var authorization) ? new AuthenticationHeaderValue("Bearer", authorization.JWT) : null;
+            var key = GetKey(scope, granted: true);
+            if (authCache.ExistsAsync(key).Result)
+            {
+                var authorization = authCache.GetAsync(key).Result;
+                return new AuthenticationHeaderValue("Bearer", authorization.JWT);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public bool Authorize(string scope)
@@ -170,7 +180,7 @@ namespace Whalerator.Client
         public bool HasAuthorization(string scope)
         {
             scope = scope ?? string.Empty;
-            return authCache.Exists(GetKey(scope, granted: true));
+            return authCache.ExistsAsync(GetKey(scope, granted: true)).Result;
         }
 
         private string GetKey(string scope, bool granted) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope, granted);
@@ -235,7 +245,7 @@ namespace Whalerator.Client
             if (AnonymousMode && !DockerHub) { return true; }
 
             // if this user was recently denied for the same scope, don't waste a roundtrip on it
-            if (!force && authCache.Exists(GetKey(scope, granted: false))) { return false; }
+            if (!force && authCache.ExistsAsync(GetKey(scope, granted: false)).Result) { return false; }
 
             scope = scope ?? string.Empty;
             var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
@@ -264,12 +274,12 @@ namespace Whalerator.Client
                     var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
                     if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
                     {
-                        authCache.Set(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
+                        authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow).Wait();
                         return true;
                     }
                     else
                     {
-                        authCache.Set(GetKey(scope, granted: false), authorization, AuthTtl);
+                        authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl).Wait();
                     }
                 }
                 return false;

@@ -90,9 +90,10 @@ namespace Whalerator.Content
         /// <param name="fileEntries">Enumerable entries. Must be in top-down order.</param>
         /// <param name="target">If set, processing will stop when the target path is found. Only processed layers will be returned</param>
         /// <returns></returns>
-        public IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, params string[] targets)
+        public async IAsyncEnumerable<LayerIndex> FilterLayers(IAsyncEnumerable<LayerIndex> layers, params string[] targets)
         {
-            var files = new List<(string name, string digest, int depth)>();
+            // master list of all files found, to enable duplicate detection
+            var runFiles = new HashSet<string>();
 
             // prep the list of target paths, if provided
             if (CaseInsensitiveSearch) { targets = targets?.Select(t => t.ToLowerInvariant())?.ToArray(); }
@@ -102,7 +103,9 @@ namespace Whalerator.Content
 
             var wh = new List<string>();
 
-            foreach (var layer in layers)
+            LayerIndex newLayer = null;
+
+            await foreach (var layer in layers)
             {
                 if (layer.Depth <= currentDepth) { throw new DataMisalignedException("LayerIndexes must enumerate in top-down order."); }
                 else { currentDepth = layer.Depth; }
@@ -117,36 +120,47 @@ namespace Whalerator.Content
                 );
 
                 // add any new files not in a whiteout/opq
-                var newFiles = layerFiles.Where(lf => !(lf.isWh || MatchesAnyWh(lf.path, wh) || files.Any(xf => xf.name.Equals(lf.path))))
-                    .Select(f => (f.path, layer.Digest, layer.Depth)).ToList();
-                files.AddRange(newFiles);
+                var newFiles = layerFiles.Where(lf => !(lf.isWh || MatchesAnyWh(lf.path, wh) || runFiles.Any(xf => xf.Equals(lf.path))))
+                    .Select(f => f.path).ToList();
+                runFiles.UnionWith(newFiles);
 
                 // check for target hits
                 if (targetsHash != null)
-                {                    
-                    var hits = newFiles.Select(f => CaseInsensitiveSearch ? f.path.ToLowerInvariant() : f.path).Where(f => targetsHash.Contains(f)).ToHashSet();
-                    targetsHash.RemoveWhere(t => hits.Contains(t));
-
-                    // if we've exhausted the target list, we're done
-                    if (targetsHash.Count == 0) { break; }
-                }
-
-
-                if (targetsHash != null && newFiles.Select(f => CaseInsensitiveSearch ? f.path.ToLowerInvariant() : f.path).Any(f => targetsHash.Contains(f)))
                 {
-
+                    var hits = newFiles.Select(f => CaseInsensitiveSearch ? f.ToLowerInvariant() : f).Where(f => targetsHash.Contains(f)).ToHashSet();
+                    targetsHash.RemoveWhere(t => hits.Contains(t));
                 }
 
                 // add any new whiteouts
                 wh.AddRange(layerFiles.Where(f => f.isWh).Select(f => f.path));
+
+                // if we found something, create a new layer index
+                newLayer = newFiles.Count > 0 ? new LayerIndex
+                {
+                    Digest = layer.Digest,
+                    Depth = currentDepth,
+                    Files = newFiles
+                } : null;
+
+                // if we still have work to do, return the layer and continue iterating
+                if (targetsHash == null || targetsHash.Count > 0)
+                {
+                    if (newLayer != null)
+                    {
+                        yield return newLayer;
+                    }
+                }
+                else
+                {
+                    // we're done searching, break the loop before yielding the final result
+                    break;
+                }
             }
 
-            return files.GroupBy(f => f.digest).Select(g => new LayerIndex
+            if (newLayer != null)
             {
-                Digest = g.Key,
-                Depth = g.Min(d => d.depth),
-                Files = g.Select(f => f.name)
-            });
+                yield return newLayer;
+            }
         }
     }
 }

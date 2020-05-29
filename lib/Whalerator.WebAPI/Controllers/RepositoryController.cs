@@ -65,7 +65,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="digest">Manifest digest. Must be for a discrete image, not a multiplatform image.</param>
         /// <returns></returns>
         [HttpGet("sec/{digest}/{*repository}")]
-        public IActionResult GetSecScan(string repository, string digest)
+        public async Task<IActionResult> GetSecScanAsync(string repository, string digest)
         {
             if (secScanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
 
@@ -77,7 +77,7 @@ namespace Whalerator.WebAPI.Controllers
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var imageSet = client.GetImageSet(repository, digest);
+                var imageSet = await client.GetImageSetAsync(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -126,7 +126,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="targets">Optional target paths. Indexing will halt once all targets are found, and return only those layers needed to reach the deepest target.</param>
         /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
-        public IActionResult GetFiles(string repository, string digest, string targets)
+        public async Task<IActionResult> GetFilesAsync(string repository, string digest, string targets)
         {
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
             if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
@@ -138,7 +138,7 @@ namespace Whalerator.WebAPI.Controllers
                 var targetList = string.IsNullOrEmpty(targets) ? new string[0] : targets.Split(';');
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var imageSet = client.GetImageSet(repository, digest);
+                var imageSet = await client.GetImageSetAsync(repository, digest);
 
                 if (imageSet.Images.Count() != 1) { return NotFound("No image was found with the given digest."); }
 
@@ -183,7 +183,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("file/{digest}/{*repository}")]
-        public IActionResult GetFile(string repository, string digest, string path)
+        public async Task<IActionResult> GetFileAsync(string repository, string digest, string path)
         {
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
             if (!digest.IsDigest()) { return BadRequest("Digest appears invalid."); }
@@ -194,13 +194,14 @@ namespace Whalerator.WebAPI.Controllers
 
                 var client = clientFactory.GetClient(AuthHandler);
 
-                var layer = client.GetLayer(repository, digest);
-                using (var result = client.GetFile(repository, layer, path))
-                {
+                var layer = await client.GetLayerAsync(repository, digest);
+                //await using (
+                var result = await client.GetFileAsync(repository, layer, path);
+                //{
                     Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
                     Response.Headers.Add("X-Content-Type-Options", "nosniff");
                     return File(result, "application/octet-stream");
-                }
+                //}
             }
             catch (RedisConnectionException)
             {
@@ -221,15 +222,15 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("tags/list/{*repository}")]
-        public IActionResult GetTags(string repository)
+        public async Task<IActionResult> GetTagsAsync(string repository)
         {
             try
             {
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var tags = client.GetTags(repository);
-                var permissions = client.GetPermissions(repository);
+                var permissions = await client.GetPermissionsAsync(repository);
+                var tags = permissions >= Permissions.Pull ? client.GetTags(repository) : new string[0];
 
                 return Ok(new TagSet { Tags = tags, Permissions = permissions });
             }
@@ -248,7 +249,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("tag/{tag}/{*repository}")]
-        public IActionResult GetImages(string repository, string tag)
+        public async Task<IActionResult> GetImagesAsync(string repository, string tag)
         {
             try
             {
@@ -256,7 +257,7 @@ namespace Whalerator.WebAPI.Controllers
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var imageSet = client.GetImageSet(repository, tag);
+                var imageSet = await client.GetImageSetAsync(repository, tag);
 
                 return imageSet == null ? (IActionResult)NotFound() : Ok(imageSet);
             }
@@ -281,7 +282,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="digest"></param>
         /// <returns></returns>
         [HttpDelete("digest/{digest}/{*repository}")]
-        public IActionResult DeleteImageSet(string repository, string digest)
+        public async Task<IActionResult> DeleteImageSet(string repository, string digest)
         {
             try
             {
@@ -289,10 +290,10 @@ namespace Whalerator.WebAPI.Controllers
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var permissions = client.GetPermissions(repository);
+                var permissions = await client.GetPermissionsAsync(repository);
                 if (permissions != Permissions.Admin) { return Unauthorized(); }
 
-                client.DeleteImage(repository, digest);
+                await client.DeleteImageAsync(repository, digest);
                 return Ok();
             }
             catch (RedisConnectionException)
@@ -320,7 +321,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="tag"></param>
         /// <returns></returns>
         [HttpGet("digest/{tag}/{*repository}")]
-        public IActionResult GetImagesDigest(string repository, string tag)
+        public async Task<IActionResult> GetImagesDigestAsync(string repository, string tag)
         {
             try
             {
@@ -328,7 +329,7 @@ namespace Whalerator.WebAPI.Controllers
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
                 var client = clientFactory.GetClient(AuthHandler);
-                var digest = client.GetTagDigest(repository, tag);
+                var digest = await client.GetTagDigestAsync(repository, tag);
 
                 return string.IsNullOrEmpty(digest) ? (IActionResult)NotFound() : Ok(digest);
             }

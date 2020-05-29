@@ -24,7 +24,7 @@ namespace Whalerator.Content
 {
     public interface IAufsFilter
     {
-        IEnumerable<LayerIndex> FilterLayers(IEnumerable<LayerIndex> layers, params string[] targets);
+        IAsyncEnumerable<LayerIndex> FilterLayers(IAsyncEnumerable<LayerIndex> layers, params string[] targets);
         bool IsWhiteout(string path, out string target);
         bool MatchesAnyWh(string path, IEnumerable<string> wh);
     }
