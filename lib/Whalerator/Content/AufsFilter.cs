@@ -96,14 +96,15 @@ namespace Whalerator.Content
             var runFiles = new HashSet<string>();
 
             // prep the list of target paths, if provided
-            if (CaseInsensitiveSearch) { targets = targets?.Select(t => t.ToLowerInvariant())?.ToArray(); }
+            targets = targets.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.TrimStart('/')).ToArray();
+            if (CaseInsensitiveSearch) { targets = targets.Select(t => t.ToLowerInvariant())?.ToArray(); }
             var targetsHash = targets.Length == 0 ? null : new HashSet<string>(targets.Select(t => t.TrimStart('/')));
 
             int currentDepth = 0;
 
             var wh = new List<string>();
 
-            LayerIndex newLayer = null;
+            LayerIndex finalLayer = null;
 
             await foreach (var layer in layers)
             {
@@ -115,7 +116,7 @@ namespace Whalerator.Content
                     .Select(f => new
                     {
                         isWh = IsWhiteout(f, out var n),
-                        path = n,
+                        path = n.TrimStart('/'),
                     }
                 );
 
@@ -135,31 +136,34 @@ namespace Whalerator.Content
                 wh.AddRange(layerFiles.Where(f => f.isWh).Select(f => f.path));
 
                 // if we found something, create a new layer index
-                newLayer = newFiles.Count > 0 ? new LayerIndex
+                var newLayer = newFiles.Count > 0 ? new LayerIndex
                 {
                     Digest = layer.Digest,
                     Depth = currentDepth,
                     Files = newFiles
                 } : null;
 
-                // if we still have work to do, return the layer and continue iterating
-                if (targetsHash == null || targetsHash.Count > 0)
+                // two cases where we can quit early:
+                // - we had a list of targets, and we've found them all
+                // - we encountered a root-level opaque whiteout
+                if ((targetsHash != null && targetsHash.Count == 0) || wh.Contains(string.Empty))
+                {
+                    // we're done searching, break the loop before yielding the final result
+                    finalLayer = newLayer;
+                    break;
+                }
+                else
                 {
                     if (newLayer != null)
                     {
                         yield return newLayer;
                     }
                 }
-                else
-                {
-                    // we're done searching, break the loop before yielding the final result
-                    break;
-                }
             }
 
-            if (newLayer != null)
+            if (finalLayer != null)
             {
-                yield return newLayer;
+                yield return finalLayer;
             }
         }
     }

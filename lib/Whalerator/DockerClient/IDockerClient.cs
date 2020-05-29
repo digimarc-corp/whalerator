@@ -31,6 +31,7 @@ namespace Whalerator.DockerClient
         IEnumerable<Repository> GetRepositories();
         IEnumerable<string> GetTags(string repository);
         IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets);
+
         Task<string> GetTagDigestAsync(string repository, string tag);
         Task<ImageSet> GetImageSetAsync(string repository, string tag);
         Task<Data.ImageConfig> GetImageConfigAsync(string repository, string digest);

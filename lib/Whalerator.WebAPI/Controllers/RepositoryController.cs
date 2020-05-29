@@ -195,13 +195,12 @@ namespace Whalerator.WebAPI.Controllers
                 var client = clientFactory.GetClient(AuthHandler);
 
                 var layer = await client.GetLayerAsync(repository, digest);
-                //await using (
+
                 var result = await client.GetFileAsync(repository, layer, path);
-                //{
-                    Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
-                    Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                    return File(result, "application/octet-stream");
-                //}
+
+                Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
+                Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                return File(result, "application/octet-stream");
             }
             catch (RedisConnectionException)
             {

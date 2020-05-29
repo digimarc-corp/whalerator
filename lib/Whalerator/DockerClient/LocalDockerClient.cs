@@ -183,7 +183,7 @@ namespace Whalerator.DockerClient
                 {
                     try
                     {
-                        files = await extractor.ExtractFilesAsync(layerStream).ToListAsync();
+                        files = extractor.ExtractFiles(layerStream).ToList();
                     }
                     catch (SharpZipBaseException ex)
                     {

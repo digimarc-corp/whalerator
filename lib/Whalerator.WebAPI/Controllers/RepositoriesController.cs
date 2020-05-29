@@ -44,7 +44,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetAsync()
+        public IActionResult Get()
         {
             try
             {

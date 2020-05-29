@@ -74,7 +74,7 @@ namespace Whalerator.Content
         /// </summary>
         /// <param name="layerArchive"></param>
         /// <returns></returns>
-        public async IAsyncEnumerable<string> ExtractFilesAsync(Stream stream)
+        public IEnumerable<string> ExtractFiles(Stream stream)
         {
             using (var gzipStream = new GZipInputStream(stream) { IsStreamOwner = false })
             using (var tarStream = new TarInputStream(gzipStream) { IsStreamOwner = false })

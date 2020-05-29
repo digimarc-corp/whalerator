@@ -25,6 +25,6 @@ namespace Whalerator.Content
     public interface ILayerExtractor
     {
         Task<Stream> ExtractFileAsync(string layerFile, string path);
-        IAsyncEnumerable<string> ExtractFilesAsync(Stream stream);
+        IEnumerable<string> ExtractFiles(Stream stream);
     }
 }

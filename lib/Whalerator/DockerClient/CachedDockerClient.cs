@@ -43,25 +43,8 @@ namespace Whalerator.DockerClient
 
         Task<T> ExecAsync<T>(string scope, string key, Func<Task<T>> func) where T : class => cacheFactory.Get<T>().ExecAsync(scope, key, AuthHandler, func);
 
-        public IEnumerable<Model.Repository> GetRepositories()
-        {
-            if (AuthHandler.Authorize(AuthHandler.CatalogScope()))
-            {
-                return ExecAsync(AuthHandler.CatalogScope(), CatalogKey(), () => Task.FromResult(innerClient.GetRepositories())).Result;
-            }
-            else
-            {
-                // the user doesn't have catalog permissions, but we can try to construct a synthetic catalog from configured static repos
-                var repos = Config.Repositories?.Select(r => new Model.Repository { Name = r, });
-                var perms = repos.Select(async r => r.Permissions = await GetPermissionsAsync(r.Name));
-                Task.WaitAll(perms.ToArray());
-
-                var tags = repos.Where(r => r.Permissions >= Permissions.Pull).Select(async r => r.Tags = GetTags(r.Name).Count());
-                Task.WaitAll(tags.ToArray());
-
-                return repos.Where(r => r.Tags > 0);
-            }
-        }
+        public IEnumerable<Model.Repository> GetRepositories() =>
+            ExecAsync(AuthHandler.CatalogScope(), CatalogKey(), () => Task.FromResult(innerClient.GetRepositories())).Result;
 
         public Task<string> GetTagDigestAsync(string repository, string tag) =>
             ExecAsync(AuthHandler.RepoPullScope(repository), RepoTagDigestKey(repository, tag), () => innerClient.GetTagDigestAsync(repository, tag));

@@ -60,7 +60,7 @@ namespace Whalerator.Test
 
         [Theory]
         [ClassData(typeof(FlatIndexData))]
-        public void CanCoalesceIndexes(IEnumerable<string> flatFiles, IEnumerable<string> finalFiles, string target)
+        public void CanCoalesceIndexes(IEnumerable<string> flatFiles, IEnumerable<string> expected, string target)
         {
             var indexer = new AufsFilter();
             var flatIndexes = flatFiles
@@ -69,22 +69,23 @@ namespace Whalerator.Test
                 .GroupBy(t => t.Item1)
                 .Select(g => new LayerIndex { Digest = g.Key, Depth = g.Min(i => i.Item2), Files = g.Select(i => i.Item3) });
 
-            var processed = indexer.FilterLayers(flatIndexes, target)
+            var processed = indexer.FilterLayers(flatIndexes.ToAsyncEnumerable(), target)
+                .ToEnumerable()
                 .SelectMany(l => l.Files.Select(f => $"{l.Digest},{l.Depth},{f}"));
 
-            Assert.Equal(finalFiles, processed);
+            Assert.Equal(expected, processed);
         }
 
         public class FlatIndexData : IEnumerable<object[]>
-        {
+        {            
             static string[] Simple = new[] { "a,1,/test" };
             static string[] SimpleWhiteout = new[] { "a,1,/test", "a,1,/.wh.foo", "b,2,/foo" };
             static string[] SimpleOpq = new[] { "a,1,/test", "a,1,/.wh..wh.opq", "b,2,/foo" };
-            static string[] SimpleCoalesed = new[] { "a,1,/test" };
+            static string[] SimpleCoalesed = new[] { "a,1,test" };
 
             static string[] Moderate = new[] { "a,1,/test/foo", "b,2,/test/.wh..wh.opq", "c,4,/bar", "c,4,/test/baz" };
-            static string[] ModerateCoalesced = new[] { "a,1,/test/foo", "c,4,/bar" };
-            static string[] ModerateTargeted = new[] { "a,1,/test/foo" };
+            static string[] ModerateCoalesced = new[] { "a,1,test/foo", "c,4,bar" };
+            static string[] ModerateTargeted = new[] { "a,1,test/foo" };
 
 
             public IEnumerator<object[]> GetEnumerator()

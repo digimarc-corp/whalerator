@@ -175,34 +175,60 @@ namespace Whalerator.DockerClient
             return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
         }
 
-        public IEnumerable<Model.Repository> GetRepositories() => GetLiveRepositoriesAsync().Result.Where(r => r.Tags > 0);
+        public IEnumerable<Model.Repository> GetRepositories() => GetRepositoriesAsync().Result;
 
-        async Task<IEnumerable<Model.Repository>> GetLiveRepositoriesAsync()
+        async Task<IEnumerable<Model.Repository>> GetRepositoriesAsync()
         {
+            IEnumerable<string> repos;
             try
             {
-                var repos = (await dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope())).Repositories
-                    .Union(Config.Repositories).Distinct().Select(r => new Model.Repository { Name = r }).ToList();
-
-                var perms = repos.Select(async r => r.Permissions = await GetPermissionsAsync(r.Name));
-                Task.WaitAll(perms.ToArray());
-
-                repos.Where(r => r.Permissions >= Permissions.Pull).ToList().ForEach(r => r.Tags = GetTags(r.Name).Count());
-
-
-                return repos;
+                var result = await dockerDistribution.GetRepositoryListAsync(AuthHandler.CatalogScope());
+                repos = result.Repositories;
             }
-            catch (AuthenticationException)
+            catch (ApiException ex)
             {
-                return new Model.Repository[0];
+                if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    repos = new string[0];
+                }
+                else
+                {
+                    throw;
+                }
             }
+
+            var tasks = repos.Union(Config.Repositories)
+                .Distinct()
+                .Select(r => GetRepositoryAsync(r))
+                .ToArray();
+
+            Task.WaitAll(tasks);
+
+            return tasks
+                .Where(t => t.IsCompletedSuccessfully)
+                .Select(t => t.Result)
+                .Where(t => t.Tags > 0);
+        }
+
+        public async Task<Model.Repository> GetRepositoryAsync(string repositoryName)
+        {
+            var tPerms = GetPermissionsAsync(repositoryName);
+            var tTags = GetTagsAsync(repositoryName);
+
+            return new Model.Repository
+            {
+                Name = repositoryName,
+                Permissions = await tPerms,
+                Tags = await tPerms >= Permissions.Pull ? (await tTags).Count() : 0
+            };
         }
 
         public IEnumerable<string> GetTags(string repository)
         {
+            TagList result;
             try
             {
-                var result = dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result;
+                result = dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result;
                 return result?.Tags ?? new string[0];
             }
             catch (AggregateException ex)
@@ -215,7 +241,15 @@ namespace Whalerator.DockerClient
                 {
                     throw;
                 }
-            }/*
+            }
+        }
+
+        public async Task<IEnumerable<string>> GetTagsAsync(string repository)
+        {
+            try
+            {
+                return (await dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)))?.Tags ?? new string[0];
+            }
             catch (ApiException ex)
             {
                 if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -226,7 +260,7 @@ namespace Whalerator.DockerClient
                 {
                     throw;
                 }
-            }*/
+            }
         }
     }
 }

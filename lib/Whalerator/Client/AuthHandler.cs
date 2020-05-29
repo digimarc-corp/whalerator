@@ -172,10 +172,9 @@ namespace Whalerator.Client
             }
         }
 
-        public bool Authorize(string scope)
-        {
-            return HasAuthorization(scope) || UpdateAuthorization(scope); // || (DockerHub && scope == "registry:catalog:*");
-        }
+        // DockerHub catalog is a special case, where we don't really have authorization, but we can create synthetic catalogs and need
+        // psuedo-auth to allow caching etc
+        public bool Authorize(string scope) => HasAuthorization(scope) || UpdateAuthorization(scope) || (DockerHub && scope == "registry:catalog:*");
 
         public bool HasAuthorization(string scope)
         {
