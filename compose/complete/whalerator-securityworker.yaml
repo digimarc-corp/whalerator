@@ -1,0 +1,20 @@
+﻿# Security queue worker, polls for scan requests and relays them to Clair, then polls for results
+# and pushes them into cache
+
+# enable vulnerability scanning in this instance
+clairWorker: true
+clairApi: http://clair:6060
+
+redisCache: redis
+
+authTokenKey: key.pem
+
+registryRoot: /var/lib/registry
+registryAliases: 
+  - registry: localhost
+    alias: registry:5000
+
+logging:
+  logLevel:
+    default: "Information"
+

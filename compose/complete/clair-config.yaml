@@ -1,0 +1,20 @@
+clair:
+  database:
+    type: pgsql
+    options:
+      source: host=pgsql port=5432 user=postgres password=abc123 sslmode=disable statement_timeout=60000
+      cachesize: 16384
+      paginationkey: 
+  api:
+    addr: "0.0.0.0:6060"
+    healthaddr: "0.0.0.0:6061"
+    timeout: 900s
+  updater:
+    interval: 2h
+    enabledupdaters: 
+    - debian
+    - ubuntu
+    - rhel
+    - oracle
+    - alpine
+    - suse
