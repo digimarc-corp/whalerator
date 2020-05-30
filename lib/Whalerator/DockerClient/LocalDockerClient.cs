@@ -79,14 +79,17 @@ namespace Whalerator.DockerClient
 
         public Task DeleteImageAsync(string repository, string digest)
         {
-            var tags = GetTags(repository).Where(t => GetTagDigestAsync(repository, t).Equals(digest));
-            tags.ToList().ForEach(t => Directory.Delete(TagPath(repository, t), true));
+            var tagDigests = GetTags(repository)
+                .Select(t => (tag: t, digest: GetTagDigestAsync(repository, t).Result))
+                .Where(t => t.digest.Equals(digest))
+                .ToList();
+            tagDigests.ForEach(t => Directory.Delete(TagPath(repository, t.tag), true));
             return Task.CompletedTask;
         }
 
         public Task DeleteRepositoryAsync(string repository)
         {
-            File.Delete(RepoPath(repository));
+            Directory.Delete(RepoPath(repository), recursive: true);
             return Task.CompletedTask;
         }
 

@@ -48,7 +48,13 @@ namespace Whalerator.Config
         public string RegistryUser { get; set; }
         public string RegistryPassword { get; set; }
         public string RegistryCache { get; set; }
-        public string RegistryAlias { get; set; }
+        public List<RegistryAlias> RegistryAliases { get; set; } = new List<RegistryAlias>();
+        
+        /// <summary>
+        /// Allows internal clients to ignore RegistryAliases, while wtill applying them to external services like Clair. Primarily for dev use, ex. running whalerator
+        /// services locally while Registry and Clair are in a docker-compose env.
+        /// </summary>
+        public bool IgnoreInternalAlias { get; set; }
         public bool AutoLogin { get; set; }
 
         public List<string> Repositories { get; set; } = new List<string>();

@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -26,16 +27,23 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Whalerator.Config;
 
 namespace Whalerator.Client
 {
     public class AuthHandler : IAuthHandler
     {
         private ICache<Authorization> authCache;
+        private Dictionary<string, string> aliases;
+        private readonly ServiceConfig config;
+        private readonly ILogger<AuthHandler> logger;
 
-        public AuthHandler(ICache<Authorization> cache)
+        public AuthHandler(ICache<Authorization> cache, ServiceConfig config, ILogger<AuthHandler> logger)
         {
             authCache = cache;
+            this.config = config;
+            this.logger = logger;
+            aliases = config.RegistryAliases.ToDictionary(a => a.Registry, a => a.Alias);
         }
 
         public string CatalogScope() => "registry:catalog:*";
@@ -43,11 +51,15 @@ namespace Whalerator.Client
         public string RepoPushScope(string repository) => $"repository:{repository}:push";
         public string RepoAdminScope(string repository) => $"repository:{repository}:*";
 
+        public string GetRegistryEndpoint(bool ignoreAliases = false) =>
+            RegistryCredentials.HostToEndpoint(GetRegistryHost(ignoreAliases));
 
-        public string Username => RegistryCredentials.Username;
-        public string Password => RegistryCredentials.Password;
-        public string RegistryEndpoint { get; private set; }
-        public string RegistryHost => RegistryCredentials.Registry;
+        public string GetRegistryHost(bool ignoreAliases = false) =>
+            !ignoreAliases && aliases.ContainsKey(RegistryCredentials.Registry) ? aliases[RegistryCredentials.Registry] : RegistryCredentials.Registry;
+
+        string username => RegistryCredentials.Username;
+        string password => RegistryCredentials.Password;
+
         public RegistryCredentials RegistryCredentials { get; private set; }
 
         /// <summary>
@@ -83,7 +95,9 @@ namespace Whalerator.Client
         {
             AnonymousMode = false;
             RegistryCredentials = credentials;
-            RegistryEndpoint = RegistryCredentials.HostToEndpoint(RegistryHost);
+
+            var host = GetRegistryHost(config.IgnoreInternalAlias);
+            var endpoint = GetRegistryEndpoint(config.IgnoreInternalAlias);
 
             var key = GetKey(null, granted: true);
 
@@ -99,11 +113,11 @@ namespace Whalerator.Client
             {
                 using (var client = new HttpClient())
                 {
-                    AnonymousMode = (string.IsNullOrEmpty(Username) && string.IsNullOrEmpty(Password));
+                    AnonymousMode = (string.IsNullOrEmpty(username) && string.IsNullOrEmpty(password));
 
                     // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
                     // but we can set some known values
-                    if (RegistryHost == RegistryCredentials.DockerHub)
+                    if (host == RegistryCredentials.DockerHub)
                     {
                         DockerHub = true;
                         Realm = RegistryCredentials.DockerRealm;
@@ -112,7 +126,7 @@ namespace Whalerator.Client
                     }
 
                     // first try an anonymous get for the registry catalog - if that succeeds but we're not in anonymous mode, throw
-                    var preLogin = await client.GetAsync(RegistryEndpoint + "/");
+                    var preLogin = await client.GetAsync(endpoint + "/");
                     if (preLogin.IsSuccessStatusCode)
                     {
                         if (!AnonymousMode)
@@ -134,7 +148,7 @@ namespace Whalerator.Client
                         if (await UpdateAuthorizationAsync(null))
                         {
                             client.DefaultRequestHeaders.Authorization = await GetAuthorizationAsync(null);
-                            var confirmation = client.GetAsync(RegistryEndpoint + "/").Result;
+                            var confirmation = client.GetAsync(endpoint + "/").Result;
 
                             if (!confirmation.IsSuccessStatusCode)
                             {
@@ -183,7 +197,7 @@ namespace Whalerator.Client
             return await authCache.ExistsAsync(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope, bool granted) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope, granted);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, password, scope, granted);
 
         public string ParseScope(Uri uri)
         {
@@ -230,7 +244,7 @@ namespace Whalerator.Client
 
         private string EncodeCredentials()
         {
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Username}:{Password}"));
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         }
 
         /// <summary>
@@ -257,7 +271,7 @@ namespace Whalerator.Client
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
                 uri.Query = $"?{parameters}";
 
-                if (!string.IsNullOrEmpty(Username))
+                if (!string.IsNullOrEmpty(username))
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", EncodeCredentials());
                 }

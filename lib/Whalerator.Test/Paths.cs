@@ -41,12 +41,12 @@ namespace Whalerator.Test
         [InlineData((string)null)]
         [InlineData("")]
         public void CanDetectBadDigest(string badDigest) =>
-            Assert.Throws<FormatException>(() => _ =badDigest.ToDigestPath());
+            Assert.Throws<FormatException>(() => _ = badDigest.ToDigestPath());
 
         [Fact]
         public void CanParseUriPathToScope()
         {
-            var auth = new AuthHandler(new DictCache<Authorization>());
+            var auth = new AuthHandler(new DictCache<Authorization>(), null, null);
             Assert.Equal("registry:catalog", auth.ParseScope(new Uri("https://myregistry.io/v2/_catalog")));
             Assert.Equal("repository:coolimage", auth.ParseScope(new Uri("https://myregistry.io/v2/coolimage/tags/list")));
             Assert.Equal("repository:cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/cool/image/manifests/latest")));
@@ -56,7 +56,7 @@ namespace Whalerator.Test
         [Fact]
         public void CanThrowOnBadUriPath()
         {
-            var auth = new AuthHandler(new DictCache<Authorization>());
+            var auth = new AuthHandler(new DictCache<Authorization>(), null, null);
             Assert.Throws<ArgumentException>(() => auth.ParseScope(new Uri("https://myregistry.io/something/else")));
         }
 

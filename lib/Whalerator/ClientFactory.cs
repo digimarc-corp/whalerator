@@ -67,13 +67,14 @@ namespace Whalerator
                  * to the local client to actually load data, interperet manifests, etc. So, a circular dependency exists. Still waiting on an epiphany to make it cleaner.
                  */
 
-                var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(ClientTokenCallback(auth))) { BaseAddress = new Uri(RegistryCredentials.HostToEndpoint(auth.RegistryHost)) };
+                var host = auth.GetRegistryHost(config.IgnoreInternalAlias);
+                var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(ClientTokenCallback(auth))) { BaseAddress = new Uri(RegistryCredentials.HostToEndpoint(host)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
-                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = auth.RegistryHost };
-                var remoteClient = new RemoteDockerClient(config, auth, service, localClient, cacheFactory) { Host = auth.RegistryHost };
+                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = host };
+                var remoteClient = new RemoteDockerClient(config, auth, service, localClient, cacheFactory) { Host = host };
                 localClient.RecurseClient = remoteClient;
 
-                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = auth.RegistryHost };
+                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = host };
 
                 return cachedClient;
             }

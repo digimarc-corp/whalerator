@@ -214,7 +214,7 @@ namespace Whalerator.WebAPI
             return services;
         }
 
-        public static IServiceCollection AddWhaleVulnerabilities(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig)
+        public static IServiceCollection AddWhaleVulnerabilities(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig, ILogger logger)
         {
             bool clairWorker = config.ClairWorker;
             bool vulnUi = config.Vulnerabilities;
@@ -223,8 +223,15 @@ namespace Whalerator.WebAPI
 
             if (clairWorker)
             {
-                services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.ClairApi));
-                services.AddHostedService<SecurityScanWorker>();
+                if (string.IsNullOrEmpty(config.ClairApi))
+                {
+                    logger.LogCritical("ClairApi is not configured, cannot start security worker.");
+                }
+                else
+                {
+                    services.AddScoped(p => Refit.RestService.For<IClairAPI>(config.ClairApi));
+                    services.AddHostedService<SecurityScanWorker>();
+                }
             }
 
             if (clairWorker || vulnUi)

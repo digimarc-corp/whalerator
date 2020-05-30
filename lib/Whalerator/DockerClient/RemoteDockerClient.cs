@@ -42,7 +42,8 @@ namespace Whalerator.DockerClient
 
         public TimeSpan DownloadTimeout { get; set; } = TimeSpan.FromMinutes(5);
 
-        public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient, ICacheFactory cacheFactory) : base(config, auth)
+        public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient, ICacheFactory cacheFactory) : 
+            base(config, auth)
         {
             this.auth = auth;
             this.dockerDistribution = dockerDistribution;
@@ -50,7 +51,7 @@ namespace Whalerator.DockerClient
             this.cacheFactory = cacheFactory;
         }
 
-        IDockerDistribution api => RestService.For<IDockerDistribution>(auth.RegistryEndpoint);
+        IDockerDistribution api => RestService.For<IDockerDistribution>(auth.GetRegistryEndpoint(Config.IgnoreInternalAlias));
 
         private async Task FetchBlobAsync(string repository, string layerDigest, string scope)
         {

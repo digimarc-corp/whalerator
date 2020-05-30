@@ -30,9 +30,11 @@ namespace Whalerator.Client
         string RepoPushScope(string repository);
         string RepoAdminScope(string repository);
 
+        public string GetRegistryEndpoint(bool ignoreAliases = false);
+        public string GetRegistryHost(bool ignoreAliases = false);
+
+
         public RegistryCredentials RegistryCredentials { get; }
-        public string RegistryEndpoint { get; }
-        public string RegistryHost { get; }
         bool AnonymousMode { get; }
         bool TokensRequired { get; }
 
@@ -45,6 +47,5 @@ namespace Whalerator.Client
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);
         bool TryParseScope(Uri uri, out string scope);
         Task<bool> UpdateAuthorizationAsync(string scope, bool force = false);
-        string Username { get; }
     }
 }

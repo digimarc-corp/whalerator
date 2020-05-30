@@ -37,20 +37,22 @@ namespace Whalerator.WebAPI.Controllers
     {
         private ICryptoAlgorithm crypto;
         private ICache<Authorization> cache;
+        private readonly ILoggerFactory loggerFactory;
 
         public ILogger<TokenController> Logger { get; }
         public ServiceConfig Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ServiceConfig config)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILoggerFactory loggerFactory, ServiceConfig config)
         {
             this.crypto = crypto;
             this.cache = cache;
-            Logger = logger;
+            this.loggerFactory = loggerFactory;
+            Logger = this.loggerFactory.CreateLogger<TokenController>();
             Config = config;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody]RegistryCredentials credentials)
+        public async Task<IActionResult> Post([FromBody] RegistryCredentials credentials)
         {
             // must specify a registry
             if (string.IsNullOrEmpty(credentials.Registry)) { return Unauthorized(); }
@@ -63,7 +65,7 @@ namespace Whalerator.WebAPI.Controllers
             try
             {
                 credentials.Registry = RegistryCredentials.DeAliasDockerHub(credentials.Registry);
-                var handler = new AuthHandler(cache);
+                var handler = new AuthHandler(cache, Config, loggerFactory.CreateLogger<AuthHandler>());
                 await handler.LoginAsync(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = crypto.Encrypt(json);
