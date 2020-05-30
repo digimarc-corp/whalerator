@@ -196,19 +196,15 @@ namespace Whalerator.WebAPI
                 uiConfig.SearchLists = config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)));
             }
 
-            if (contentWorker || contentUI)
+            if (string.IsNullOrEmpty(config.RedisCache))
             {
-                //services.AddSingleton<IContentScanner, Content.ContentScanner>();
-                if (string.IsNullOrEmpty(config.RedisCache))
-                {
-                    services.AddSingleton<IWorkQueue<IndexRequest>, MemQueue<IndexRequest>>();
-                }
-                else
-                {
-                    services.AddScoped<IWorkQueue<IndexRequest>>(p => new RedQueue<IndexRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
-                        p.GetRequiredService<ILogger<RedQueue<IndexRequest>>>(),
-                        IndexRequest.WorkQueueKey));
-                }
+                services.AddSingleton<IWorkQueue<IndexRequest>, MemQueue<IndexRequest>>();
+            }
+            else
+            {
+                services.AddScoped<IWorkQueue<IndexRequest>>(p => new RedQueue<IndexRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
+                    p.GetRequiredService<ILogger<RedQueue<IndexRequest>>>(),
+                    IndexRequest.WorkQueueKey));
             }
 
             return services;

@@ -2,7 +2,7 @@
 
 Whalerator is a portable front-end for Docker Registry/Distribution. It allows discovering Docker images available to you on a registry, as well as displaying embedded documentation from an image, without downloading entire images or even running Docker locally.
 
-By default, Whalerator looks for a `readme.md` in the root of a given image, and if it finds one, it displays it with standard markdown formatting. It also understands multi-platform and cross-platform images, and can correllate tag references between many tags. Not sure which named version is `latest`? Just ask Whalerator.
+By default, Whalerator looks for a `readme.md` in the root of a given image, and if it finds one, it displays it with standard markdown formatting. It also understands multi-platform and cross-platform images, and can correllate tag references between many tags. Assuming the correct permissions, it can also delete images and associated tags, or entire repositories.
 
 Whalerator requires no special access to your Docker registry, and does not store any user credentials for normal operations. If your login has access to your registry's catalog, Whalerator will figure out the rest.
 
@@ -20,11 +20,23 @@ Or build Whalerator directly from Github:
 docker build https://github.com/digimarc-corp/whalerator.git -t whalerator
 ```
 
-## Productionizing
+You can also try out the compose samples to get a complete registry with UI, vulnerability scanning, etc:
 
-Our first design goal was for Whalerator to run and be useful out-of-the-box with zero configuration. Pull the latest image (or build your own), run it, and log in. 
+```
+(cd compose/complete && docker-compose up -d)
 
-For some users, the only configuration you may need is to set a default registry, which can be as simple as setting a single environment variable. More likely, you will want to add things like persistent cache, a default catalog user, and a certificate for signing and encrypting credentials. See (config.yaml)[/app/config.yaml] for examples.
+docker pull whalerator/whalerator
+docker tag whalerator/whalerator localhost/whalerator
+docker push localhost/whalerator
+```
+
+Then just point a browser at [localhost](http://localhost/)
+
+## Production Use
+
+Our first design goal was for Whalerator to run and be useful out-of-the-box with zero configuration. Pull the latest image (or build your own), run it, and log in.
+
+For some users, the only configuration you may need is to set a default registry, which can be as simple as setting a single environment variable. More likely, you will want to add things like cache, a default user, and a certificate for signing and encrypting credentials. See [config.md](/config.md) for details.
 
 Redis configuration will accept a `StackExchange.Redis` style connection string, which may specify things like default DB, timeouts, etc. in addition to the actual host.
 

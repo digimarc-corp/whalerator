@@ -44,5 +44,5 @@ EXPOSE 80
 ARG SRC_HASH="Unknown"
 ARG RELEASE="0.0"
 RUN echo "{ \""hash\"": \""$SRC_HASH\"", \""release\"": \""$RELEASE\"" }" > ./wwwroot/assets/v.json
-COPY README.md /README.md
+COPY *.md /
 ENTRYPOINT ["dotnet", "Whalerator.WebAPI.dll"]

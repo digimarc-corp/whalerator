@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -25,10 +26,13 @@ namespace Whalerator.Config
 {
     public class ServiceConfig
     {
+        static string GetTempFolder() => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+
         public string RedisCache { get; set; }
+
         public int CacheTtl { get; set; } = 3600;
 
-        public string IndexFolder { get; set; }
+        public string IndexFolder { get; set; } = GetTempFolder();
 
         public List<Theme> Themes { get; set; } = new List<Theme>();
 
@@ -38,7 +42,7 @@ namespace Whalerator.Config
 
         public List<string> Documents { get; set; } = new List<string>();
 
-        public bool CaseInsensitive { get; set; }
+        public bool CaseInsensitive { get; set; } = true;
 
         public int AuthTokenLifetime { get; set; } = 2419200;
         public string AuthTokenKey { get; set; }
@@ -47,9 +51,9 @@ namespace Whalerator.Config
         public string RegistryRoot { get; set; }
         public string RegistryUser { get; set; }
         public string RegistryPassword { get; set; }
-        public string RegistryCache { get; set; }
+        public string RegistryCache { get; set; } = GetTempFolder();
         public List<RegistryAlias> RegistryAliases { get; set; } = new List<RegistryAlias>();
-        
+
         /// <summary>
         /// Allows internal clients to ignore RegistryAliases, while wtill applying them to external services like Clair. Primarily for dev use, ex. running whalerator
         /// services locally while Registry and Clair are in a docker-compose env.
@@ -58,7 +62,7 @@ namespace Whalerator.Config
         public bool AutoLogin { get; set; }
 
         public List<string> Repositories { get; set; } = new List<string>();
-        public List<string> HiddenRepositories { get; set; } = new List<string>();
+        //public List<string> HiddenRepositories { get; set; } = new List<string>();
 
         public bool IndexWorker { get; set; }
         public bool ClairWorker { get; set; }
