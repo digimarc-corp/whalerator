@@ -19,6 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
+using Whalerator.Client;
 
 namespace Whalerator
 {
@@ -30,22 +32,45 @@ namespace Whalerator
     {
         public Dictionary<string, T> Cache { get; set; } = new Dictionary<string, T>();
 
-        public TimeSpan VolatileTtl { get; set; }
+        public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
 
-        public TimeSpan? StaticTtl { get; set; } = null;
-
-        public bool Exists(string key) => Cache.ContainsKey(key);
-        public void Set(string key, T value) => Cache[key] = value;
-
-        public void Set(string key, T value, TimeSpan? ttl) => Set(key, value);
-
-        public void Set(string key, T value, bool isVolatile) => Set(key, value);
-
-        public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan timeout) => throw new NotImplementedException();
-
-        public bool TryDelete(string key)
+        public Task<T> ExecAsync(string scope, string key, IAuthHandler authHandler, Func<Task<T>> func) => ExecAsync(scope, key, Ttl, authHandler, func);
+        public async Task<T> ExecAsync(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<Task<T>> func)
         {
-            if (Exists(key))
+            T result;
+            if (await authHandler.AuthorizeAsync(scope))
+            {
+                if (await ExistsAsync(key))
+                {
+                    return await GetAsync(key);
+                }
+                else
+                {
+                    result = await func();
+                    await SetAsync(key, result, ttl);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
+        }
+
+        public Task<bool> ExistsAsync(string key) => Task.FromResult(Cache.ContainsKey(key));
+        public Task SetAsync(string key, T value)
+        {
+            Cache[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task SetAsync(string key, T value, TimeSpan ttl) => SetAsync(key, value);
+
+        public Task<Lock> TakeLockAsync(string key, TimeSpan lockTime, TimeSpan timeout) => throw new NotImplementedException();
+
+        public async Task<bool> TryDeleteAsync(string key)
+        {
+            if (await ExistsAsync(key))
             {
                 Cache.Remove(key);
                 return true;
@@ -56,11 +81,6 @@ namespace Whalerator
             }
         }
 
-        public bool TryGet(string key, out T value)
-        {
-            var exists = Exists(key);
-            value = exists ? Cache[key] : null;
-            return exists;
-        }
+        public Task<T> GetAsync(string key) => Task.FromResult(Cache[key]);
     }
 }

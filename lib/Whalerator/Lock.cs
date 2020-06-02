@@ -19,21 +19,22 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Whalerator
 {
-    public class Lock : IDisposable
+    public class Lock : IDisposable, IAsyncDisposable
     {
-        private readonly Action releaseAction;
-        private readonly Func<TimeSpan, bool> extendAction;
+        private readonly Func<Task> releaseAction;
+        private readonly Func<TimeSpan, Task<bool>> extendAction;
 
-        public Lock(Action releaseAction, Func<TimeSpan, bool> extendAction)
+        public Lock(Func<Task> releaseAction, Func<TimeSpan, Task<bool>> extendAction)
         {
             this.releaseAction = releaseAction;
             this.extendAction = extendAction;
         }
 
-        public bool Extend(TimeSpan time)
+        public Task<bool> ExtendAsync(TimeSpan time)
         {
             return extendAction(time);
         }
@@ -47,7 +48,7 @@ namespace Whalerator
             {
                 if (disposing)
                 {
-                    releaseAction();
+                    releaseAction().Wait();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -70,6 +71,15 @@ namespace Whalerator
             Dispose(true);
             // TODO: uncomment the following line if the finalizer is overridden above.
             // GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (!disposedValue)
+            {
+                await releaseAction();
+                disposedValue = true;
+            }
         }
         #endregion
     }

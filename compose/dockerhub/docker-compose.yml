@@ -5,29 +5,15 @@ version: '3.7'
 services:
   pgsql:
     image: postgres:11.2
-    ports: 
-    - "5432:5432"
     environment:
     - POSTGRES_PASSWORD=abc123
   redis:
     image: redis
-    ports:
-    - "6379:6379"
   clair:
     image: quay.io/coreos/clair:v2.1.0
-    ports:
-    - "6060:6060"
     restart: on-failure
     volumes:
     - './clair-config.yaml:/etc/clair/config.yaml'
-  registry:
-    image: registry:2.7
-    ports:
-    - "5000:5000"
-    environment:
-    - REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis
-    - REGISTRY_REDIS_ADDR=redis:6379
-    - REGISTRY_REDIS_DB=1
   whalerator:
     build: ../..
     ports: 
@@ -35,14 +21,22 @@ services:
     volumes:
     - './whalerator-service.yaml:/app/config.yaml'
     - './samplekey.pem:/app/key.pem'
-  content_worker:
+    - 'registrydata:/var/lib/registry'
+    - 'indexdata:/var/data/whalerator/indexes'
+  indexer:
     build: ../..
     volumes:
-    - './whalerator-contentworker.yaml:/app/config.yaml'
+    - './whalerator-indexer.yaml:/app/config.yaml'
     - './samplekey.pem:/app/key.pem'
-  security_worker:
+    - 'registrydata:/var/lib/registry'
+    - 'indexdata:/var/data/whalerator/indexes'
+  scanner:
     build: ../..
     volumes:
     - './whalerator-securityworker.yaml:/app/config.yaml'
     - './samplekey.pem:/app/key.pem'
-  
+    - 'registrydata:/var/lib/registry'
+    - 'indexdata:/var/data/whalerator/indexes'
+volumes:
+  registrydata:
+  indexdata:

@@ -18,20 +18,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Text;
+using Whalerator.Content;
 
-namespace Whalerator.Config
+namespace Whalerator
 {
-    public class ClairConfig
+    public interface IIndexStore
     {
-        public string ClairApi { get; set; }
-
-        public List<RegistryAlias> RegistryAliases { get; set; }
-
-        public class RegistryAlias
-        {
-            public string Internal { get; set; }
-            public string External { get; set; }
-        }
+        IEnumerable<LayerIndex> GetIndex(string digest, params string[] targetPaths);
+        bool IndexExists(string digest, params string[] targetPaths);
+        void SetIndex(IEnumerable<LayerIndex> index, string digest, params string[] targetPaths);
     }
 }

@@ -119,6 +119,16 @@ span.badge.tag-count {
     color: #3f7ea0;
 }
 
+.badge_ornament {
+    border: none;    
+    border-radius: none;
+}
+
+.errored {
+    background-color: #b32525;
+    opacity: 0.8;
+}
+
 .badge.tag.selected {
     border-left: 0.1em solid #3f7ea0;
 }

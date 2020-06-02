@@ -17,28 +17,57 @@
 */
 
 using System;
+using System.Threading.Tasks;
+using Whalerator.Client;
 
 namespace Whalerator
 {
     public interface ICache<T> where T : class
     {
-        bool Exists(string key);
-        bool TryGet(string key, out T value);
+        public TimeSpan Ttl { get; set; }
 
         /// <summary>
-        /// Stores an object in cache, with no Ttl
+        /// Returns a cached result for a Func<typeparamref name="T"/>, or executes the function and caches the new result.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="scope">Security scope to be passed to the IAuthHandler</param>
         /// <param name="key"></param>
-        /// <param name="value"></param>
-        void Set(string key, T value);
+        /// <param name="ttl"></param>
+        /// <param name="authHandler"></param>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        Task<T> ExecAsync(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<Task<T>> func);
 
         /// <summary>
-        /// Stores an object in cache, using an explicit TTL (or null TTL for non-expiring data)
+        /// Returns a cached result for a Func<typeparamref name="T"/>, or executes the function and caches the new result.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="scope">Security scope to be passed to the IAuthHandler</param>
+        /// <param name="key"></param>
+        /// <param name="authHandler"></param>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        Task<T> ExecAsync(string scope, string key, IAuthHandler authHandler, Func<Task<T>> func);
+
+
+        Task<bool> ExistsAsync(string key);
+        Task<T> GetAsync(string key);
+
+        /// <summary>
+        /// Stores an object in cache, using an explicit ttl
         /// </summary>
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <param name="ttl"></param>
-        void Set(string key, T value, TimeSpan? ttl);
+        Task SetAsync(string key, T value, TimeSpan ttl);
+
+        /// <summary>
+        /// Stores an object in cache, using the default ttl
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <param name="ttl"></param>
+        Task SetAsync(string key, T value);
 
         /// <summary>
         /// Represents a basic threadsafe locking mechanism. TakeLock will block until it can return a disposable Lock object, or throw if timeout is exceeded.
@@ -49,13 +78,13 @@ namespace Whalerator
         /// <param name="lockTime"></param>
         /// <param name="timeout"></param>
         /// <returns></returns>
-        Lock TakeLock(string key, TimeSpan lockTime, TimeSpan timeout);
+        Task<Lock> TakeLockAsync(string key, TimeSpan lockTime, TimeSpan timeout);
 
         /// <summary>
         /// Returns true if a key could be found and deleted, otherwise false
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        bool TryDelete(string key);
+        Task<bool> TryDeleteAsync(string key);
     }
 }

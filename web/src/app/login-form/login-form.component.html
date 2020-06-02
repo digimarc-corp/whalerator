@@ -10,7 +10,14 @@
     </div>
     <div *ngIf="showPreview" class="preview">
       <div>
-        <span class="label">Tags:</span><span class="badge tag selected">Tag</span>
+        <span class="label">Tags:</span>
+        <span class="badge tag selected">Selected</span>
+        <span class="badge tag">Unselected</span>
+        <span class="badge tag">Errored</span>
+        <span class="badge_ornament errored">
+          <img class="action-icon errored" src="assets/exclamation-outline.svg" alt="Oh noe" />
+        </span>
+        <span class="badge tag loading">Loading</span>
       </div>
       <div>
         <span class="label">Platforms:</span> <span class="badge platform selected">Platform</span>

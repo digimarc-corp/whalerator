@@ -1,38 +1,25 @@
-﻿# Basic config for running standalone in a Docker container
-# Use this as a starting point for a production deployment
+﻿# Minimal default configuration for stand-alone running
+# See config.md for detailed configuration
 
-# Configure caching options. By default, Whalerator will use an in-memory cache. An external Redis cache will greatly increase
-# performance and scalability in production use. 'layercache' is the only absolutely required configuration option, as Whalerator
-# needs somewhere to download image layers.
-cache:
-  # StackExchange.Redis connection string.
-  #redis: localhost
-  # Cache lifetime (in seconds) for volatile data (tags, repository list, etc). Default is 900 (15 mintues).
-  #volatileTtl: 3600 # 1 hour
-  # Cache lifetime for non-volatile data (hashed layers, manifests, etc). Default is null (keep indefinitely).
+indexFolder: /var/data/whalerator/indexes
+registryCache: /var/data/whalerator/cache
 
-# each list may have multiple filenames specified, separated by semicolons. Only the first hit from each list will be displayed. Names are case-insensitive
-search:
-  filelists:
-  - readme.md;about.md
-  - setup.md
+themes:
+  - name: dark
+    style: assets/dark.css
+  - name: techie
+    style: assets/techie.css
+  - name: anchors
+    style: assets/classic.css
 
-catalog:
-  themes:
-    - name: techie
-      style: assets/techie.css
-    - name: anchors
-      style: assets/classic.css
-    - name: dark
-      style: assets/dark.css
-    - name: minimalist
+documents:
+  - readme.md
 
-contentScanner:
-  # Local folder for storing downloaded layer data
-  layercache: /var/data
+maxSearchDepth: 6
 
-security:
-  tokenLifetime: 2419200 # 4 weeks
+caseInsensitive: true
+
+indexWorker: true
 
 logging:
   logLevel:

@@ -31,6 +31,7 @@ import { History } from './models/history';
 import { TestBed } from '@angular/core/testing';
 import { ScanResult } from './models/scanResult';
 import { TagSet } from './models/tagSet';
+import { FileListing } from './models/fileListing';
 
 
 @Injectable({
@@ -104,6 +105,16 @@ export class CatalogService extends WebService {
     return this.http.get<string>(imageUrl, { headers: headers }).pipe(
       tap(repos => console.log('got image set')),
       catchError(this.handleError<string>('getImage'))
+    );
+  }
+
+  getFileList(repo: string, digest: string, targets: string): Observable<FileListing[] | HttpResponse<FileListing[]> | ServiceError> {
+    const filesUrl = this.apiBase + `/repository/${repo}/files/${digest}?targets=${targets}`;
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get<FileListing[]>(filesUrl, { headers: headers, observe: 'response' }).pipe(
+      tap(list => console.log('got file listings')),
+      catchError(this.handleError<FileListing[]>('getScan'))
     );
   }
 

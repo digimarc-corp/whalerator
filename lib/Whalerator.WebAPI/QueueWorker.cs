@@ -34,23 +34,23 @@ namespace Whalerator.WebAPI
     public abstract class QueueWorker<T> : IHostedService where T : Whalerator.RequestBase
     {
         protected ILogger logger;
-        protected ConfigRoot config;
+        protected ServiceConfig config;
         protected IWorkQueue<T> queue;
-        protected IRegistryFactory registryFactory;
+        protected IClientFactory clientFactory;
         private Timer timer;
 
-        protected QueueWorker(ILogger logger, ConfigRoot config, IWorkQueue<T> queue, IRegistryFactory regFactory)
+        protected QueueWorker(ILogger logger, ServiceConfig config, IWorkQueue<T> queue, IClientFactory clientFactory)
         {
             this.logger = logger;
             this.config = config;
             this.queue = queue;
-            registryFactory = regFactory;
+            this.clientFactory = clientFactory;
         }
 
         void StartTimer() => timer.Change(5000, 5000);
         void PauseTimer() => timer.Change(Timeout.Infinite, 0);
 
-        public abstract void DoRequest(T request);
+        public abstract Task DoRequestAsync(T request);
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -70,7 +70,7 @@ namespace Whalerator.WebAPI
                 var workItem = queue.Pop();
                 while (workItem != null)
                 {
-                    DoRequest(workItem);
+                    DoRequestAsync(workItem).Wait();
 
                     workItem = queue.Pop();
                 }

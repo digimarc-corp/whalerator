@@ -37,34 +37,36 @@ namespace Whalerator.WebAPI.Controllers
     {
         private ICryptoAlgorithm crypto;
         private ICache<Authorization> cache;
+        private readonly ILoggerFactory loggerFactory;
 
         public ILogger<TokenController> Logger { get; }
-        public ConfigRoot Config { get; }
+        public ServiceConfig Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILogger<TokenController> logger, ConfigRoot config)
+        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILoggerFactory loggerFactory, ServiceConfig config)
         {
             this.crypto = crypto;
             this.cache = cache;
-            Logger = logger;
+            this.loggerFactory = loggerFactory;
+            Logger = this.loggerFactory.CreateLogger<TokenController>();
             Config = config;
         }
 
         [HttpPost]
-        public IActionResult Post([FromBody]RegistryCredentials credentials)
+        public async Task<IActionResult> Post([FromBody] RegistryCredentials credentials)
         {
             // must specify a registry
             if (string.IsNullOrEmpty(credentials.Registry)) { return Unauthorized(); }
 
             // deny requests for foreign instances, if configured
-            if (!string.IsNullOrEmpty(Config.Catalog?.Registry) && credentials.Registry.ToLowerInvariant() != Config.Catalog.Registry.ToLowerInvariant())
+            if (!string.IsNullOrEmpty(Config.Registry) && credentials.Registry.ToLowerInvariant() != Config.Registry.ToLowerInvariant())
             {
                 return Unauthorized();
             }
             try
             {
-                credentials.DeAliasRegistry();
-                var handler = new AuthHandler(cache);
-                handler.Login(credentials.Registry, credentials.Username, credentials.Password);
+                credentials.Registry = RegistryCredentials.DeAliasDockerHub(credentials.Registry);
+                var handler = new AuthHandler(cache, Config, loggerFactory.CreateLogger<AuthHandler>());
+                await handler.LoginAsync(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
                 var cipherText = crypto.Encrypt(json);
 
@@ -76,7 +78,7 @@ namespace Whalerator.WebAPI.Controllers
                         Usr = credentials.Username,
                         Reg = credentials.Registry,
                         Iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.Security.TokenLifetime
+                        Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime
                     }, crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256)
                 });
             }

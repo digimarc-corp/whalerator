@@ -20,13 +20,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Config
+namespace Whalerator.Security
 {
-    public class SearchConfig
+    public class ScanRequest : RequestBase
     {
-        public bool Vulnerabilities { get; set; }
-        public int? Depth { get; set; } = 4;
-        public List<string> Filelists { get; set; }
+        public override string WorkItemKey => $"workitem:security:{this.TargetDigest}";
+        public const string WorkQueueKey = "workitems:queue:security";
+        public bool Submitted { get; set; }
     }
-
 }

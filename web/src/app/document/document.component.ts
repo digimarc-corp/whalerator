@@ -28,6 +28,9 @@ import { ConfigService } from '../config.service';
 import { ScanResult } from '../models/scanResult';
 import { Observable, Subscriber } from 'rxjs';
 import { delay } from 'q';
+import { FileListing } from '../models/fileListing';
+import { HttpResponse } from '@angular/common/http';
+import { stringify } from 'querystring';
 
 @Component({
   selector: 'app-document',
@@ -49,7 +52,8 @@ export class DocumentComponent implements OnInit {
     if (this.configService.config.docScanner) {
       if (image && !image.documents) {
         this.searchStatus = 'Searching';
-        this.getDocuments();
+        this.rotateSearchStatus(0);
+        this.getFileListing(image);
       } else if (image && image.documents.length > 0) {
         this.selected = image.documents[0];
         this.searchStatus = null;
@@ -93,7 +97,7 @@ export class DocumentComponent implements OnInit {
     if (this.image.scanResult.status === 'Succeeded') {
       const components = this.image.scanResult.vulnerableComponents == null ?
         0 : this.image.scanResult.vulnerableComponents.length;
-      return components === 0 ? '"No known issues' : components === 1 ? '1 known issue' : `${components} known issues`;
+      return components === 0 ? 'No known issues' : components === 1 ? '1 known issue' : `${components} known issues`;
     } else if (this.image.scanResult.status === 'Pending') {
       return 'Scan pending';
     } else {
@@ -137,69 +141,75 @@ export class DocumentComponent implements OnInit {
     this.changeDetector.detectChanges();
   }
 
-  pushDocument(document: Document) {
-    if (this.image.documents) {
-      if (!this.image.documents.some((d) => d.name === document.name)) {
-        this.image.documents.push(document);
+  pushDocument(image: Image, document: Document) {
+    if (image.documents) {
+      if (!image.documents.some((d) => d.name === document.name)) {
+        image.documents.push(document);
       }
     } else {
-      this.image.documents = [document];
-      if (!this.selected) {
+      image.documents = [document];
+      if (this.image === image && !this.selected) {
         this.selected = document;
       }
     }
+    this.rotateSearchStatus(0);
     this.changeDetector.detectChanges();
   }
 
-  // translate search lists into stacks of documents to search for
-  getDocuments() {
-    if (this.configService.config.searchLists.length > 0) {
-      // start a searcher observable for each potential stack of documents
-      this.configService.config.searchLists.forEach(list => {
-        const obv = new Observable<string>((o) => {
-          // searchStack will actually remove items from the list as it processes them, so use map() to clone the original
-          this.searchStack(list.map(d => d), o);
-        });
-        this.addSearch(obv);
-        obv.subscribe(r => console.log(r), err => console.error(err), () => this.removeSearch(obv));
-      });
-
-      // start rotating the search status mussage
-      this.rotateSearchStatus(0);
-
-    } else {
-      this.image.documents = [];
-    }
-  }
-
-  addSearch(o: Observable<string>) {
-    this.searching.push(o);
-  }
-
-  removeSearch(o: Observable<string>) {
-    this.remove(this.searching, o);
-    if (this.searching.length === 0 && !this.image.documents) {
-      this.searchStatus = 'No docs found';
-      if (!this.selected) {
-        this.selected = this.image.history;
+  getFileListing(image: Image) {
+    console.log(`Requesting file index`);
+    const targets = this.configService.config.searchLists.flat().join(';');
+    this.catalog.getFileList(this.repository, this.image.digest, targets).subscribe(r => {
+      if (isError(r)) {
+        // indexing failed for some reason.
+        console.error('Unable to get file index from service.');
+        this.image.files = new FileListing[0];
+      } else if (r instanceof HttpResponse) {
+        r = r as HttpResponse<FileListing[]>;
+        if (r.status === 200) {
+          image.files = r.body;
+          this.searchStatus = null;
+          this.loadDocuments(image);
+        } else if (r.status === 202) {
+          delay(1000).then(() => this.getFileListing(image));
+        } else {
+          console.error('Indexing failed');
+        }
       }
-      this.changeDetector.detectChanges();
+    });
+  }
+
+  loadDocuments(image: Image) {
+    if (this.configService.config.searchLists.length > 0) {
+      const files = image.files.map(l => l.files.map(f => ({ layer: l.digest, path: f}) )).flat();
+      const matches = files.filter(f => this.configService.config.searchLists.flat().some(s => s.toLowerCase() === f.path.toLowerCase()));
+      if (matches.length > 0) {
+        matches.map(m => this.loadDocument(image, m.layer, m.path));
+      } else {
+        this.selectHistory();
+      }
     }
   }
 
-  remove<T>(list: T[], item: T) {
-    const index = list.indexOf(item, 0);
-    if (index > -1) {
-      list.splice(index, 1);
-    }
-  }
+  loadDocument(image: Image, layer: string, path: string) {
+    const document = new Document();
+    document.name = path;
+    document.content = `*Loading ${path}...*\n\n\n\n\n \`${layer}\``;
 
-  removeAll<T>(list: T[]) {
-    list.splice(0, list.length);
+    this.pushDocument(image, document);
+    this.catalog.getFile(this.repository, layer, path).subscribe(r => {
+      if (isError(r)) {
+        console.error(`Couldn't load ${path}`);
+      } else if (isHttpString(r)) {
+        if (r.status === 200) {
+          document.content = r.body;
+        }
+      }
+    });
   }
 
   rotateSearchStatus(spin: number) {
-    if (this.searching.length > 0) {
+    if (!this.image.files) {
       this.searchStatus = 'Searching' + '.'.repeat(spin++ % 4);
       delay(500).then(() => this.rotateSearchStatus(spin));
     } else {
@@ -210,48 +220,5 @@ export class DocumentComponent implements OnInit {
       }
     }
     this.changeDetector.detectChanges();
-  }
-
-  // begin searching for a hit from a list of documents
-  searchStack(list: string[], s: Subscriber<string>) {
-    if (list.length > 0) {
-      this.pollDocument(list);
-      delay(1000).then(() => {
-        this.searchStack(list, s);
-      });
-    } else {
-      s.complete();
-    }
-  }
-
-  pollDocument(list: string[]) {
-    const filename = list[0];
-    console.log(`Searching for ${filename}`);
-    const digest = this.image.digest;
-    this.catalog.getFile(this.repository, this.image.digest, filename).subscribe(r => {
-      if (isError(r)) {
-        // if this document doesn't exist or is otherwise unretrievable, nix it and move on
-        this.remove(list, filename);
-      } else if (isHttpString(r)) {
-        if (r.status === 200) {
-          // verify we didn't have a race and already load a document from this list, or switch images
-          if (list.length > 0 && this.image.digest === digest) {
-            const document = new Document();
-            document.name = filename;
-            document.content = r.body;
-            this.pushDocument(document);
-          } else {
-            console.log('Mismatched digests, discarding document load');
-          }
-          this.removeAll(list);
-        } else if (r.status === 202) {
-          console.log(`Search pending for ${filename}`);
-        } else {
-          console.error(`Unexpected service response ${r.status}`);
-        }
-      } else {
-        console.log('WTF?');
-      }
-    });
   }
 }

@@ -26,6 +26,7 @@ using System.Text;
 using System.Threading;
 using Whalerator.Client;
 using Whalerator.Config;
+using Whalerator.DockerClient;
 using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
@@ -35,13 +36,13 @@ namespace Whalerator.Support
     public class ClairScanner : ISecurityScanner
     {
         private ILogger logger;
-        private ConfigRoot config;
+        private ServiceConfig config;
         private IClairAPI clair;
         private ICacheFactory cacheFactory;
 
-        public IWorkQueue<Request> Queue { get; private set; }
+        public IWorkQueue<ScanRequest> Queue { get; private set; }
 
-        public ClairScanner(ILogger<ClairScanner> logger, ConfigRoot config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<Request> queue)
+        public ClairScanner(ILogger<ClairScanner> logger, ServiceConfig config, IClairAPI clair, ICacheFactory cacheFactory, IWorkQueue<ScanRequest> queue)
         {
             this.logger = logger;
             this.config = config;
@@ -50,7 +51,7 @@ namespace Whalerator.Support
             Queue = queue;
         }
 
-        private string GetKey(Image image) => $"volatile:scans:{image.Digest}";
+        private string GetKey(Image image) => $"clair:scans:{image.Digest}";
 
         /// <summary>
         /// Tries to get a summary of vulnerabilities from Clair. Returns null if the image has not been scanned yet.
@@ -64,9 +65,9 @@ namespace Whalerator.Support
             var key = GetKey(image);
 
             // if we have a cached scan, return it
-            if (!hard && cache.TryGet(key, out var cachedResult))
+            if (!hard && cache.ExistsAsync(key).Result)
             {
-                return cachedResult;
+                return cache.GetAsync(key).Result;
             }
             // if we don't have a Clair instance handy, return null
             else if (clair == null)
@@ -79,7 +80,7 @@ namespace Whalerator.Support
                 try
                 {
                     var scanResult = clair.GetLayerResult(image.Layers.First().Digest).Result.ToScanResult();
-                    cache.Set(key, scanResult);
+                    cache.SetAsync(key, scanResult).Wait();
 
                     return scanResult;
                 }
@@ -102,25 +103,24 @@ namespace Whalerator.Support
         /// <param name="registry"></param>
         /// <param name="repository"></param>
         /// <param name="image"></param>
-        public void RequestScan(IRegistry registry, string repository, Image image)
+        public void RequestScan(string repository, Image image, string host, string authorization)
         {
             var cache = cacheFactory.Get<Result>();
             var lockTime = new TimeSpan(0, 5, 0);
 
             // if this image is already in cache, skip it entirely
-            if (!cache.Exists(GetKey(image)))
+            if (!cache.ExistsAsync(GetKey(image)).Result)
             {
                 bool layerErrors = false;
                 string lastError = string.Empty;
-                using (var scanlock = cache.TakeLock($"scan:{image.Digest}", lockTime, lockTime))
+                using (var scanlock = cache.TakeLockAsync($"scan:{image.Digest}", lockTime, lockTime).Result)
                 {
                     Layer previousLayer = null;
                     foreach (var layer in image.Layers.Reverse())
                     {
                         if (!CheckLayerScanned(layer))
                         {
-                            var aliases = config.ClairScanner?.RegistryAliases?.Select(a => (a.External, a.Internal)).ToList();
-                            var proxy = registry.GetLayerProxyInfo(repository, layer, aliases);
+                            var uri = new Uri(RegistryCredentials.HostToEndpoint(host, $"{repository}/blobs/{layer.Digest}"));
 
                             var request = new ClairLayerRequest
                             {
@@ -128,14 +128,10 @@ namespace Whalerator.Support
                                 {
                                     Name = layer.Digest,
                                     ParentName = previousLayer?.Digest,
-                                    Path = proxy.LayerUrl
+                                    Path = uri.ToString(),
+                                    Headers = string.IsNullOrEmpty(authorization) ? null : new ClairLayerRequest.LayerRequest.LayerRequestHeaders { Authorization = authorization }
                                 }
                             };
-
-                            if (!string.IsNullOrWhiteSpace(proxy.LayerAuthorization))
-                            {
-                                request.Layer.Headers = new ClairLayerRequest.LayerRequest.LayerRequestHeaders { Authorization = proxy.LayerAuthorization };
-                            }
 
                             try
                             {
@@ -169,11 +165,11 @@ namespace Whalerator.Support
                     // if any layers failed above, check that we can get a valid result, and if not set an error entry so we can avoid further attempts for now
                     if (layerErrors && !CheckLayerScanned(image.Layers.First()))
                     {
-                        cache.Set(GetKey(image), new Result
+                        cache.SetAsync(GetKey(image), new Result
                         {
                             Status = RequestStatus.Failed,
                             Message = lastError ?? "At least one layer of the image could not be scanned."
-                        });
+                        }).Wait();
                     }
                 }
             }

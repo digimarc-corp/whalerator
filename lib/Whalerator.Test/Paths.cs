@@ -16,7 +16,6 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Whalerator.Data;
 using Whalerator.Model;
 using System;
@@ -24,58 +23,71 @@ using System.Collections.Generic;
 using System.Text;
 using Whalerator.Client;
 using Whalerator.Support;
+using Xunit;
+using System.Xml.Serialization;
 
 namespace Whalerator.Test
 {
-    [TestClass]
     public class Paths
     {
-        [TestMethod]
+        [Theory]
+        [InlineData("sha256:056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c", "sha256/05/056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c")]
+        [InlineData("mydigest:abcd123", "mydigest/ab/abcd123")]
+        public void CanParseDigestPath(string digest, string path) =>
+            Assert.Equal(path.Replace('/', System.IO.Path.DirectorySeparatorChar), digest.ToDigestPath());
+
+        [Theory]
+        [InlineData("notadigest")]
+        [InlineData((string)null)]
+        [InlineData("")]
+        public void CanDetectBadDigest(string badDigest) =>
+            Assert.Throws<FormatException>(() => _ = badDigest.ToDigestPath());
+
+        [Fact]
         public void CanParseUriPathToScope()
         {
-            var auth = new AuthHandler(new DictCache<Authorization>());
-            Assert.AreEqual("registry:catalog", auth.ParseScope(new Uri("https://myregistry.io/v2/_catalog")));
-            Assert.AreEqual("repository:coolimage", auth.ParseScope(new Uri("https://myregistry.io/v2/coolimage/tags/list")));
-            Assert.AreEqual("repository:cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/cool/image/manifests/latest")));
-            Assert.AreEqual("repository:super/cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/super/cool/image/blobs/sha256:digest")));
+            var auth = new AuthHandler(new DictCache<Authorization>(), null, null);
+            Assert.Equal("registry:catalog", auth.ParseScope(new Uri("https://myregistry.io/v2/_catalog")));
+            Assert.Equal("repository:coolimage", auth.ParseScope(new Uri("https://myregistry.io/v2/coolimage/tags/list")));
+            Assert.Equal("repository:cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/cool/image/manifests/latest")));
+            Assert.Equal("repository:super/cool/image", auth.ParseScope(new Uri("https://myregistry.io/v2/super/cool/image/blobs/sha256:digest")));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
+        [Fact]
         public void CanThrowOnBadUriPath()
         {
-            var auth = new AuthHandler(new DictCache<Authorization>());
-            auth.ParseScope(new Uri("https://myregistry.io/something/else"));
+            var auth = new AuthHandler(new DictCache<Authorization>(), null, null);
+            Assert.Throws<ArgumentException>(() => auth.ParseScope(new Uri("https://myregistry.io/something/else")));
         }
 
-        [TestMethod]
+        [Fact]
         public void PatheratorCanHandleUnixPath()
         {
             var search = "/var/data/myfile".Patherate();
 
-            Assert.AreEqual("var/data/myfile", search.searchPath);
-            Assert.AreEqual("var/data/.wh.myfile", search.fileWhiteout);
-            Assert.AreEqual("var/data/.wh..wh.opq", search.pathWhiteout);
+            Assert.Equal("var/data/myfile", search.searchPath);
+            Assert.Equal("var/data/.wh.myfile", search.fileWhiteout);
+            Assert.Equal("var/data/.wh..wh.opq", search.pathWhiteout);
         }
 
-        [TestMethod]
+        [Fact]
         public void PatheratorCanHandleWindowsPath()
         {
             var search = @"Program Files\CoolApp\license.txt".Patherate();
 
-            Assert.AreEqual("Program Files/CoolApp/license.txt", search.searchPath);
-            Assert.AreEqual("Program Files/CoolApp/.wh.license.txt", search.fileWhiteout);
-            Assert.AreEqual("Program Files/CoolApp/.wh..wh.opq", search.pathWhiteout);
+            Assert.Equal("Program Files/CoolApp/license.txt", search.searchPath);
+            Assert.Equal("Program Files/CoolApp/.wh.license.txt", search.fileWhiteout);
+            Assert.Equal("Program Files/CoolApp/.wh..wh.opq", search.pathWhiteout);
         }
 
-        [TestMethod]
+        [Fact]
         public void PatheratorCanHandleRootedFile()
         {
             var search = @"readme.md".Patherate();
 
-            Assert.AreEqual("readme.md", search.searchPath);
-            Assert.AreEqual(".wh.readme.md", search.fileWhiteout);
-            Assert.AreEqual(".wh..wh.opq", search.pathWhiteout);
+            Assert.Equal("readme.md", search.searchPath);
+            Assert.Equal(".wh.readme.md", search.fileWhiteout);
+            Assert.Equal(".wh..wh.opq", search.pathWhiteout);
         }
     }
 }

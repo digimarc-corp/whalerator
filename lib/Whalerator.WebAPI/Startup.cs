@@ -58,11 +58,11 @@ namespace Whalerator.WebAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var config = new ConfigRoot();
+            var config = new ServiceConfig();
             Configuration.Bind(config);
             var uiConfig = new PublicConfig()
             {
-                Themes = config.Catalog?.Themes
+                Themes = config.Themes
             };
 
             services.AddSingleton(config);
@@ -72,7 +72,7 @@ namespace Whalerator.WebAPI
                 .AddWhaleAuth()
                 .AddWhaleDebug()
                 .AddWhaleSerialization()
-                .AddWhaleVulnerabilities(config, uiConfig)
+                .AddWhaleVulnerabilities(config, uiConfig, Logger)
                 .AddWhaleDocuments(config, uiConfig, Logger)
                 .AddWhaleCache(config, Logger)
                 .AddWhaleRegistry(config, uiConfig, Logger);

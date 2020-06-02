@@ -18,21 +18,34 @@
 
 using System;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using Whalerator.Model;
 
 namespace Whalerator.Client
 {
     public interface IAuthHandler
     {
+        string CatalogScope();
+        string RepoPullScope(string repository);
+        string RepoPushScope(string repository);
+        string RepoAdminScope(string repository);
+
+        public string GetRegistryEndpoint(bool ignoreAliases = false);
+        public string GetRegistryHost(bool ignoreAliases = false);
+
+
+        public RegistryCredentials RegistryCredentials { get; }
         bool AnonymousMode { get; }
-        AuthenticationHeaderValue GetAuthorization(string scope);
-        bool Authorize(string scope);
-        bool HasAuthorization(string scope);
-        void Login(string registryHost, string username = null, string password = null);
+        bool TokensRequired { get; }
+
+        Task<AuthenticationHeaderValue> GetAuthorizationAsync(string scope);
+        Task<bool> AuthorizeAsync(string scope);
+        Task<bool> HasAuthorizationAsync(string scope);
+        Task LoginAsync(RegistryCredentials registryCredentials);
+        Task LoginAsync(string registryHost, string username = null, string password = null);
         string ParseScope(Uri uri);
         (string realm, string service, string scope) ParseWwwAuthenticate(AuthenticationHeaderValue header);
         bool TryParseScope(Uri uri, out string scope);
-        bool UpdateAuthorization(string scope, bool force = false);
-        string Username { get; }
+        Task<bool> UpdateAuthorizationAsync(string scope, bool force = false);
     }
 }

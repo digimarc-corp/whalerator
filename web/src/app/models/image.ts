@@ -20,6 +20,7 @@ import { Platform } from './platform';
 import { Document } from './document';
 import { History } from './history';
 import { ScanResult } from './scanResult';
+import { FileListing } from './fileListing';
 
 export class Image {
     constructor(obj?: any) {
@@ -34,5 +35,6 @@ export class Image {
     public platform: Platform;
     public history: History[];
     public documents: Document[];
+    public files: FileListing[];
     public scanResult: ScanResult;
 }

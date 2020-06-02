@@ -20,7 +20,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
+using Whalerator.Data;
 
 namespace Whalerator.Model
 {
@@ -59,6 +61,32 @@ namespace Whalerator.Model
                 Type = parsed.type
             };
         }
+
+        public static History From(ManifestV1.HistoryV1.HistoryV1Compatibility rawHistory)
+        {
+            var rawCommand = rawHistory?.Container_Config?.Cmd?.Where(s => !string.IsNullOrEmpty(s)) ?? new string[0];
+            var command = string.Join(' ', rawCommand);
+            string args = null;
+
+            var argsm = argsRegex.Match(command);
+            if (argsm.Success)
+            {
+                args = argsm.Groups[1].Value;
+                command = argsm.Groups[2].Value;
+            }
+
+            var parsed = TryParse(command);
+
+            return new History
+            {
+                Command = command,
+                CommandArgs = args,
+                Created = rawHistory.Created ?? DateTime.UnixEpoch,
+                ShortCommand = parsed.command,
+                Type = parsed.type
+            };
+        }
+
 
         private static (HistoryType type, string command) TryParse(string command)
         {

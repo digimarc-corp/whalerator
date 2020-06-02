@@ -1,0 +1,19 @@
+﻿# Index worker, generates aufs file listings from sets of layers
+
+# since all registry data is local, we can let the indexer go as deep as it wants
+maxSearchDepth: 6
+caseInsensitive: true
+
+# enable indexing in this instance
+indexWorker: true
+indexFolder: /var/data/whalerator/indexes
+
+redisCache: redis
+
+authTokenKey: key.pem
+
+registryCache: /var/data/whalerator/cache
+
+logging:
+  logLevel:
+    default: "Warning"

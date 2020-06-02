@@ -20,12 +20,11 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Whalerator.Config
+namespace Whalerator.DockerClient
 {
-    public class SecurityConfig
+    public interface ILocalDockerClient : IDockerClient
     {
-        // one day default
-        public long TokenLifetime { get; set; } = 86_400;
-        public string PrivateKey { get; set; }
+        IDockerClient RecurseClient { get; set; }
+        string BlobPath(string digest);
     }
 }

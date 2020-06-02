@@ -28,6 +28,7 @@ namespace Whalerator
 {
     public static class ExtensionMethods
     {
+        /*
         public static Permissions GetPermissions(this IAuthHandler handler, string repository)
         {
             return handler.Authorize($"repository:{repository}:*") ? Permissions.Admin :
@@ -35,23 +36,37 @@ namespace Whalerator
                    handler.Authorize($"repository:{repository}:pull") ? Permissions.Pull :
                    Permissions.None;
         }
+        */
 
-        public static string ToImageSetDigest(this IEnumerable<Model.Image> images) {
+        public static bool IsDigest(this string str) => str.StartsWith("sha256:");
+
+        public static string ToDigestPath(this string digest)
+        {
+            var parts = digest?.Split(':');
+            if (parts == null || parts.Length != 2) { throw new FormatException("Could not parse as a digest string"); }
+            else
+            {
+                return Path.Combine(parts[0], parts[1][..2], parts[1]);
+            }
+        }
+        /*
+        public static string ToImageSetDigest(this IEnumerable<Model.Image> images)
+        {
             return string.Join(":", images.Select(i => i.Digest));
         }
-
+        */
         public static TValue Get<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key) where TValue : class
         {
             return dict.ContainsKey(key) ? dict[key] : null;
         }
-
+        /*
         // Compares string values with flag to control case sensitivity.
         // Overloading Equals(this string, etc) does not work because of ambiguity with object.Equals(...)
         public static bool Matches(this string str, string value, bool ignoreCase)
         {
             return ignoreCase ? str.Equals(value, StringComparison.InvariantCultureIgnoreCase) : str == value;
         }
-
+        */
         /// <summary>
         /// Takes a search path within a tar'd AUFS diff, and return a normalized path and whiteout strings
         /// </summary>
@@ -67,6 +82,6 @@ namespace Whalerator
             var opqWhiteout = string.IsNullOrEmpty(folder) ? ".wh..wh.opq" : $"{folder}/.wh..wh.opq";
 
             return (search, fileWhiteout, opqWhiteout);
-        }       
+        }
     }
 }

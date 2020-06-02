@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Whalerator.Client;
 
 namespace Whalerator.Support
 {
@@ -34,52 +35,73 @@ namespace Whalerator.Support
             mux = redisMux;
         }
 
-        /// <inheritdoc/>
-        public bool Exists(string key) => mux.GetDatabase().KeyExists(key);
+        public TimeSpan Ttl { get; set; } = TimeSpan.FromHours(1);
 
         /// <inheritdoc/>
-        public void Set(string key, T value, TimeSpan? ttl)
+        public Task<T> ExecAsync(string scope, string key, IAuthHandler authHandler, Func<Task<T>> func) =>
+            ExecAsync(scope, key, Ttl, authHandler, func);
+
+        /// <inheritdoc/>
+        public async Task<T> ExecAsync(string scope, string key, TimeSpan ttl, IAuthHandler authHandler, Func<Task<T>> func)
         {
-            var json = JsonConvert.SerializeObject(value);
-            mux.GetDatabase().StringSet(key, json, ttl);
+            T result;
+            if (await authHandler.AuthorizeAsync(scope))
+            {
+                if (await ExistsAsync(key))
+                {
+                    return await GetAsync(key);
+                }
+                else
+                {
+                    result = await func();
+                    await SetAsync(key, result, ttl);
+                    return result;
+                }
+            }
+            else
+            {
+                throw new AuthenticationException("The request could not be authorized.");
+            }
         }
 
         /// <inheritdoc/>
-        public void Set(string key, T value) => Set(key, value, null);
+        public Task<bool> ExistsAsync(string key) => mux.GetDatabase().KeyExistsAsync(key);
 
         /// <inheritdoc/>
-        public Lock TakeLock(string key, TimeSpan lockTime, TimeSpan lockTimeout)
+        public Task SetAsync(string key, T value, TimeSpan ttl)
+        {
+            var json = JsonConvert.SerializeObject(value);
+            return mux.GetDatabase().StringSetAsync(key, json, ttl);
+        }
+
+        /// <inheritdoc/>
+        public Task SetAsync(string key, T value) => SetAsync(key, value, Ttl);
+
+        /// <inheritdoc/>
+        public async Task<Lock> TakeLockAsync(string key, TimeSpan lockTime, TimeSpan lockTimeout)
         {
             var value = Guid.NewGuid().ToString();
             var db = mux.GetDatabase();
             var start = DateTime.UtcNow;
-            while (!db.LockTake(key, value, lockTime))
+            while (!await db.LockTakeAsync(key, value, lockTime))
             {
                 if (DateTime.Now - start > lockTimeout) { throw new TimeoutException($"Could not get a lock for {key} in the allotted time."); }
                 System.Threading.Thread.Sleep(500);
             }
             return new Lock(
-                releaseAction: () => { db.LockRelease(key, value); },
-                extendAction: (time) => { return db.LockExtend(key, value, time); }
+                releaseAction: () => db.LockReleaseAsync(key, value),
+                extendAction: (time) => db.LockExtendAsync(key, value, time)
             );
         }
 
         /// <inheritdoc/>
-        public bool TryDelete(string key) => mux.GetDatabase().KeyDelete(key);
+        public Task<bool> TryDeleteAsync(string key) => mux.GetDatabase().KeyDeleteAsync(key);
 
         /// <inheritdoc/>
-        public bool TryGet(string key, out T value)
+        public async Task<T> GetAsync(string key)
         {
-            try
-            {
-                var json = mux.GetDatabase().StringGet(key);
-                value = json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
-            }
-            catch
-            {
-                value = null;
-            }
-            return value == null ? false : true;
+            var json = await mux.GetDatabase().StringGetAsync(key);
+            return json.IsNullOrEmpty ? null : JsonConvert.DeserializeObject<T>(json);
         }
     }
 }

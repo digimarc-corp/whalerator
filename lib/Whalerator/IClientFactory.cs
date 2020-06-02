@@ -16,16 +16,14 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Whalerator.Client;
+using Whalerator.DockerClient;
 
-namespace Whalerator.Security
+namespace Whalerator
 {
-    public class Request : RequestBase
+    public interface IClientFactory
     {
-        public override string WorkItemKey => $"workitem:security:{this.TargetDigest}";
-        public const string WorkQueueKey = "workitems:queue:security";
-        public bool Submitted { get; set; }
+        IDockerClient GetClient(IAuthHandler auth);
     }
 }

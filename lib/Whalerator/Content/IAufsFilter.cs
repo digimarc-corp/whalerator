@@ -16,27 +16,16 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Whalerator.Config
+using System.Collections.Generic;
+using Whalerator.Model;
+
+namespace Whalerator.Content
 {
-    public class CatalogConfig
+    public interface IAufsFilter
     {
-        public List<Theme> Themes { get; set; }
-        
-        public string Registry { get; set; }
-        // Should only be used with anonymous registry
-        public bool AutoLogin { get; set; }
-        public List<string> Repositories { get; set; }
-        public List<string> Hidden { get; set; }
-        public CatalogUser User { get; set; }
-        public class CatalogUser
-        {
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public int PollingInterval { get; set; } = 0;
-        }
+        IAsyncEnumerable<LayerIndex> FilterLayers(IAsyncEnumerable<LayerIndex> layers, params string[] targets);
+        bool IsWhiteout(string path, out string target);
+        bool MatchesAnyWh(string path, IEnumerable<string> wh);
     }
 }

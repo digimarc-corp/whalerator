@@ -32,9 +32,9 @@ namespace Whalerator.WebAPI
     public class RegistryAuthenticationDecoder
     {
         private ICryptoAlgorithm crypto;
-        private ConfigRoot config;
+        private ServiceConfig config;
 
-        public RegistryAuthenticationDecoder(ICryptoAlgorithm crypto, ConfigRoot config)
+        public RegistryAuthenticationDecoder(ICryptoAlgorithm crypto, ServiceConfig config)
         {
             this.crypto = crypto;
             this.config = config;
@@ -55,7 +55,7 @@ namespace Whalerator.WebAPI
                 var json = crypto.Decrypt(token.Crd);
                 var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
 
-                if (!string.IsNullOrEmpty(config.Catalog?.Registry) && Registry.DeAliasDockerHub(config.Catalog.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
+                if (!string.IsNullOrEmpty(config.Registry) && RegistryCredentials.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
                 {
                     return Task.FromResult(AuthenticateResult.Fail("{ error: \"The supplied token is for an unsupported registry.\" }"));
                 }

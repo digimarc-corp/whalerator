@@ -16,24 +16,18 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-using Whalerator.Data;
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Whalerator.Model;
-using System.Net.Http.Headers;
+using System.Text;
 
-namespace Whalerator.Client
+namespace Whalerator
 {
-    public interface IDistributionClient
+    public class IndexRequest : RequestBase
     {
-        string Host { get; }
-        Task<RepositoryList> GetRepositoriesAsync();
-        Task<TagList> GetTagsAsync(string repository);
-        Task<HttpResponseMessage> GetBlobAsync(string repository, string digest);
-        Task<(Uri path, AuthenticationHeaderValue auth)> GetBlobPathAndAuthorizationAsync(string repository, string digest);
-        Task<ImageSet> GetImageSet(string repository, string tag);
-        Task DeleteImage(string repository, string digest);
+        public override string WorkItemKey => $"workitem:content:{TargetDigest}";
+
+        public IEnumerable<string> TargetPaths { get; set; }
+
+        public const string WorkQueueKey = "workitems:queue:index";
     }
 }

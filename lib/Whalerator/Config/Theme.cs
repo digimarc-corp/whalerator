@@ -22,6 +22,9 @@ using System.Text;
 
 namespace Whalerator.Config
 {
+    /// <summary>
+    /// A user-selectable theme for the Whalerator UI
+    /// </summary>
     public class Theme
     {
         public string Name { get; set; }

@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Whalerator.DockerClient;
 using Whalerator.Model;
 using Whalerator.Queue;
 
@@ -37,8 +38,8 @@ namespace Whalerator.Security
         /// <param name="registry"></param>
         /// <param name="repository"></param>
         /// <param name="image"></param>
-        void RequestScan(IRegistry registry, string repository, Image image);
+        void RequestScan(string repository, Image image, string host, string authorization);
 
-        IWorkQueue<Request> Queue { get; }
+        IWorkQueue<ScanRequest> Queue { get; }
     }
 }

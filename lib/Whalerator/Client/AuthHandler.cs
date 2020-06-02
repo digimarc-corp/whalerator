@@ -16,6 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -25,27 +26,51 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Whalerator.Config;
 
 namespace Whalerator.Client
 {
     public class AuthHandler : IAuthHandler
     {
         private ICache<Authorization> authCache;
+        private Dictionary<string, string> aliases;
+        private readonly ServiceConfig config;
+        private readonly ILogger<AuthHandler> logger;
 
-        public AuthHandler(ICache<Authorization> cache)
+        public AuthHandler(ICache<Authorization> cache, ServiceConfig config, ILogger<AuthHandler> logger)
         {
             authCache = cache;
+            this.config = config;
+            this.logger = logger;
+            aliases = config.RegistryAliases.ToDictionary(a => a.Registry, a => a.Alias);
         }
 
+        public string CatalogScope() => "registry:catalog:*";
+        public string RepoPullScope(string repository) => $"repository:{repository}:pull";
+        public string RepoPushScope(string repository) => $"repository:{repository}:push";
+        public string RepoAdminScope(string repository) => $"repository:{repository}:*";
 
-        public string Username { get; private set; }
-        public string Password { get; private set; }
-        public string RegistryEndpoint { get; private set; }
+        public string GetRegistryEndpoint(bool ignoreAliases = false) =>
+            RegistryCredentials.HostToEndpoint(GetRegistryHost(ignoreAliases));
+
+        public string GetRegistryHost(bool ignoreAliases = false) =>
+            !ignoreAliases && aliases.ContainsKey(RegistryCredentials.Registry) ? aliases[RegistryCredentials.Registry] : RegistryCredentials.Registry;
+
+        string username => RegistryCredentials.Username;
+        string password => RegistryCredentials.Password;
+
+        public RegistryCredentials RegistryCredentials { get; private set; }
+
+        /// <summary>
+        /// If true, the current registry requires some form of token authentication
+        /// </summary>
+        public bool TokensRequired => DockerHub || !AnonymousMode;
 
         public string Service { get; private set; }
         public string Realm { get; private set; }
 
-        public TimeSpan AuthTtl { get; set; } = new TimeSpan(1, 0, 0);
+        public TimeSpan AuthTtl { get; set; } = TimeSpan.FromMinutes(20);
 
         /// <summary>
         /// If true, the registry is running in fully open mode, with no Authentication of any kind. Any calls to UpdateAuthorization will be ignored.
@@ -60,20 +85,25 @@ namespace Whalerator.Client
         /// <summary>
         /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
         /// </summary>
-        /// <param name="registryHost">Actual registry host, i.e. myregistry.io</param>
-        /// <param name="username"></param>
-        /// <param name="password"></param>
-        public void Login(string registryHost, string username = null, string password = null)
+        public Task LoginAsync(string registry, string username, string password) =>
+            LoginAsync(new RegistryCredentials { Registry = registry, Username = username, Password = password });
+
+        /// <summary>
+        /// Initializes the set of authorizations for this auth handler, and validates credentials with the registry service.
+        /// </summary>
+        public async Task LoginAsync(RegistryCredentials credentials)
         {
             AnonymousMode = false;
-            Username = username;
-            Password = password ?? string.Empty;
-            RegistryEndpoint = Registry.HostToEndpoint(registryHost);
+            RegistryCredentials = credentials;
+
+            var host = GetRegistryHost(config.IgnoreInternalAlias);
+            var endpoint = GetRegistryEndpoint(config.IgnoreInternalAlias);
 
             var key = GetKey(null, granted: true);
 
-            if (authCache.TryGet(key, out var authorization))
+            if (await authCache.ExistsAsync(key))
             {
+                var authorization = await authCache.GetAsync(key);
                 Service = authorization.Service;
                 Realm = authorization.Realm;
                 AnonymousMode = authorization.Anonymous;
@@ -87,16 +117,16 @@ namespace Whalerator.Client
 
                     // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
                     // but we can set some known values
-                    if (registryHost == Registry.DockerHub)
+                    if (host == RegistryCredentials.DockerHub)
                     {
                         DockerHub = true;
-                        Realm = Registry.DockerRealm;
-                        Service = Registry.DockerService;
+                        Realm = RegistryCredentials.DockerRealm;
+                        Service = RegistryCredentials.DockerService;
                         return;
                     }
 
-                    // first try an anonymous get for the registry catalog - if that succeeds but we're in anonymous mode, throw
-                    var preLogin = client.GetAsync(RegistryEndpoint).Result;
+                    // first try an anonymous get for the registry catalog - if that succeeds but we're not in anonymous mode, throw
+                    var preLogin = await client.GetAsync(endpoint + "/");
                     if (preLogin.IsSuccessStatusCode)
                     {
                         if (!AnonymousMode)
@@ -115,10 +145,10 @@ namespace Whalerator.Client
                         Service = challenge.service;
                         Realm = challenge.realm;
 
-                        if (UpdateAuthorization(null))
+                        if (await UpdateAuthorizationAsync(null))
                         {
-                            client.DefaultRequestHeaders.Authorization = GetAuthorization(null);
-                            var confirmation = client.GetAsync(RegistryEndpoint).Result;
+                            client.DefaultRequestHeaders.Authorization = await GetAuthorizationAsync(null);
+                            var confirmation = client.GetAsync(endpoint + "/").Result;
 
                             if (!confirmation.IsSuccessStatusCode)
                             {
@@ -126,7 +156,7 @@ namespace Whalerator.Client
                             }
                             else
                             {
-                                authCache.Set(key, new Authorization { JWT = GetAuthorization(null).Parameter, Realm = Realm, Service = Service, Anonymous = AnonymousMode }, AuthTtl);
+                                await authCache.SetAsync(key, new Authorization { JWT = (await GetAuthorizationAsync(null)).Parameter, Realm = Realm, Service = Service, Anonymous = AnonymousMode }, AuthTtl);
                             }
                         }
                         else
@@ -142,24 +172,32 @@ namespace Whalerator.Client
             }
         }
 
-        public AuthenticationHeaderValue GetAuthorization(string scope)
+        public async Task<AuthenticationHeaderValue> GetAuthorizationAsync(string scope)
         {
             scope = scope ?? string.Empty;
-            return authCache.TryGet(GetKey(scope, granted: true), out var authorization) ? new AuthenticationHeaderValue("Bearer", authorization.JWT) : null;
+            var key = GetKey(scope, granted: true);
+            if (await authCache.ExistsAsync(key))
+            {
+                var authorization = await authCache.GetAsync(key);
+                return new AuthenticationHeaderValue("Bearer", authorization.JWT);
+            }
+            else
+            {
+                return null;
+            }
         }
 
-        public bool Authorize(string scope)
-        {
-            return HasAuthorization(scope) || UpdateAuthorization(scope) || (DockerHub && scope == "registry:catalog:*");
-        }
+        // DockerHub catalog is a special case, where we don't really have authorization, but we can create synthetic catalogs and need
+        // psuedo-auth to allow caching etc
+        public async Task<bool> AuthorizeAsync(string scope) => await HasAuthorizationAsync(scope) || await UpdateAuthorizationAsync(scope) || (DockerHub && scope == "registry:catalog:*");
 
-        public bool HasAuthorization(string scope)
+        public async Task<bool> HasAuthorizationAsync(string scope)
         {
             scope = scope ?? string.Empty;
-            return authCache.Exists(GetKey(scope, granted: true));
+            return await authCache.ExistsAsync(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope, bool granted) => Authorization.CacheKey(RegistryEndpoint, Username, Password, scope, granted);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, password, scope, granted);
 
         public string ParseScope(Uri uri)
         {
@@ -206,7 +244,7 @@ namespace Whalerator.Client
 
         private string EncodeCredentials()
         {
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Username}:{Password}"));
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         }
 
         /// <summary>
@@ -215,13 +253,13 @@ namespace Whalerator.Client
         /// <param name="scope"></param>
         /// <param name="force">If true, ignore any cached denials and try the request again.</param>
         /// <returns></returns>
-        public bool UpdateAuthorization(string scope, bool force = false)
+        public async Task<bool> UpdateAuthorizationAsync(string scope, bool force = false)
         {
             // registry is fully anonymous, so authorization is moot
             if (AnonymousMode && !DockerHub) { return true; }
 
             // if this user was recently denied for the same scope, don't waste a roundtrip on it
-            if (!force && authCache.Exists(GetKey(scope, granted: false))) { return false; }
+            if (!force && await authCache.ExistsAsync(GetKey(scope, granted: false))) { return false; }
 
             scope = scope ?? string.Empty;
             var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
@@ -233,11 +271,11 @@ namespace Whalerator.Client
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
                 uri.Query = $"?{parameters}";
 
-                if (!string.IsNullOrEmpty(Username))
+                if (!string.IsNullOrEmpty(username))
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", EncodeCredentials());
                 }
-                var response = client.GetAsync(uri.Uri).Result;
+                var response = await client.GetAsync(uri.Uri);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -245,15 +283,17 @@ namespace Whalerator.Client
                     var payload = Jose.JWT.Payload(token);
                     var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
 
+                    var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+
                     var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
                     if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
                     {
-                        authCache.Set(GetKey(scope, granted: true), authorization, AuthTtl);
+                        await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
                         return true;
                     }
                     else
                     {
-                        authCache.Set(GetKey(scope, granted: false), authorization, AuthTtl);
+                        await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
                     }
                 }
                 return false;
