@@ -1,12 +1,17 @@
 ﻿# Security queue worker, polls for scan requests and relays them to Clair, then polls for results
 # and pushes them into cache
-cache:
-  redis: redis
-  volatileTtl: 3600 # 1 hour
-clairScanner:
-  clairApi: http://clair:6060
-security:
-  privateKey: key.pem
+
+# enable vulnerability scanning in this instance
+clairWorker: true
+clairApi: http://clair:6060
+
+redisCache: redis
+
+authTokenKey: key.pem
+
+registryCache: /var/data/whalerator/cache
+
 logging:
   logLevel:
     default: "Information"
+

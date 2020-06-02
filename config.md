@@ -75,7 +75,7 @@ registryPassword { get; set; }
 Options controlling Docker Registry
 
 ```{yaml}
-# The default Docker Registry instance to connect to. This should be the "public" name, as you would use with a `docker login` command.
+# The default Docker Registry instance to connect to. This should be the "public" name, as you would use with a `docker login` command. In the case of Docker Hub, this can be any one of several common names like hub.docker.com or docker.io. These will all be translated to the canonical registry-1.docker.io
 registry: myregistry
 
 # A list of registry aliases. These are important if Whalerator and your Registry will run inside a cluster, where they will need to reach one another by different host names than a "public" user would.

@@ -37,7 +37,6 @@ themes:
     style: assets/techie.css
   - name: anchors
     style: assets/classic.css
-  - name: minimalist
 
 logging:
   logLevel:
