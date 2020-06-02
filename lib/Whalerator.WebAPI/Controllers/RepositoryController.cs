@@ -264,6 +264,10 @@ namespace Whalerator.WebAPI.Controllers
             {
                 return StatusCode(503, "Cannot access cache");
             }
+            catch (RegistryException ex)
+            {
+                return StatusCode(502, ex.Message);
+            }
             catch (Client.NotFoundException)
             {
                 return NotFound();

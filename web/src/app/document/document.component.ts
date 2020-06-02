@@ -183,7 +183,11 @@ export class DocumentComponent implements OnInit {
     if (this.configService.config.searchLists.length > 0) {
       const files = image.files.map(l => l.files.map(f => ({ layer: l.digest, path: f}) )).flat();
       const matches = files.filter(f => this.configService.config.searchLists.flat().some(s => s.toLowerCase() === f.path.toLowerCase()));
-      matches.map(m => this.loadDocument(image, m.layer, m.path));
+      if (matches.length > 0) {
+        matches.map(m => this.loadDocument(image, m.layer, m.path));
+      } else {
+        this.selectHistory();
+      }
     }
   }
 

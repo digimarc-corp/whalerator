@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <Version>0.15.0</Version>
+    <Version>0.20.0</Version>
     <Authors>Adrian Black</Authors>
     <Description>Registry browser library and image inspector for Docker Registry/Distribution</Description>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

@@ -108,49 +108,92 @@ namespace Whalerator.DockerClient
             }
             string manifestPath = BlobPath(digest);
             string manifest = await ReadFileAsync(manifestPath);
-            var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
-            ImageSet imageSet;
-
-            // In docker-land, a fat manifest is just a bunch of regular manifests bundled together under a single digest
-            // In whalerator-land, there are no non-fat manifests, just fat manifests with a single image
-            if (mediaType.StartsWith("application/vnd.docker.distribution.manifest.list.v2"))
+            try
             {
-                var images = new List<Image>();
-                var fatManifest = JsonConvert.DeserializeObject<FatManifest>(manifest);
-                foreach (var subManifest in fatManifest.Manifests)
-                {
-                    images.Add((await RecurseClient.GetImageSetAsync(repository, subManifest.Digest)).Images.First());
-                }
+                var mediaType = (string)JObject.Parse(manifest)["mediaType"];
 
-                imageSet = new ImageSet
+                // In docker-land, a fat manifest is just a bunch of regular manifests bundled together under a single digest
+                // In whalerator-land, there are no non-fat manifests, just fat manifests with a single image
+
+                return mediaType switch
                 {
-                    Date = images.SelectMany(i => i.History.Select(h => h.Created)).Max(),
-                    Images = images,
-                    Platforms = images.Select(i => i.Platform),
-                    SetDigest = digest,
+                    string m when m.StartsWith("application/vnd.docker.distribution.manifest.v2") => await ParseV2ThinManifest(repository, digest, manifest),
+                    string m when m.StartsWith("application/vnd.docker.distribution.manifest.list.v2") => await ParseV2FatManifest(repository, digest, manifest),
+                    _ => ParseV1Manifest(digest, manifest)
                 };
             }
-            else if (mediaType.StartsWith("application/vnd.docker.distribution.manifest.v2"))
+            catch
             {
-                var thinManifest = JsonConvert.DeserializeObject<ManifestV2>(manifest);
-                var config = await RecurseClient.GetImageConfigAsync(repository, thinManifest.Config.Digest);
-                if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
-                var image = new Image
-                {
-                    History = config.History.Select(h => Model.History.From(h)),
-                    Layers = thinManifest.Layers.Select(l => l.ToLayer()),
-                    Digest = digest,
-                    Platform = new Platform
-                    {
-                        Architecture = config.Architecture,
-                        OS = config.OS,
-                        OSVerion = config.OSVersion
-                    }
-                };
-                image.Layers = thinManifest.Layers.Select(l => l.ToLayer());
+                logger.LogError($"Failed to parse manifest {digest}. Manifest may be corrupt or an unsupported format.");
+                throw new RegistryException("The manifest was unparseable.");
+            }
+        }
 
-                imageSet = new ImageSet
+        private async Task<ImageSet> ParseV2ThinManifest(string repository, string digest, string manifest)
+        {
+            var thinManifest = JsonConvert.DeserializeObject<ManifestV2>(manifest);
+            var config = await RecurseClient.GetImageConfigAsync(repository, thinManifest.Config.Digest);
+            if (config == null) { throw new NotFoundException("The requested manifest does not exist in the registry."); }
+            var image = new Image
+            {
+                History = config.History.Select(h => Model.History.From(h)),
+                Layers = thinManifest.Layers.Select(l => l.ToLayer()),
+                Digest = digest,
+                Platform = new Platform
+                {
+                    Architecture = config.Architecture,
+                    OS = config.OS,
+                    OSVerion = config.OSVersion
+                }
+            };
+
+            return new ImageSet
+            {
+                Date = image.History.Max(h => h.Created),
+                Images = new[] { image },
+                Platforms = new[] { image.Platform },
+                SetDigest = image.Digest
+            };
+        }
+
+        private async Task<ImageSet> ParseV2FatManifest(string repository, string digest, string manifest)
+        {
+            var images = new List<Image>();
+            var fatManifest = JsonConvert.DeserializeObject<FatManifest>(manifest);
+            foreach (var subManifest in fatManifest.Manifests)
+            {
+                images.Add((await RecurseClient.GetImageSetAsync(repository, subManifest.Digest)).Images.First());
+            }
+
+            return new ImageSet
+            {
+                Date = images.SelectMany(i => i.History.Select(h => h.Created)).Max(),
+                Images = images,
+                Platforms = images.Select(i => i.Platform),
+                SetDigest = digest,
+            };
+        }
+
+        private static ImageSet ParseV1Manifest(string digest, string manifest)
+        {
+            var v1manifest = JsonConvert.DeserializeObject<ManifestV1>(manifest);
+            var image = new Image
+            {
+                History = v1manifest.History.Select(h => h.Parsed.ToHistory()),
+                Layers = v1manifest.FsLayers.Select(l => l.ToLayer()),
+                Digest = digest,
+                Platform = new Platform
+                {
+                    Architecture = v1manifest.Architecture,
+                    OS = "linux",
+                    OSVerion = "unknown"
+                }
+            };
+
+            try
+            {
+                return new ImageSet
                 {
                     Date = image.History.Max(h => h.Created),
                     Images = new[] { image },
@@ -158,12 +201,10 @@ namespace Whalerator.DockerClient
                     SetDigest = image.Digest
                 };
             }
-            else
+            catch (Exception ex)
             {
-                throw new Exception($"Cannot build image set from mediatype '{mediaType}'");
+                return null;
             }
-
-            return imageSet;
         }
 
         public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) =>

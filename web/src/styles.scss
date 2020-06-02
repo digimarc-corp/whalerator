@@ -134,6 +134,20 @@ nav {
     word-break: break-all;
 }
 
+.badge_ornament {
+    border-width: 0.05em 0.05em 0.05em 0em;
+    border-style: solid solid solid none;
+    border-radius: 0em 0.2em 0.2em 0em;
+    margin-left: -0.2em;
+    padding: 0.1em 0.3em;
+    display: inline-block;
+    word-break: break-all;
+}
+
+.errored {
+    background-color: $orange-light;
+}
+
 .loading {
     opacity: 0.2;
 }

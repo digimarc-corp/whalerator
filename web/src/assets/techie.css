@@ -81,6 +81,10 @@ div.image-detail {
     border: none;
 }
 
+.badge_ornament {
+    border: none;
+}
+
 .badge.tag.selected {
     border-left: 0.1em solid #3f7ea0;
 }
@@ -95,7 +99,7 @@ div.image-detail {
 }
 
 .tab.document {
-    color: #26c36d
+    color: #268851;
 }
 
 .tab.document.selected {

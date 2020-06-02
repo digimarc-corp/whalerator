@@ -6,7 +6,8 @@
     <div class="repohead">{{name}}</div>
     <div class="copyBuffer">
       <span>{{fullPath}}</span>
-      <span (click)="copyPath()"><img src="assets/clipboard.svg" class="action-icon" alt="Copy path to clipboard" /></span>
+      <span (click)="copyPath()"><img src="assets/clipboard.svg" class="action-icon"
+          alt="Copy path to clipboard" /></span>
       <span class="copyMessage" [class.hidden]="!showCopyMsg">Copied!</span>
     </div>
   </div>
@@ -21,13 +22,19 @@
       <span class="tag-count">{{filteredTags.length}} tags</span>
       <div *ngFor="let tag of filteredTags" (click)="selectTag(tag)">
         <span class="badge tag" [class.selected]="tag === selectedTag"
-          [class.loading]="!tagMap[tag]">{{tag}}</span>
+          [class.loading]="!tagMap[tag] && !errorMap[tag]">{{tag}}</span>
+        <span class="badge_ornament errored" *ngIf="errorMap[tag]">
+          <img class="action-icon errored" src="assets/exclamation-outline.svg" alt={{errorMap[tag]}} />
+        </span>
       </div>
     </div>
     <div class="tag-list">
       <div *ngFor="let tag of tags" (click)="selectTag(tag)">
         <span class="badge tag" [class.selected]="tag === selectedTag"
-          [class.loading]="!tagMap[tag]">{{tag}}</span>
+          [class.loading]="!tagMap[tag] && !errorMap[tag]">{{tag}}</span>
+        <span class="badge_ornament errored" *ngIf="errorMap[tag]">
+          <img class="action-icon errored" src="assets/exclamation-outline.svg" alt={{errorMap[tag]}} />
+        </span>
       </div>
     </div>
   </div>
@@ -38,29 +45,47 @@
       </div>
       <div *ngIf="selectedTag; then tagBlock else promptBlock"></div>
       <ng-template #tagBlock>
-        <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
-        <ng-template #detailBlock>
+        <div *ngIf="errorMap[selectedTag]; then errorBlock else imageBlock"></div>
+        <ng-template #errorBlock>
           <div>
-            <span class="label">Last update:</span> {{selectedImageSet.date | date : "medium" }}
-            <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon"
-              (click)="delete(selectedImageSet)" />
+            <h3>The selected tag could not be loaded.</h3>
+            <div style="margin: 2em;">
+              <span>{{errorMap[selectedTag]}}</span>
+            </div>
+            <div>
+              <span class="label">Tag:</span><span class= "badge tag">{{selectedTag}}</span>
+            </div>
+            <div>
+              <span class="label">Tag digest:</span><code>{{tagMap[selectedTag]}}</code>
+            </div>
           </div>
-          <div>
-              <span class="label">Tags:</span>
-            <span class="badge tag" *ngFor="let tag of selectedImageSet.tags" [class.selected]="tag === selectedTag" (click)="selectTag(tag)">{{tag}}</span>
-          </div>
-          <div>
-              <span class="label">Platforms:</span>
-            <span class="badge platform" (click)="selectPlatform(platform)"
-              [class.selected]="selectedPlatform.label === platform.label"
-              *ngFor="let platform of selectedImageSet.platforms">
-              {{platform.label}}
-            </span>
-          </div>
-          <app-document [repository]="name" [image]="selectedImage"></app-document>
         </ng-template>
-        <ng-template #loadingBlock>
-          <span>Loading image details</span>
+        <ng-template #imageBlock>
+          <div *ngIf="selectedImageSet; then detailBlock else loadingBlock"></div>
+          <ng-template #detailBlock>
+            <div>
+              <span class="label">Last update:</span> {{selectedImageSet.date | date : "medium" }}
+              <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon"
+                (click)="delete(selectedImageSet)" />
+            </div>
+            <div>
+              <span class="label">Tags:</span>
+              <span class="badge tag" *ngFor="let tag of selectedImageSet.tags" [class.selected]="tag === selectedTag"
+                (click)="selectTag(tag)">{{tag}}</span>
+            </div>
+            <div>
+              <span class="label">Platforms:</span>
+              <span class="badge platform" (click)="selectPlatform(platform)"
+                [class.selected]="selectedPlatform.label === platform.label"
+                *ngFor="let platform of selectedImageSet.platforms">
+                {{platform.label}}
+              </span>
+            </div>
+            <app-document [repository]="name" [image]="selectedImage"></app-document>
+          </ng-template>
+          <ng-template #loadingBlock>
+            <span>Loading image details</span>
+          </ng-template>
         </ng-template>
       </ng-template>
       <ng-template #promptBlock>

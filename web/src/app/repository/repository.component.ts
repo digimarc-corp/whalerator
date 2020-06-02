@@ -62,7 +62,8 @@ export class RepositoryComponent implements OnInit {
   public showCopyMsg: Boolean;
 
   public images: { [id: string]: ImageSet } = {};
-  public tagMap: { [tag: string]: ImageSet } = {};
+  public tagMap: { [tag: string]: string } = {};
+  public errorMap: { [tag: string]: string } = {};
 
   public permissions: Permissions;
   public get canDelete(): boolean {
@@ -137,13 +138,14 @@ export class RepositoryComponent implements OnInit {
 
   selectTag(tag: string) {
     this.selectedTag = tag;
-    this.selectedImageSet = this.tagMap[tag];
-    if (!this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
-      this.selectedPlatform = this.selectedImageSet.images[0].platform;
-      console.log('Setting platform ' + this.selectedPlatform.label);
+    this.selectedImageSet = this.images[this.tagMap[tag]];
+    if (this.selectedImageSet) {
+      if (!this.selectedPlatform || !this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
+        this.selectedPlatform = this.selectedImageSet.images[0].platform;
+        console.log('Setting platform ' + this.selectedPlatform.label);
+      }
+      this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === this.selectedPlatform.label);
     }
-    this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === this.selectedPlatform.label);
-
     this.router.navigate([], { relativeTo: this.route, queryParams: { tag: tag }, replaceUrl: true });
   }
 
@@ -200,35 +202,31 @@ export class RepositoryComponent implements OnInit {
           this.showError(digest, next);
         }
       } else {
+        this.mapTag(digest, tag);
         // if we've already loaded an imageset with this digest, just make the map entry
         if (this.images[digest]) {
-          this.mapTag(digest, tag);
           if (next) { next(); }
         } else {
           // fetch the actual imageset
           this.catalog.getImageSet(this.name, tag).subscribe(i => {
             if (isError(i)) {
-              this.showError(i, next);
-            } else {
+              this.errorMap[tag] = i.error;
+            } else if (!this.images[digest]) {
               // this request may have been duplicated since it was sent, so recheck the set of fetched images.
               // throwing away the extra information is cheaper than implementing locking or eliminating parallelism here.
-              if (this.images[digest]) {
-                this.mapTag(digest, tag);
-              } else {
-                const setDigest = i.setDigest;
-                i.tags = [tag];
-                this.images[setDigest] = i;
-                this.tagMap[tag] = this.images[setDigest];
-                // if this tag is currently selected, set the active image and let the document view start loading details
-                if (tag === this.selectedTag) {
-                  this.selectedImageSet = this.images[setDigest];
-                  this.selectedImage = this.images[setDigest].images[0];
-                  this.selectedPlatform = this.images[setDigest].images[0].platform;
-                }
-                if (next) {
-                  next();
-                }
+              const setDigest = i.setDigest;
+              i.tags = [tag];
+              this.images[setDigest] = i;
+              this.tagMap[tag] = setDigest;
+              // if this tag is currently selected, set the active image and let the document view start loading details
+              if (tag === this.selectedTag) {
+                this.selectedImageSet = this.images[setDigest];
+                this.selectedImage = this.images[setDigest].images[0];
+                this.selectedPlatform = this.images[setDigest].images[0].platform;
               }
+            }
+            if (next) {
+              next();
             }
           });
         }
@@ -237,7 +235,9 @@ export class RepositoryComponent implements OnInit {
   }
 
   private mapTag(digest: string, tag: string) {
-    this.images[digest].tags.push(tag);
-    this.tagMap[tag] = this.images[digest];
+    if (this.images[digest]) {
+      this.images[digest].tags.push(tag);
+    }
+    this.tagMap[tag] = digest;
   }
 }
