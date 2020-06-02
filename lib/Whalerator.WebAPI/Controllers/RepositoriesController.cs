@@ -52,7 +52,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 var client = clientFactory.GetClient(AuthHandler);
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
-                return Ok(client.GetRepositories().OrderBy(r => r.Name));
+                return Ok(client.GetRepositories().Where(r => r.Permissions >= Permissions.Pull).OrderBy(r => r.Name));
             }
             catch (RedisConnectionException)
             {
