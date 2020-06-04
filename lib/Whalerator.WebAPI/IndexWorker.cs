@@ -17,6 +17,7 @@
 */
 
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,15 +49,34 @@ namespace Whalerator.WebAPI
         {
             try
             {
-                var authResult = authDecoder.AuthenticateAsync(request.Authorization).Result;
-                if (!authResult.Succeeded)
+                RegistryCredentials credentials = null;
+
+                // if the request was submitted by a user, it must have auth info included
+                if (!string.IsNullOrEmpty(request.Authorization))
                 {
-                    logger.LogWarning(authResult.Failure, "Authorization failed for the work item. A token may have expired since it was first submitted.");
+                    var authResult = authDecoder.AuthenticateAsync(request.Authorization).Result;
+                    if (authResult.Succeeded)
+                    {
+                        credentials = authResult.Principal.ToRegistryCredentials();
+                    }
+                }
+                // if the request came via an event sink, there is no auth provided, and we need to have a default user configured
+                else
+                {
+                    credentials = config.GetCatalogCredentials() ?? throw new ArgumentException("The indexing request had no included authorization, and no default catalog user is configured.");
+                }
+
+                if (credentials == null)
+                {
+                    logger.LogWarning("Authorization failed for the work item. A token may have expired since it was first submitted.");
                 }
                 else
                 {
-                    await authHandler.LoginAsync(authResult.Principal.ToRegistryCredentials());
+                    await authHandler.LoginAsync(credentials);
                     var client = clientFactory.GetClient(authHandler);
+
+                    // if deep indexing is configured, ignore target paths
+                    if (config.DeepIndexing) { request.TargetPaths = new string[0]; }
 
                     var imageSet = await client.GetImageSetAsync(request.TargetRepo, request.TargetDigest);
                     if ((imageSet?.Images?.Count() ?? 0) != 1) { throw new Exception($"Couldn't find a valid image for {request.TargetRepo}:{request.TargetDigest}"); }
