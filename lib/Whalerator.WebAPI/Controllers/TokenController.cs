@@ -33,7 +33,7 @@ namespace Whalerator.WebAPI.Controllers
 {
     [Produces("application/json")]
     [Route("api/Token")]
-    public class TokenController : Controller
+    public class TokenController : ControllerBase
     {
         private ICryptoAlgorithm crypto;
         private ICache<Authorization> cache;
