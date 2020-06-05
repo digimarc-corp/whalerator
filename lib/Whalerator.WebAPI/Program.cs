@@ -151,7 +151,7 @@ namespace Whalerator.WebAPI
                     .Where(l => !string.IsNullOrWhiteSpace(l))
                     .ToList()
                     .ForEach(l => Console.WriteLine(l));
-                Console.WriteLine("\n\t(c) Digimarc, Inc\n");
+                Console.WriteLine("\n\t(c) 2018 Digimarc, Inc\n");
             }
             catch { }
             finally
