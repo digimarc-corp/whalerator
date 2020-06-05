@@ -23,6 +23,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using CommandLine;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -34,11 +35,23 @@ using Whalerator.Security;
 
 namespace Whalerator.WebAPI
 {
+
+
     public class Program
     {
         public static void Main(string[] args)
         {
-            PrintSplash();
+            Options options = null;
+            var parseResult = Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(o => options = o)
+                .WithNotParsed(e => Environment.Exit(-1));
+            
+
+
+            if (!options.NoBanner)
+            {
+                PrintSplash();
+            }
 
             var builder = new WebHostBuilder()
                 .UseKestrel()
@@ -88,9 +101,13 @@ namespace Whalerator.WebAPI
             builder.UseStartup<Startup>();
             var webHost = builder.Build();
 
-            if (args.Length > 0 && args[0] == "--rescan")
+            if (options.Rescan)
             {
                 Rescan(webHost.Services).Wait();
+            }
+
+            if (options.Exit)
+            {
                 Environment.Exit(0);
             }
 
