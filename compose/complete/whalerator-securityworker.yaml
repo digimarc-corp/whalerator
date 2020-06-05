@@ -9,12 +9,11 @@ redisCache: redis
 
 authTokenKey: key.pem
 
+registry: localhost
 registryRoot: /var/lib/registry
 registryAliases: 
   - registry: localhost
     alias: registry:5000
 
-logging:
-  logLevel:
-    default: "Information"
-
+logLevel: "Information"
+    

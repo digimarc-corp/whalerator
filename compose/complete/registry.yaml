@@ -1,0 +1,33 @@
+version: 0.1
+log:
+  fields:
+    service: registry
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+notifications:
+  endpoints:
+    - name: whalerator
+      url: http://whalerator/api/events
+      headers:
+        Authorization: ["Bearer: 8B413879C18D4A2B8D7B3E2EFFBC2C09"]
+      timeout: 1s
+      threshold: 5
+      backoff: 30s
+      ignore:
+        mediatypes:
+           - application/octet-stream
+        actions:
+           - pull
+    

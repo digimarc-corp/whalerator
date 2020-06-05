@@ -8,15 +8,17 @@ caseInsensitive: true
 indexWorker: true
 indexFolder: /var/data/whalerator/indexes
 
+deepIndexing: true
+
 redisCache: redis
 
 authTokenKey: key.pem
 
+# default registry must be set for event-driven requests
+registry: localhost
 registryRoot: /var/lib/registry
 registryAliases: 
   - registry: localhost
     alias: registry:5000
 
-logging:
-  logLevel:
-    default: "Warning"
+logLevel: "Information"
