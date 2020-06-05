@@ -242,10 +242,9 @@ namespace Whalerator.Client
             return (realm, service, scope);
         }
 
-        private string EncodeCredentials()
-        {
-            return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
-        }
+        private string EncodeCredentials() => Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+        private string EncodeDefaultCredentials() => Convert.ToBase64String(Encoding.UTF8.GetBytes($"{config.RegistryUser}:{config.RegistryPassword}"));
+
 
         /// <summary>
         /// Tries to get a new authorization for the requested scope.
@@ -263,6 +262,37 @@ namespace Whalerator.Client
 
             scope = scope ?? string.Empty;
             var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
+
+            var token = await GetTokenAsync(scope);
+            // if the call failed completely, return false but don't cache the result
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+            // otherwise, process the claims returned
+            else
+            {
+                var payload = Jose.JWT.Payload(token);
+                var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
+
+                var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+
+                var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
+                if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
+                {
+                    await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
+                    return true;
+                }
+                else
+                {
+                    await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
+                    return false;
+                }
+            }
+        }
+
+        private async Task<string> GetTokenAsync(string scope)
+        {
             using (var client = new HttpClient())
             {
                 var uri = new UriBuilder(Realm);
@@ -271,7 +301,12 @@ namespace Whalerator.Client
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
                 uri.Query = $"?{parameters}";
 
-                if (!string.IsNullOrEmpty(username))
+                // if we're getting catalog info, and we have a default user configured, use that instead
+                if (scope == CatalogScope() && !string.IsNullOrEmpty(config.RegistryUser))
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", EncodeDefaultCredentials());
+                }
+                else if (!string.IsNullOrEmpty(username))
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", EncodeCredentials());
                 }
@@ -279,24 +314,12 @@ namespace Whalerator.Client
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var token = JsonConvert.DeserializeAnonymousType(response.Content.ReadAsStringAsync().Result, new { token = "" }).token;
-                    var payload = Jose.JWT.Payload(token);
-                    var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
-
-                    var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
-
-                    var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
-                    if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
-                    {
-                        await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
-                        return true;
-                    }
-                    else
-                    {
-                        await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
-                    }
+                    return JsonConvert.DeserializeAnonymousType(response.Content.ReadAsStringAsync().Result, new { token = "" }).token;
                 }
-                return false;
+                else
+                {
+                    return null;
+                }
             }
         }
     }

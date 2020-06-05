@@ -21,6 +21,4 @@ caseInsensitive: true
 
 indexWorker: true
 
-logging:
-  logLevel:
-    default: "Warning"
+logLevel: "Warning"

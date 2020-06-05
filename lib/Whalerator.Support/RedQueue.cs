@@ -54,31 +54,38 @@ namespace Whalerator.Support
         {
             var db = mux.GetDatabase();
             var key = db.ListRightPop(queueName);
-            if (key.IsNullOrEmpty)
-            {
-                return null;
-            }
-            else
+            var orphans = 0;
+            T result = null;
+
+            while (result == null && !key.IsNullOrEmpty)
             {
                 var json = db.StringGet(key.ToString());
                 if (json.HasValue)
                 {
                     db.KeyDelete(key.ToString());
-                    return JsonConvert.DeserializeObject<T>(json);
+                    result = JsonConvert.DeserializeObject<T>(json);
                 }
                 else
                 {
-                    logger.LogWarning($"Got bad workitem key: {key}");
-                    return null;
+                    orphans++;
+                    logger.LogDebug($"Found orphan workitem key: {key}");
                 }
+
+                key = db.ListRightPop(queueName);
             }
+
+            if (orphans > 0)
+            {
+                logger.LogWarning($"Discarded {orphans:N0} orphan work items from '{queueName}' queue.");
+            }
+
+            return result;
         }
 
         public void Push(T workItem)
         {
             var db = mux.GetDatabase();
-            // expiration is aggressive to allow queue failures to self-clear quickly
-            db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromSeconds(1200));
+            db.StringSet(workItem.WorkItemKey, JsonConvert.SerializeObject(workItem), TimeSpan.FromDays(7));
             db.ListLeftPush(queueName, workItem.WorkItemKey);
         }
 

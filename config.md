@@ -6,6 +6,12 @@ Whalerator configuration is normally applied via a `config.yaml` file. Individua
 
 Configuration options do not need to be in any particular order, and extra options (or misspelled options) will be ignored, as long as the file follows standard YAML formatting.
 
+## Startup options
+
+- `--rescan` or `-r` causes Whalerator to enumerate all repositories, images, and tags in the configured registry and submit them for indexing and/or scanning.
+- `--exit` or `-x` causes Whalerator to load configuration, process a rescan if requested, and then exit.
+- `--nobanner` causes Whalerator to skip printing the startup banner.
+
 ## Cache Options
 
 ```{yaml}
@@ -33,6 +39,24 @@ vulnerabilities: true
 autoLogin: false
 ```
 
+## Logging
+
+These options affect logging.
+
+```{yaml}
+# Threshold for logging whalerator events. One of Trace, Debug, Information, Warning, Error, or Critical. Default is Warning.
+logLevel: "Warning"
+
+# Threshold for logging ASP.NET Core events. One of Trace, Debug, Information, Warning, Error, or Critical. Default is Warning.
+msLogLevel: "Warning"
+
+# If true, a log header is printed sampling output formats for various log levels. Default is false.
+logHeader: false
+
+# If true, exceptions will include a stack trace. Default is false.
+logStack: false
+```
+
 ## Document options
 
 These options control the discovery of embedded documents like a `readme.md`.
@@ -43,6 +67,11 @@ indexFolder:
 
 # Maximum number of layers to download and index while looking for documentation. If 0, all layers may be downloaded. Default is 0.
 maxSearchDepth { get; set; }
+
+# If true, all layers in an image will be indexed, even if target documents have already been located.
+# If used where the Registry instance is remote, with no shared registryRoot and no maxSearchDepth, this may cause Whalerator to download excessive
+# amounts of layer data
+deepIndexing: true
 
 # A list of documents to look for when indexing. If all target documents can be found before maxSearchDepth is reached, indexing will halt. If this list is empty, the documents tab will not be shown in the UI.
 documents:
@@ -93,6 +122,14 @@ registryCache:
 repositories:
   - myrepo
   - some/other/repo
+
+# If true, Whalerator will accept Registry event webhook calls at /api/events. Push events will cause indexing and/or scanning tasks to be queued
+# for those images. See: https://docs.docker.com/registry/notifications/. Default is false.
+eventSink: false
+
+# If set, event webhooks must include the supplied value in the Authorization header. This value is static and separate from any other
+# authorization mechanism in Whalerator or Docker Registry
+eventAuthorization:
 ```
 
 ## Workers

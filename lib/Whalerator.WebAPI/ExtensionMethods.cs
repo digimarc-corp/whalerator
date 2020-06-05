@@ -144,8 +144,8 @@ namespace Whalerator.WebAPI
                     catch (Exception ex)
                     {
                         logger?.LogWarning($"Could not connect to redis instance. Retrying in {retryTime}s.");
-                        logger?.LogInformation($"Connection string: {config.RedisCache}");
-                        logger?.LogInformation(ex, "Error:");
+                        logger?.LogInformation($"Redis connection string: {config.RedisCache}");
+                        logger?.LogError(ex, "Redis connection error");
                         System.Threading.Thread.Sleep(TimeSpan.FromSeconds(retryTime));
                     }
                 }

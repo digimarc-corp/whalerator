@@ -58,6 +58,19 @@ namespace Whalerator.DockerClient
         string blobsRoot => Path.Combine(RegistryRoot, "docker/registry/v2/blobs");
         private const string tagsFolder = "_manifests/tags";
 
+        public static HashSet<string> SupportedManifestTypes { get; } = new HashSet<string>(new[] {
+            ManifestV1MediaType,
+            ManifestV2MediaType,
+            ManifestListV2MediaType,
+            ManifestV1MediaType + "+json",
+            ManifestV2MediaType + "+json",
+            ManifestListV2MediaType + "+json"
+        });
+
+        public const string ManifestV2MediaType = "application/vnd.docker.distribution.manifest.v2";
+        public const string ManifestListV2MediaType = "application/vnd.docker.distribution.manifest.list.v2";
+        public const string ManifestV1MediaType = "application/vnd.docker.distribution.manifest.v1+json";
+
         public string BlobPath(string digest) => Path.Combine(blobsRoot, digest.ToDigestPath(), "data");
         public string RepoPath(string repository) => Path.Combine(repositoriesRoot, repository);
         public string TagPath(string repository, string tag) => Path.Combine(RepoPath(repository), tagsFolder, tag);
@@ -118,8 +131,8 @@ namespace Whalerator.DockerClient
 
                 return mediaType switch
                 {
-                    string m when m.StartsWith("application/vnd.docker.distribution.manifest.v2") => await ParseV2ThinManifest(repository, digest, manifest),
-                    string m when m.StartsWith("application/vnd.docker.distribution.manifest.list.v2") => await ParseV2FatManifest(repository, digest, manifest),
+                    string m when m.StartsWith(ManifestV2MediaType) => await ParseV2ThinManifest(repository, digest, manifest),
+                    string m when m.StartsWith(ManifestListV2MediaType) => await ParseV2FatManifest(repository, digest, manifest),
                     _ => ParseV1Manifest(digest, manifest)
                 };
             }
@@ -201,7 +214,7 @@ namespace Whalerator.DockerClient
                     SetDigest = image.Digest
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }

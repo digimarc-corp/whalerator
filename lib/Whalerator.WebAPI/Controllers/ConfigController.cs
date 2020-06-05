@@ -29,7 +29,7 @@ namespace Whalerator.WebAPI.Controllers
 {
     [Produces("application/json")]
     [Route("api/config")]
-    public class ConfigController : Controller
+    public class ConfigController : ControllerBase
     {
         public ConfigController(ILogger<ConfigController> logger, PublicConfig config)
         {

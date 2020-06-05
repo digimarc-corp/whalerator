@@ -28,6 +28,13 @@ namespace Whalerator.Config
     {
         static string GetTempFolder() => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 
+        public RegistryCredentials GetCatalogCredentials() => string.IsNullOrEmpty(Registry) ? null : new RegistryCredentials
+        {
+            Password = RegistryPassword,
+            Registry = Registry,
+            Username = RegistryUser
+        };
+
         public string RedisCache { get; set; }
 
         public int CacheTtl { get; set; } = 3600;
@@ -40,7 +47,12 @@ namespace Whalerator.Config
 
         public int MaxSearchDepth { get; set; }
 
+        // Both the indexer and the event sink honor this setting, which means you can set it both places for slightly different results.
+        // If set on the frontend (but not the backend) it will only apply to webhook updates. UI searches will still trigger targeted indexing, unless a deep index already exists
+        // If set on the backend worker, it will apply to all searches.
         public List<string> Documents { get; set; } = new List<string>();
+
+        public bool DeepIndexing { get; set; }
 
         public bool CaseInsensitive { get; set; } = true;
 
@@ -53,6 +65,9 @@ namespace Whalerator.Config
         public string RegistryPassword { get; set; }
         public string RegistryCache { get; set; } = GetTempFolder();
         public List<RegistryAlias> RegistryAliases { get; set; } = new List<RegistryAlias>();
+
+        public bool EventSink { get; set; }
+        public string EventAuthorization { get; set; }
 
         /// <summary>
         /// Allows internal clients to ignore RegistryAliases, while wtill applying them to external services like Clair. Primarily for dev use, ex. running whalerator
