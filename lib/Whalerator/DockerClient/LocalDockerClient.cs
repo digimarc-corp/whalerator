@@ -214,7 +214,7 @@ namespace Whalerator.DockerClient
                     SetDigest = image.Digest
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
