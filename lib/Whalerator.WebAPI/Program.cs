@@ -20,12 +20,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Whalerator.Client;
+using Whalerator.Config;
+using Whalerator.Security;
 
 namespace Whalerator.WebAPI
 {
@@ -33,6 +38,8 @@ namespace Whalerator.WebAPI
     {
         public static void Main(string[] args)
         {
+            PrintSplash();
+
             var builder = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -70,15 +77,174 @@ namespace Whalerator.WebAPI
                 })
                 .ConfigureLogging((hostingContext, logging) =>
                 {
-                    logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                    logging.AddConsole();
-                    logging.AddFilter("Microsoft", (level) => level >= LogLevel.Warning);
+                    GetLogSettings(hostingContext, out var logLevel, out var msLogLevel, out var logStack, out var logHeader);
+
+                    logging.SetMinimumLevel(logLevel);
+
+                    logging.AddProvider(new ConsoleLoggerProvider(logStack, logHeader));
+                    logging.AddFilter("Microsoft", (level) => level >= msLogLevel);
                     logging.AddDebug();
                 });
             builder.UseStartup<Startup>();
             var webHost = builder.Build();
 
+            if (args.Length > 0 && args[0] == "--rescan")
+            {
+                Rescan(webHost.Services).Wait();
+                Environment.Exit(0);
+            }
+
             webHost.Run();
+        }
+
+        private static void GetLogSettings(WebHostBuilderContext hostingContext, out LogLevel logLevel, out LogLevel msLogLevel, out bool logStack, out bool logHeader)
+        {
+            try
+            {
+                var str = hostingContext.Configuration.GetValue(typeof(string), "logLevel") as string;
+                logLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
+            }
+            catch
+            {
+                logLevel = LogLevel.Information;
+                Console.WriteLine($"Could not get log level from config. Defaulting to '{logLevel}'");
+            }
+
+            try
+            {
+                var str = hostingContext.Configuration.GetValue(typeof(string), "msLogLevel") as string;
+                msLogLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
+            }
+            catch
+            {
+                msLogLevel = LogLevel.Warning;
+            }
+
+            try
+            {
+                logStack = (bool)hostingContext.Configuration.GetValue(typeof(bool), "logStack");
+            }
+            catch
+            {
+                logStack = false;
+            }
+
+            try
+            {
+                logHeader = (bool)hostingContext.Configuration.GetValue(typeof(bool), "logHeader");
+            }
+            catch
+            {
+                logHeader = false;
+            }
+        }
+
+        private static void PrintSplash()
+        {
+            var color = Console.ForegroundColor;
+            try
+            {
+                var banner = Figgle.FiggleFonts.Larry3d.Render("Whalerator");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+
+                banner.Split('\n')
+                    .Where(l => !string.IsNullOrWhiteSpace(l))
+                    .ToList()
+                    .ForEach(l => Console.WriteLine(l));
+                Console.WriteLine("\n\t(c) Digimarc, Inc\n");
+            }
+            catch { }
+            finally
+            {
+                Console.ForegroundColor = color;
+            }
+        }
+
+        public static async Task Rescan(IServiceProvider services)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            try
+            {
+                var processed = new HashSet<string>();
+                var tags = 0;
+
+                logger.LogInformation("Rescan requested.");
+                var config = services.GetRequiredService<ServiceConfig>();
+                if (string.IsNullOrEmpty(config.Registry))
+                {
+                    logger.LogError("A default registry must be configured to perform a rescan");
+                }
+                else
+                {
+                    var clientFactory = services.GetRequiredService<IClientFactory>();
+                    var auth = services.GetRequiredService<IAuthHandler>();
+                    await auth.LoginAsync(config.GetCatalogCredentials());
+                    var client = clientFactory.GetClient(auth);
+
+                    var indexQueue = services.GetRequiredService<Queue.IWorkQueue<IndexRequest>>();
+                    var secScanner = services.GetRequiredService<Queue.IWorkQueue<ScanRequest>>();
+
+                    foreach (var repo in client.GetRepositories())
+                    {
+                        try
+                        {
+                            foreach (var tag in client.GetTags(repo.Name))
+                            {
+                                tags++;
+                                var digest = await client.GetTagDigestAsync(repo.Name, tag);
+                                if (!processed.Contains(digest))
+                                {
+                                    processed.Add(digest);
+
+                                    try
+                                    {
+                                        if (config.Documents?.Count > 0)
+                                        {
+                                            indexQueue.Push(new IndexRequest
+                                            {
+                                                CreatedTime = DateTime.UtcNow,
+                                                TargetDigest = digest,
+                                                TargetPaths = config.DeepIndexing ? null : config.Documents,
+                                                TargetRepo = repo.Name
+                                            });
+                                            logger.LogInformation($"Queued index for {repo}:{tag}");
+                                        }
+
+                                        if (config.Vulnerabilities)
+                                        {
+                                            secScanner.Push(new Security.ScanRequest
+                                            {
+                                                CreatedTime = DateTime.UtcNow,
+                                                TargetRepo = repo.Name,
+                                                TargetDigest = digest
+                                            });
+                                            logger.LogInformation($"Queued scan for {repo}:{tag}");
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        logger.LogError(ex, $"Error submitting {repo}:{tag}");
+                                    }
+                                }
+                                else
+                                {
+                                    logger.LogInformation($"Duplicate digest {repo}:{tag}");
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            logger.LogError($"Could not get tags for repository {repo}");
+                        }
+                    }
+                }
+
+                logger.LogInformation($"Submitted {processed.Count:N0} unique images from {tags:N0} tags for indexing and/or security scanning.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to start rescan.");
+            }
         }
     }
 }

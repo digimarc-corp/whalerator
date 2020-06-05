@@ -86,13 +86,14 @@ namespace Whalerator.WebAPI
                     {
                         if (!indexStore.IndexExists(image.Digest, request.TargetPaths.ToArray()))
                         {
+                            logger.LogInformation($"Starting index for {request.TargetRepo}:{request.TargetDigest}");
                             var indexes = client.GetIndexes(request.TargetRepo, image, request.TargetPaths.ToArray());
                             indexStore.SetIndex(indexes, image.Digest, request.TargetPaths.ToArray());
                             logger.LogInformation($"Completed indexing {indexes.Max(i => i.Depth)} layer(s) from {request.TargetRepo}:{request.TargetDigest} {(request.TargetPaths.Count() == 0 ? "" : $"({string.Join(", ", request.TargetPaths)})")}");
                         }
                         else
                         {
-                            logger.LogInformation($"Discarding duplicate index request for {request.TargetRepo}:{request.TargetDigest}");
+                            logger.LogInformation($"Index already exists for {request.TargetRepo}:{request.TargetDigest}");
                         }
                     }
                 }

@@ -54,7 +54,7 @@ namespace Whalerator.WebAPI
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation("QueueWorker starting");
+            logger.LogInformation($"{this.GetType().Name} starting");
 
             timer = new Timer(DoWork);
             StartTimer();

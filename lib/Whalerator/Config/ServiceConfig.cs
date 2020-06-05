@@ -47,6 +47,9 @@ namespace Whalerator.Config
 
         public int MaxSearchDepth { get; set; }
 
+        // Both the indexer and the event sink honor this setting, which means you can set it both places for slightly different results.
+        // If set on the frontend (but not the backend) it will only apply to webhook updates. UI searches will still trigger targeted indexing, unless a deep index already exists
+        // If set on the backend worker, it will apply to all searches.
         public List<string> Documents { get; set; } = new List<string>();
 
         public bool DeepIndexing { get; set; }
