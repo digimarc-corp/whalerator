@@ -16,12 +16,12 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Version, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { CatalogService } from '../catalog.service';
 import { ImageSet } from '../models/imageSet';
-import { VersionSort } from '../version-sort';
+import { SimplifiedSort } from '../sorts/simplified-sort';
 import { Platform } from '../models/platform';
 import { Image } from '../models/image';
 import { isError } from '../web-service';
@@ -30,6 +30,8 @@ import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
 import { ConfigService } from '../config.service';
+import { Sorts } from '../models/sorts';
+import { SemverSort } from '../sorts/semver-sort';
 
 @Component({
   selector: 'app-repository',
@@ -44,6 +46,7 @@ export class RepositoryComponent implements OnInit {
     private catalog: CatalogService,
     private sessionService: SessionService,
     private configService: ConfigService,
+    private changeDetector: ChangeDetectorRef,
     private titleService: Title) { }
 
   public name: string;
@@ -58,6 +61,17 @@ export class RepositoryComponent implements OnInit {
   public selectedPlatform: Platform;
   public selectedImage: Image;
   public readme: string;
+
+  private _sort = Sorts.Semver;
+  public get sort() {
+    return this._sort;
+  }
+  public set sort(value: string) {
+    this._sort = value as Sorts;
+    this.sortTags();
+  }
+  public sortOptions = Object.keys(Sorts);
+  public sortAscending = false;
 
   public showCopyMsg: Boolean;
 
@@ -77,7 +91,8 @@ export class RepositoryComponent implements OnInit {
 
   ngOnInit() {
     this.route.queryParams.subscribe(p => {
-      this.name = this.route.snapshot.children[0].url.join('/');
+      const snapshot = this.route.snapshot.children[0];
+      this.name = snapshot ? snapshot.url.join('/') : 'unknown';
       this.requestedTag = p['tag'];
       this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name);
       this.getRepo();
@@ -92,6 +107,31 @@ export class RepositoryComponent implements OnInit {
     }
   }
 
+  toggleSortOrder() {
+    this.sortAscending = !this.sortAscending;
+    this.sortTags();
+  }
+
+  sortTags() {
+    switch (this._sort) {
+      case Sorts.Simplified:
+        this.tags.sort(SimplifiedSort.sort);
+        if (this.filteredTags) { this.filteredTags.sort(SimplifiedSort.sort); }
+        break;
+      case Sorts.Semver:
+        this.tags.sort(SemverSort.sort);
+        if (this.filteredTags) { this.filteredTags.sort(SemverSort.sort); }
+        break;
+      case Sorts.Alpha:
+        this.tags.sort();
+        if (this.filteredTags) { this.filteredTags.sort(); }
+        break;
+    }
+    if (this.sortAscending) {
+      this.tags.reverse();
+      if (this.filteredTags) { this.filteredTags.reverse(); }
+    }
+  }
 
   delete(imageSet: ImageSet) {
     if (confirm('Delete this image and all related tags?')) {
@@ -135,7 +175,6 @@ export class RepositoryComponent implements OnInit {
     this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === platform.label);
   }
 
-
   selectTag(tag: string) {
     this.selectedTag = tag;
     this.selectedImageSet = this.images[this.tagMap[tag]];
@@ -159,7 +198,8 @@ export class RepositoryComponent implements OnInit {
           this.showError(tagset);
         } else {
           this.permissions = tagset.permissions;
-          this.tags = tagset.tags.sort(VersionSort.sort);
+          this.tags = tagset.tags;
+          this.sortTags();
           this.selectedTag = this.requestedTag || this.tags[0];
           this.getFirstImage(this.selectedTag, () => {
             this.tags.filter(t => t !== this.selectedTag).forEach(t => this.getImage(t));

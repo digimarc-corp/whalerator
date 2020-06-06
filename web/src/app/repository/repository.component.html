@@ -18,6 +18,15 @@
     <div class="search">
       <input type="text" class="search" [(ngModel)]="searchQuery" placeholder="search" />
     </div>
+    <div class="sort" >
+      <select [(ngModel)]="sort">
+        <option *ngFor="let opt of sortOptions" [value]="opt">
+          {{opt}}
+        </option>
+      </select>
+      <img *ngIf="!sortAscending" src="assets/arrow-thick-down.svg" class="action-icon" (click)="toggleSortOrder()" />
+      <img *ngIf="sortAscending" src="assets/arrow-thick-up.svg" class="action-icon" (click)="toggleSortOrder()"/>
+    </div>
     <div *ngIf="filteredTags" class="tag-list filtered">
       <span class="tag-count">{{filteredTags.length}} tags</span>
       <div *ngFor="let tag of filteredTags" (click)="selectTag(tag)">
