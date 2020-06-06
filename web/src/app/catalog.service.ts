@@ -22,16 +22,16 @@ import { Observable, of } from 'rxjs';
 import { Repository } from './models/repository';
 import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
-import { ImageSet } from './models/imageSet';
+import { ImageSet } from './models/image-set';
 import { environment } from '../environments/environment';
 import { Config } from './models/config';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
 import { History } from './models/history';
 import { TestBed } from '@angular/core/testing';
-import { ScanResult } from './models/scanResult';
-import { TagSet } from './models/tagSet';
-import { FileListing } from './models/fileListing';
+import { ScanResult } from './models/scan-result';
+import { TagSet } from './models/tag-set';
+import { FileListing } from './models/file-listing';
 
 
 @Injectable({

@@ -20,7 +20,7 @@ import { Component, OnInit, Version, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { CatalogService } from '../catalog.service';
-import { ImageSet } from '../models/imageSet';
+import { ImageSet } from '../models/image-set';
 import { SimplifiedSort } from '../sorts/simplified-sort';
 import { Platform } from '../models/platform';
 import { Image } from '../models/image';

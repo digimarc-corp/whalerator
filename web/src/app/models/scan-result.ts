@@ -15,23 +15,23 @@
 
    SPDX-License-Identifier: Apache-2.0
 */
+
 import { Vulnerability } from "./vulnerability";
-import { Severity } from "./severity";
+import { ScanComponent } from "./scan-component";
 
-
-export class ScanComponent {
+export class ScanResult {
     constructor(obj?: any) {
         Object.assign(this, obj);
-        this.vulnerabilities = (this.vulnerabilities || []).map(v => new Vulnerability(v)).sort((a, b) => b.severity - a.severity);
+        this.vulnerableComponents = (this.vulnerableComponents || []).map(c => new ScanComponent(c)).sort((a, b) => b.maxSeverity - a.maxSeverity);
     }
 
-    public name: string;
-    public addedBy: string;
-    public version: string;
-    public namespaceName: number;
-    public vulnerabilities: Vulnerability[];
+    public digest: string;
+    public status: string;
+    public message: string;
+    public totalComponents: number;
+    public vulnerableComponents: ScanComponent[];
 
-    public get maxSeverity(): number {
-        return this.vulnerabilities.length == 0 ? 0 : Math.max.apply(Math, this.vulnerabilities.map(v => v.severity));
+    public get hasVulnerabilities(): boolean {
+        return this.vulnerableComponents != null && this.vulnerableComponents.length > 0;
     }
 }

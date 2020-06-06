@@ -17,7 +17,7 @@
 */
 
 import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
-import { ImageSet } from '../models/imageSet';
+import { ImageSet } from '../models/image-set';
 import { Platform } from '../models/platform';
 import { CatalogService } from '../catalog.service';
 import { Image } from '../models/image';
@@ -25,10 +25,10 @@ import { Document } from '../models/document';
 import { History } from '../models/history';
 import { isError, isHttpString } from '../web-service';
 import { ConfigService } from '../config.service';
-import { ScanResult } from '../models/scanResult';
+import { ScanResult } from '../models/scan-result';
 import { Observable, Subscriber } from 'rxjs';
 import { delay } from 'q';
-import { FileListing } from '../models/fileListing';
+import { FileListing } from '../models/file-listing';
 import { HttpResponse } from '@angular/common/http';
 import { stringify } from 'querystring';
 

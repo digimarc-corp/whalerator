@@ -17,7 +17,7 @@
 */
 
 import { Component, OnInit, Input } from '@angular/core';
-import { ScanResult } from '../models/scanResult';
+import { ScanResult } from '../models/scan-result';
 import { TypeofExpr } from '@angular/compiler';
 import { Severity } from '../models/severity';
 

@@ -16,7 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { ImageSet } from './imageSet';
+import { ImageSet } from './image-set';
 
 export class Tag {
     constructor(obj?: any) {

@@ -19,8 +19,8 @@
 import { Platform } from './platform';
 import { Document } from './document';
 import { History } from './history';
-import { ScanResult } from './scanResult';
-import { FileListing } from './fileListing';
+import { ScanResult } from './scan-result';
+import { FileListing } from './file-listing';
 
 export class Image {
     constructor(obj?: any) {

@@ -17,7 +17,7 @@
 */
 
 import { Pipe, PipeTransform } from '@angular/core';
-import { ImageSet } from './models/imageSet';
+import { ImageSet } from './models/image-set';
 
 @Pipe({
   name: 'tagSort'
