@@ -2,8 +2,8 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ScanResultComponent } from './scan-result.component';
 import { FormsModule } from '@angular/forms';
-import { ScanComponent } from '../models/scanComponent';
-import { ScanResult } from '../models/scanResult';
+import { ScanComponent } from '../models/scan-component';
+import { ScanResult } from '../models/scan-result';
 
 describe('ScanResultComponent', () => {
   let component: ScanResultComponent;
