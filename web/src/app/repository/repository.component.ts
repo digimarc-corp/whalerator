@@ -115,23 +115,24 @@ export class RepositoryComponent implements OnInit {
   }
 
   sortTags() {
+    if (this.tags) { this.applySort(this.tags); }
+    if (this.filteredTags) { this.applySort(this.filteredTags); }
+  }
+
+  applySort(tags: string[]) {
     switch (this._sort) {
       case SortOrder.Simplified:
-        this.tags.sort(SimplifiedSort.sort);
-        if (this.filteredTags) { this.filteredTags.sort(SimplifiedSort.sort); }
+        tags.sort(SimplifiedSort.sort);
         break;
       case SortOrder.Semver:
-        this.tags.sort(SemverSort.sort);
-        if (this.filteredTags) { this.filteredTags.sort(SemverSort.sort); }
+        tags.sort(SemverSort.sort);
         break;
       case SortOrder.Alpha:
-        this.tags.sort();
-        if (this.filteredTags) { this.filteredTags.sort(); }
+        tags.sort();
         break;
     }
     if (this.sortAscending) {
-      this.tags.reverse();
-      if (this.filteredTags) { this.filteredTags.reverse(); }
+      tags.reverse();
     }
   }
 

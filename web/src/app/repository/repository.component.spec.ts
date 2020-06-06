@@ -7,6 +7,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { ScanResultComponent } from '../scan-result/scan-result.component';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { SortOrder } from '../models/sort-order';
 
 describe('RepositoryComponent', () => {
   let component: RepositoryComponent;
@@ -23,6 +24,7 @@ describe('RepositoryComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(RepositoryComponent);
     component = fixture.componentInstance;
+    component.sort = SortOrder.Semver;
     fixture.detectChanges();
   });
 
