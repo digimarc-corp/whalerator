@@ -1,6 +1,9 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ScanResultComponent } from './scan-result.component';
+import { FormsModule } from '@angular/forms';
+import { ScanComponent } from '../models/scanComponent';
+import { ScanResult } from '../models/scanResult';
 
 describe('ScanResultComponent', () => {
   let component: ScanResultComponent;
@@ -8,14 +11,16 @@ describe('ScanResultComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ScanResultComponent ]
+      imports: [FormsModule],
+      declarations: [ScanResultComponent]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ScanResultComponent);
     component = fixture.componentInstance;
+    component.scan = new ScanResult;
     fixture.detectChanges();
   });
 

@@ -45,5 +45,4 @@ export class ScanResultComponent implements OnInit {
 
   ngOnInit() {
   }
-
 }

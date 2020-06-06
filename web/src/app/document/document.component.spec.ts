@@ -1,6 +1,9 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DocumentComponent } from './document.component';
+import { MarkdownComponent } from 'ngx-markdown';
+import { ScanResultComponent } from '../scan-result/scan-result.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('DocumentComponent', () => {
   let component: DocumentComponent;
@@ -8,9 +11,10 @@ describe('DocumentComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ DocumentComponent ]
+      imports: [ HttpClientTestingModule ],
+      declarations: [DocumentComponent, MarkdownComponent, ScanResultComponent ]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {

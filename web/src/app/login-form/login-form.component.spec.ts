@@ -2,13 +2,25 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LoginFormComponent } from './login-form.component';
 
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
+import { FormsModule } from '@angular/forms';
+import { MarkdownComponent } from 'ngx-markdown';
+import { ConfigService } from '../config.service';
+
 describe('LoginFormComponent', () => {
   let component: LoginFormComponent;
   let fixture: ComponentFixture<LoginFormComponent>;
 
   beforeEach(async(() => {
+    const configSpy = { config: { get: jasmine.createSpyObj('Config', [ 'registry' ]) } };
+
     TestBed.configureTestingModule({
-      declarations: [ LoginFormComponent ]
+      providers: [
+        { provide: ConfigService, useValue: configSpy },
+      ],
+      imports: [HttpClientTestingModule, RouterTestingModule, FormsModule],
+      declarations: [ LoginFormComponent, MarkdownComponent ]
     })
     .compileComponents();
   }));
