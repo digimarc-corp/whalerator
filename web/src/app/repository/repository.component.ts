@@ -30,7 +30,7 @@ import { ServiceError } from '../service-error';
 import { Title } from '@angular/platform-browser';
 import { SessionService } from '../session.service';
 import { ConfigService } from '../config.service';
-import { Sorts } from '../models/sorts';
+import { SortOrder } from '../models/sort-order';
 import { SemverSort } from '../sorts/semver-sort';
 
 @Component({
@@ -62,16 +62,16 @@ export class RepositoryComponent implements OnInit {
   public selectedImage: Image;
   public readme: string;
 
-  private _sort = Sorts.Semver;
+  private _sort = SortOrder.Semver;
   public get sort() {
     return this._sort;
   }
   public set sort(value: string) {
-    this._sort = value as Sorts;
+    this._sort = value as SortOrder;
     this.sortTags();
     this.configService.setRepoSort(this.name, this._sort, this.sortAscending);
   }
-  public sortOptions = Object.keys(Sorts);
+  public sortOptions = Object.keys(SortOrder);
   public sortAscending = false;
 
   public showCopyMsg: Boolean;
@@ -116,15 +116,15 @@ export class RepositoryComponent implements OnInit {
 
   sortTags() {
     switch (this._sort) {
-      case Sorts.Simplified:
+      case SortOrder.Simplified:
         this.tags.sort(SimplifiedSort.sort);
         if (this.filteredTags) { this.filteredTags.sort(SimplifiedSort.sort); }
         break;
-      case Sorts.Semver:
+      case SortOrder.Semver:
         this.tags.sort(SemverSort.sort);
         if (this.filteredTags) { this.filteredTags.sort(SemverSort.sort); }
         break;
-      case Sorts.Alpha:
+      case SortOrder.Alpha:
         this.tags.sort();
         if (this.filteredTags) { this.filteredTags.sort(); }
         break;

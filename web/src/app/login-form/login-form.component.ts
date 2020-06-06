@@ -23,7 +23,7 @@ import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
 import { Theme } from '../models/theme';
-import { Sorts } from '../models/sorts';
+import { SortOrder } from '../models/sort-order';
 
 @Component({
   selector: 'app-login-form',
@@ -48,12 +48,12 @@ export class LoginFormComponent implements OnInit {
   themes: Theme[];
   showPreview = false;
 
-  public sortOptions = Object.keys(Sorts);
+  public sortOptions = Object.keys(SortOrder);
   public get defaultSort() {
     return this.configService.getDefaultSort();
   }
   public set defaultSort(value: string) {
-    this.configService.setDefaultSort(value as Sorts);
+    this.configService.setDefaultSort(value as SortOrder);
   }
 
   lorem = '## Readme\n' +
@@ -100,7 +100,7 @@ export class LoginFormComponent implements OnInit {
   // resets all repo-level sort preferences
   resetSorts() {
     this.configService.resetSorts();
-    this.configService.setDefaultSort(Sorts.Semver);
+    this.configService.setDefaultSort(SortOrder.Semver);
   }
 
   logout() {

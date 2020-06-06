@@ -24,7 +24,7 @@ import { environment } from '../environments/environment';
 import { Observable, of } from 'rxjs';
 import { WebService, isError } from './web-service';
 import { Theme } from './models/theme';
-import { Sorts } from './models/sorts';
+import { SortOrder } from './models/sort-order';
 
 @Injectable({
   providedIn: 'root'
@@ -84,14 +84,14 @@ export class ConfigService extends WebService {
     Object.keys(localStorage).filter(s => s.startsWith('sort_')).map(s => localStorage.removeItem(s));
   }
 
-  getRepoSort(repo: string): [Sorts, boolean] {
-    const sort = localStorage.getItem('sort_' + repo) as Sorts;
+  getRepoSort(repo: string): [SortOrder, boolean] {
+    const sort = localStorage.getItem('sort_' + repo) as SortOrder;
     const asc = localStorage.getItem('sort_asc_' + repo) ? true : false;
 
     return [sort ? sort : this.getDefaultSort(), asc];
   }
 
-  setRepoSort(repo: string, sort: Sorts, ascending: boolean) {
+  setRepoSort(repo: string, sort: SortOrder, ascending: boolean) {
     localStorage.setItem('sort_' + repo, sort);
     if (ascending) {
       localStorage.setItem('sort_asc_' + repo, 'true');
@@ -100,12 +100,12 @@ export class ConfigService extends WebService {
     }
   }
 
-  getDefaultSort(): Sorts {
-    const sort = localStorage.getItem('defaultSort') as Sorts;
-    return sort ? sort : Sorts.Semver;
+  getDefaultSort(): SortOrder {
+    const sort = localStorage.getItem('defaultSort') as SortOrder;
+    return sort ? sort : SortOrder.Semver;
   }
 
-  setDefaultSort(sort: Sorts) {
+  setDefaultSort(sort: SortOrder) {
     localStorage.setItem('defaultSort', sort);
   }
 

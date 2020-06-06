@@ -16,7 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-export enum Sorts {
+export enum SortOrder {
     Simplified = 'Simplified',
     Alpha = 'Alpha',
     Semver = 'Semver',
