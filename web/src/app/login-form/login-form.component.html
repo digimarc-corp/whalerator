@@ -1,8 +1,8 @@
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
-  <div *ngIf="themes" style="max-width: 40em; margin: auto;">
-    <div style="text-align: center;">
-      Theme: <select [(ngModel)]="selectedTheme" >
+  <div *ngIf="themes">
+    <div class="section" style="text-align: center;">
+      Theme: <select [(ngModel)]="selectedTheme">
         <option *ngFor="let theme of themes" [value]="theme.name">{{theme.name}}</option>
       </select>
       <div *ngIf="!showPreview" class="toggle-button" (click)="showPreview=!showPreview">Show preview</div>
@@ -21,7 +21,7 @@
       </div>
       <div>
         <span class="label">Platforms:</span> <span class="badge platform selected">Platform</span>
-      </div>  
+      </div>
       <div>
         <span class="tab history">History</span>
         <span class="tab scanning">Static Analysis</span>
@@ -35,7 +35,15 @@
       </div>
     </div>
   </div>
-  <div style="text-align: center; margin-top: 5em;">
+  <div class="section">
+    Default Sort: <select [(ngModel)]="defaultSort">
+      <option *ngFor="let opt of sortOptions" [value]="opt">
+        {{opt}}
+      </option>
+    </select>
+    <button (click)="resetSorts()">Reset prefs</button>
+  </div>
+  <div class="section">
     <div>Connected to {{sessionService.activeRegistry}} as {{sessionService.userLabel}}.</div>
     <div>Last login: {{sessionService.sessionStart}}</div>
     <div>Session expires: {{sessionService.sessionExpiry}}</div>
@@ -43,7 +51,7 @@
   </div>
   <div *ngIf="!showToken" class="toggle-button" (click)="showToken=!showToken">Show token</div>
   <div *ngIf="showToken" class="toggle-button" (click)="showToken=!showToken">Hide token</div>
-  <div *ngIf="showToken" class="token" >
+  <div *ngIf="showToken" class="token">
     <span>{{sessionService.sessionToken}}</span>
   </div>
 
@@ -51,12 +59,12 @@
 <ng-template #elseBlock>
   <div class="formBox">
     <form (ngSubmit)="submit()">
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="username"
-        name="username" placeholder="Username" [hidden]="anonymous" />
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="password"
-        name="password" type="password" placeholder="Password" [hidden]="anonymous" />
-      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox" [(ngModel)]="registry"
-        name="registry" placeholder="Registry" [readonly]="registryLocked" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
+        [(ngModel)]="username" name="username" placeholder="Username" [hidden]="anonymous" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
+        [(ngModel)]="password" name="password" type="password" placeholder="Password" [hidden]="anonymous" />
+      <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
+        [(ngModel)]="registry" name="registry" placeholder="Registry" [readonly]="registryLocked" />
       <span>Stay logged in:
         <input [(ngModel)]="remember" name="remember" type="checkbox" />
       </span>

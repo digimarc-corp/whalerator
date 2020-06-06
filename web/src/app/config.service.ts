@@ -24,6 +24,7 @@ import { environment } from '../environments/environment';
 import { Observable, of } from 'rxjs';
 import { WebService, isError } from './web-service';
 import { Theme } from './models/theme';
+import { Sorts } from './models/sorts';
 
 @Injectable({
   providedIn: 'root'
@@ -79,11 +80,40 @@ export class ConfigService extends WebService {
     });
   }
 
+  resetSorts() {
+    Object.keys(localStorage).filter(s => s.startsWith('sort_')).map(s => localStorage.removeItem(s));
+  }
+
+  getRepoSort(repo: string): [Sorts, boolean] {
+    const sort = localStorage.getItem('sort_' + repo) as Sorts;
+    const asc = localStorage.getItem('sort_asc_' + repo) ? true : false;
+
+    return [sort ? sort : this.getDefaultSort(), asc];
+  }
+
+  setRepoSort(repo: string, sort: Sorts, ascending: boolean) {
+    localStorage.setItem('sort_' + repo, sort);
+    if (ascending) {
+      localStorage.setItem('sort_asc_' + repo, 'true');
+    } else {
+      localStorage.removeItem('sort_asc_' + repo);
+    }
+  }
+
+  getDefaultSort(): Sorts {
+    const sort = localStorage.getItem('defaultSort') as Sorts;
+    return sort ? sort : Sorts.Semver;
+  }
+
+  setDefaultSort(sort: Sorts) {
+    localStorage.setItem('defaultSort', sort);
+  }
+
   setTheme(theme: Theme) {
-    if (theme && document.getElementById("usertheme")) {
+    if (theme && document.getElementById('usertheme')) {
       this.currentTheme = theme;
       localStorage.setItem('theme', theme.name);
-      (<HTMLLinkElement>document.getElementById("usertheme")).href = theme.style;
+      (<HTMLLinkElement>document.getElementById('usertheme')).href = theme.style;
     }
   }
 }

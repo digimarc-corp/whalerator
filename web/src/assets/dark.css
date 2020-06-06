@@ -220,3 +220,22 @@ markdown img {
     color: #797979;
     border-color: #424242;
 }
+
+select {
+    background-color: #292929;
+    color: #797979;
+    border: none;
+    outline: none;
+}
+
+button {
+    background-color: #292929;
+    color: #797979;    
+    border: none;
+    outline: none;
+}
+
+button:active {
+    background-color: #797979;
+    color: #292929;
+}

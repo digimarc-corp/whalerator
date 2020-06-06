@@ -23,6 +23,7 @@ import { ConfigService } from '../config.service';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
 import { Theme } from '../models/theme';
+import { Sorts } from '../models/sorts';
 
 @Component({
   selector: 'app-login-form',
@@ -46,6 +47,14 @@ export class LoginFormComponent implements OnInit {
   anonymous = false;
   themes: Theme[];
   showPreview = false;
+
+  public sortOptions = Object.keys(Sorts);
+  public get defaultSort() {
+    return this.configService.getDefaultSort();
+  }
+  public set defaultSort(value: string) {
+    this.configService.setDefaultSort(value as Sorts);
+  }
 
   lorem = '## Readme\n' +
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n' +
@@ -86,6 +95,12 @@ export class LoginFormComponent implements OnInit {
     if (this.configService.config.themes && this.configService.config.themes.length > 1) {
       this.themes = this.configService.config.themes;
     }
+  }
+
+  // resets all repo-level sort preferences
+  resetSorts() {
+    this.configService.resetSorts();
+    this.configService.setDefaultSort(Sorts.Semver);
   }
 
   logout() {

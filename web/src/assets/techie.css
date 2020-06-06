@@ -121,3 +121,18 @@ div.image-detail {
 .tab.history.selected {
     border-left: 0.1em solid #407;
 }
+
+select {
+    border: 1px solid #DDD;
+    outline: none;
+}
+
+button {
+    border: none;
+    outline: none;
+}
+
+button:active {
+    background-color: #797979;
+    color: #292929;
+}

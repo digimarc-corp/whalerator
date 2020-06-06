@@ -69,6 +69,7 @@ export class RepositoryComponent implements OnInit {
   public set sort(value: string) {
     this._sort = value as Sorts;
     this.sortTags();
+    this.configService.setRepoSort(this.name, this._sort, this.sortAscending);
   }
   public sortOptions = Object.keys(Sorts);
   public sortAscending = false;
@@ -110,6 +111,7 @@ export class RepositoryComponent implements OnInit {
   toggleSortOrder() {
     this.sortAscending = !this.sortAscending;
     this.sortTags();
+    this.configService.setRepoSort(this.name, this._sort, this.sortAscending);
   }
 
   sortTags() {
@@ -206,6 +208,9 @@ export class RepositoryComponent implements OnInit {
           });
         }
       });
+      const sort = this.configService.getRepoSort(this.name);
+      this.sortAscending = sort[1];
+      this.sort = sort[0];
     }
   }
 

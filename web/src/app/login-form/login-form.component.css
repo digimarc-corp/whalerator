@@ -30,3 +30,8 @@ form > * {
     text-align: center;
     cursor: pointer;
 }
+
+.section {
+    text-align: center;
+    padding: 1em;
+}
