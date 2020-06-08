@@ -19,7 +19,9 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,14 +44,24 @@ namespace Whalerator.WebAPI
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            string auth;
             if (string.IsNullOrEmpty(Request.Headers["Authorization"]))
             {
-                return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"Authorization is required.\"}"));
+                if (Request.Cookies.ContainsKey("jwt"))
+                {
+                    var token = Request.Cookies["jwt"];
+                    auth = $"Bearer {token}";
+                }
+                else
+                {
+                    return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"Authorization is required.\"}"));
+                }
             }
             else
             {
-                return decoder.AuthenticateAsync(Request.Headers["Authorization"]);
+                auth = Request.Headers["Authorization"];
             }
+            return decoder.AuthenticateAsync(auth);
         }
 
     }

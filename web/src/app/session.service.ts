@@ -26,6 +26,7 @@ import { environment } from '../environments/environment';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { CookieService } from 'ngx-cookie-service';
 
 
 const httpOptions = {
@@ -37,7 +38,7 @@ const sessionKey = 'sessionToken';
 @Injectable({ providedIn: 'root' })
 export class SessionService extends WebService {
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private cookieService: CookieService) {
     super();
     this.setSession(localStorage.getItem(sessionKey) ? localStorage.getItem(sessionKey) : sessionStorage.getItem(sessionKey));
   }
@@ -67,7 +68,7 @@ export class SessionService extends WebService {
   }
 
   public get userLabel(): string {
-    return this.sessionToken ? (this.activeUser || "anonymous") : "Login";
+    return this.sessionToken ? (this.activeUser || 'anonymous') : 'Login';
   }
 
   private setSession(token: string) {
@@ -79,17 +80,20 @@ export class SessionService extends WebService {
       this.activeUser = credential.Usr;
       this.sessionExpiry = new Date(credential.Exp * 1000).toLocaleString();
       this.sessionStart = new Date(credential.Iat * 1000).toLocaleString();
+      this.cookieService.set('jwt', token, null, null, null, false); // , token, null, null, null, true, 'Strict');
     } else {
       this.activeRegistry = null;
       this.activeUser = null;
       this.sessionExpiry = null;
       this.sessionStart = null;
+      this.cookieService.deleteAll();
     }
   }
 
   logout(): void {
     sessionStorage.removeItem(sessionKey);
     localStorage.removeItem(sessionKey);
+    this.cookieService.deleteAll();
     this.sessionToken = null;
   }
 
