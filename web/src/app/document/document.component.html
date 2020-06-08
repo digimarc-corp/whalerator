@@ -11,11 +11,11 @@
       [class.selected]="selected === document">{{document.name}}</span>
     <span *ngIf="searchStatus" class="tab searching" [class.selected]="!selected">{{searchStatus}}</span>
     <div class="tab searching" *ngIf="!selected">
-      <img src="assets/search.svg" style="width: 25%; opacity: 0.33;" alt="Searching for documentation" />
+      <img src="assets/search.svg" style="width: 25%; opacity: 0.33;" title="Searching for documentation" />
     </div>
     <div class="tab document" *ngIf="isDocument(selected)">
       <div class="frame">
-        <markdown [data]="selected.content"></markdown>
+        <markdown id="mdViewer" [data]="selected.content" (ready)="onMarkdownLoad($event);"></markdown>
       </div>
     </div>
     <div class="tab scanning" *ngIf="isScan(selected)">

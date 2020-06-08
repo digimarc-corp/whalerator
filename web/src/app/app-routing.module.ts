@@ -33,7 +33,8 @@ const routes: Routes = [
   }] },
   { path: 'repo', component: RepositoryComponent, canActivate: [SessionGuard], children: [{
     path: '**', component: RepositoryComponent
-  }] }
+  }] },
+  { path : '**', redirectTo: '/catalog' }
 ];
 
 @NgModule({

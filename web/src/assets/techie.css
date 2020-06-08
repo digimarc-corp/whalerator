@@ -124,6 +124,7 @@ div.image-detail {
 
 select {
     border: 1px solid #DDD;
+    color: #636363;
     outline: none;
 }
 
@@ -135,4 +136,9 @@ button {
 button:active {
     background-color: #797979;
     color: #292929;
+}
+
+a.deadlink {
+    text-decoration: line-through;
+    opacity: 0.5;
 }

@@ -7,7 +7,7 @@
     <div class="copyBuffer">
       <span>{{fullPath}}</span>
       <span (click)="copyPath()"><img src="assets/clipboard.svg" class="action-icon"
-          alt="Copy path to clipboard" /></span>
+          title="Copy path to clipboard" /></span>
       <span class="copyMessage" [class.hidden]="!showCopyMsg">Copied!</span>
     </div>
   </div>
@@ -33,7 +33,7 @@
         <span class="badge tag" [class.selected]="tag === selectedTag"
           [class.loading]="!tagMap[tag] && !errorMap[tag]">{{tag}}</span>
         <span class="badge_ornament errored" *ngIf="errorMap[tag]">
-          <img class="action-icon errored" src="assets/exclamation-outline.svg" alt={{errorMap[tag]}} />
+          <img class="action-icon errored" src="assets/exclamation-outline.svg" title={{errorMap[tag]}} />
         </span>
       </div>
     </div>
@@ -42,7 +42,7 @@
         <span class="badge tag" [class.selected]="tag === selectedTag"
           [class.loading]="!tagMap[tag] && !errorMap[tag]">{{tag}}</span>
         <span class="badge_ornament errored" *ngIf="errorMap[tag]">
-          <img class="action-icon errored" src="assets/exclamation-outline.svg" alt={{errorMap[tag]}} />
+          <img class="action-icon errored" src="assets/exclamation-outline.svg" title={{errorMap[tag]}} />
         </span>
       </div>
     </div>
@@ -74,7 +74,7 @@
           <ng-template #detailBlock>
             <div>
               <span class="label">Last update:</span> {{selectedImageSet.date | date : "medium" }}
-              <img *ngIf="canDelete" src="assets/trash.svg" alt="Delete Image" class="action-icon"
+              <img *ngIf="canDelete" src="assets/trash.svg" title="Delete Image" class="action-icon"
                 (click)="delete(selectedImageSet)" />
             </div>
             <div>

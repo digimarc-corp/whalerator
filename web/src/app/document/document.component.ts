@@ -16,7 +16,7 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { ImageSet } from '../models/image-set';
 import { Platform } from '../models/platform';
 import { CatalogService } from '../catalog.service';
@@ -31,6 +31,7 @@ import { delay } from 'q';
 import { FileListing } from '../models/file-listing';
 import { HttpResponse } from '@angular/common/http';
 import { stringify } from 'querystring';
+import { MarkdownComponent } from 'ngx-markdown';
 
 @Component({
   selector: 'app-document',
@@ -73,6 +74,99 @@ export class DocumentComponent implements OnInit {
     private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
+  }
+
+  public onMarkdownLoad(event: string) {
+    const element = document.getElementById('mdViewer');
+    if (element) {
+      this.reEl(element);
+    }
+  }
+
+  public markdownClick(image: Image) {
+    const a = event.target as HTMLAnchorElement;
+    if (a) {
+      const src = new URL(a.href);
+      // is this link relative?
+      if (src.hostname === window.location.hostname) {        
+        const path = src.pathname.replace(/^\//, '');
+        // does it have a path component?
+        if (path) {
+          const digest = this.getLayerDigestForPath(path, image.files);
+          // can we find it in the index of known files?
+          if (!digest) {
+            if (!a.classList.contains('deadlink')) {
+              a.classList.add('deadlink');
+              a.insertAdjacentHTML('afterend',
+                '<img title="Dead link" src="assets/exclamation-outline.svg" class="action-icon deadlink" />');
+            }
+          } else {
+            // does it look like a markdown?
+            if (/\.md$/.test(src.pathname)) {
+              const doc = image.documents.find(d => d.name === path);
+              if (doc) {
+                this.select(doc);
+              } else {
+                this.loadDocument(image, digest, path, true);
+              }
+            } else {
+              // it's something else, open in new window/tab
+              const svc = new URL(this.configService.config.serviceHost);
+              svc.pathname = `api/repository/${this.repository}/${digest}/file`;
+              svc.search = `?${path}`;
+              window.open(svc.toString());
+            }
+          }
+        } else {
+          // no path, so effectively they're asking to reopen root. Probably a link to 'localhost'
+          window.open(window.location.origin);
+        }
+      } else {
+        // external link, open externally
+        window.open(src.toString());
+      }
+      return false;
+    }
+  }
+
+  reEl(element: Element) {
+    if (element.tagName.toLowerCase() === 'a') {
+      this.retargetAnchor(element);
+    } else if (element.tagName.toLowerCase() === 'img') {
+      this.retargetImg(element as HTMLImageElement);
+    } else {
+      let i: number;
+      for (i = 0; i < element.children.length; i++) {
+        this.reEl(element.children[i]);
+      }
+    }
+  }
+
+  private retargetAnchor(element: Element) {
+    const a = element as HTMLAnchorElement;
+    a.onclick = () => this.markdownClick(this.image);
+  }
+
+  private retargetImg(img: HTMLImageElement) {
+    if (img) {
+      const src = new URL(img.src);
+      if (src.hostname === window.location.hostname) {
+        const path = src.pathname.replace(/^\//, '');
+        const digest = this.getLayerDigestForPath(path, this.image.files);
+        const svc = new URL(this.configService.config.serviceHost);
+        src.host = svc.host;
+        src.pathname = `/api/repository/${this.repository}/file/${digest}`;
+        src.search = `?path=${path}`;
+        img.src = src.toString();
+      }
+    }
+  }
+
+  getLayerDigestForPath(path: string, index: FileListing[]): string {
+    const file = index.map(l => l.files.map(f => ({ layer: l.digest, path: f })))
+      .flat()
+      .find(f => f.path === path);
+    return file ? file.layer : null;
   }
 
   getScan() {
@@ -181,7 +275,7 @@ export class DocumentComponent implements OnInit {
 
   loadDocuments(image: Image) {
     if (this.configService.config.searchLists.length > 0) {
-      const files = image.files.map(l => l.files.map(f => ({ layer: l.digest, path: f}) )).flat();
+      const files = image.files.map(l => l.files.map(f => ({ layer: l.digest, path: f }))).flat();
       const matches = files.filter(f => this.configService.config.searchLists.flat().some(s => s.toLowerCase() === f.path.toLowerCase()));
       if (matches.length > 0) {
         matches.map(m => this.loadDocument(image, m.layer, m.path));
@@ -191,7 +285,7 @@ export class DocumentComponent implements OnInit {
     }
   }
 
-  loadDocument(image: Image, layer: string, path: string) {
+  loadDocument(image: Image, layer: string, path: string, focus?: boolean) {
     const document = new Document();
     document.name = path;
     document.content = `*Loading ${path}...*\n\n\n\n\n \`${layer}\``;
@@ -203,6 +297,9 @@ export class DocumentComponent implements OnInit {
       } else if (isHttpString(r)) {
         if (r.status === 200) {
           document.content = r.body;
+          if (this.image === image && focus) {
+            this.select(document);
+          }
         }
       }
     });

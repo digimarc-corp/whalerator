@@ -239,3 +239,12 @@ button:active {
     background-color: #797979;
     color: #292929;
 }
+
+a.deadlink {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+img.deadlink {
+    filter: invert(1);
+}

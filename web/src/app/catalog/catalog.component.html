@@ -23,7 +23,7 @@
           <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>
           <span *ngIf="repoWorking[repo.name]" class="working">{{repoWorking[repo.name]}}</span>
           <span class="badge tag-count">{{repo.tags}}</span>
-        <img *ngIf="repo.canDelete" src="assets/trash.svg" alt="Delete Repository" class="action-icon" (click)="delete(repo)"/>
+        <img *ngIf="repo.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon" (click)="delete(repo)"/>
       </td>
     </tr>
   </tbody>
