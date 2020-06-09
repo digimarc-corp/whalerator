@@ -43,7 +43,7 @@ namespace Whalerator.Client
             authCache = cache;
             this.config = config;
             this.logger = logger;
-            aliases = config.RegistryAliases.ToDictionary(a => a.Registry, a => a.Alias);
+            aliases = config?.RegistryAliases?.ToDictionary(a => a.Registry, a => a.Alias) ?? new Dictionary<string, string>();
         }
 
         public string CatalogScope() => "registry:catalog:*";
