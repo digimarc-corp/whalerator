@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Ocsp;
 using StackExchange.Redis;
@@ -198,9 +199,14 @@ namespace Whalerator.WebAPI.Controllers
 
                 var result = await client.GetFileAsync(repository, layer, path);
 
-                Response.Headers.Add("Content-Disposition", Path.GetFileName(path));
-                Response.Headers.Add("X-Content-Type-Options", "nosniff");
-                return File(result, "application/octet-stream");
+                string contentType;
+                IContentTypeProvider ct = new FileExtensionContentTypeProvider();
+                if (!ct.TryGetContentType(path, out contentType))
+                {
+                    contentType = "application/octet-stream";
+                }
+
+                return File(result, contentType);
             }
             catch (RedisConnectionException)
             {
