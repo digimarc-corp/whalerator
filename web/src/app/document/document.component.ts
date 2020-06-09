@@ -32,6 +32,7 @@ import { FileListing } from '../models/file-listing';
 import { HttpResponse } from '@angular/common/http';
 import { stringify } from 'querystring';
 import { MarkdownComponent } from 'ngx-markdown';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-document',
@@ -88,7 +89,7 @@ export class DocumentComponent implements OnInit {
     if (a) {
       const src = new URL(a.href);
       // is this link relative?
-      if (src.hostname === window.location.hostname) {        
+      if (src.hostname === window.location.hostname) {
         const path = src.pathname.replace(/^\//, '');
         // does it have a path component?
         if (path) {
@@ -111,7 +112,7 @@ export class DocumentComponent implements OnInit {
               }
             } else {
               // it's something else, open in new window/tab
-              const svc = new URL(this.configService.config.serviceHost);
+              const svc = new URL(environment.serviceBaseUri);
               svc.pathname = `api/repository/${this.repository}/${digest}/file`;
               svc.search = `?${path}`;
               window.open(svc.toString());
@@ -153,11 +154,11 @@ export class DocumentComponent implements OnInit {
       if (src.hostname === window.location.hostname) {
         const path = src.pathname.replace(/^\//, '');
         const digest = this.getLayerDigestForPath(path, this.image.files);
-        const svc = new URL(this.configService.config.serviceHost);
-        src.host = svc.host;
-        src.pathname = `/api/repository/${this.repository}/file/${digest}`;
-        src.search = `?path=${path}`;
-        img.src = src.toString();
+
+        const svc = new URL(environment.serviceBaseUri);
+        svc.pathname = `/api/repository/${this.repository}/file/${digest}`;
+        svc.search = `?path=${path}`;
+        img.src = svc.toString();
       }
     }
   }

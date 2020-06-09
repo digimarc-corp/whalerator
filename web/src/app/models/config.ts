@@ -29,5 +29,4 @@ export class Config {
     public docScanner: boolean;
     public autoLogin: boolean;
     public themes: Theme[];
-    public serviceHost: string = 'http://localhost:2108';
 }
