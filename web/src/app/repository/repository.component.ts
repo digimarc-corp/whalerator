@@ -76,8 +76,11 @@ export class RepositoryComponent implements OnInit {
 
   public showCopyMsg: Boolean;
 
+  // maps image digest strings to ImageSet objects
   public images: { [id: string]: ImageSet } = {};
+  // maps tag strings to image digest strings
   public tagMap: { [tag: string]: string } = {};
+  // maps tag strings to error messages
   public errorMap: { [tag: string]: string } = {};
 
   public permissions: Permissions;
@@ -117,6 +120,7 @@ export class RepositoryComponent implements OnInit {
   sortTags() {
     if (this.tags) { this.applySort(this.tags); }
     if (this.filteredTags) { this.applySort(this.filteredTags); }
+    if (this.selectedImageSet) { this.applySort(this.selectedImageSet.tags); }
   }
 
   applySort(tags: string[]) {
@@ -181,6 +185,7 @@ export class RepositoryComponent implements OnInit {
   selectTag(tag: string) {
     this.selectedTag = tag;
     this.selectedImageSet = this.images[this.tagMap[tag]];
+    this.applySort(this.selectedImageSet.tags);
     if (this.selectedImageSet) {
       if (!this.selectedPlatform || !this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
         this.selectedPlatform = this.selectedImageSet.images[0].platform;
@@ -248,9 +253,9 @@ export class RepositoryComponent implements OnInit {
           this.showError(digest, next);
         }
       } else {
-        this.mapTag(digest, tag);
         // if we've already loaded an imageset with this digest, just make the map entry
         if (this.images[digest]) {
+          this.mapTag(digest, tag);
           if (next) { next(); }
         } else {
           // fetch the actual imageset
@@ -263,7 +268,6 @@ export class RepositoryComponent implements OnInit {
               const setDigest = i.setDigest;
               i.tags = [tag];
               this.images[setDigest] = i;
-              this.tagMap[tag] = setDigest;
               // if this tag is currently selected, set the active image and let the document view start loading details
               if (tag === this.selectedTag) {
                 this.selectedImageSet = this.images[setDigest];
@@ -271,6 +275,7 @@ export class RepositoryComponent implements OnInit {
                 this.selectedPlatform = this.images[setDigest].images[0].platform;
               }
             }
+            this.mapTag(digest, tag);
             if (next) {
               next();
             }
@@ -281,8 +286,9 @@ export class RepositoryComponent implements OnInit {
   }
 
   private mapTag(digest: string, tag: string) {
-    if (this.images[digest]) {
+    if (this.images[digest] && !this.images[digest].tags.some(t => t === tag)) {
       this.images[digest].tags.push(tag);
+      this.applySort(this.images[digest].tags);
     }
     this.tagMap[tag] = digest;
   }
