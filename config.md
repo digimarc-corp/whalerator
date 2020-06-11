@@ -18,8 +18,11 @@ Configuration options do not need to be in any particular order, and extra optio
 # A StackExchange.Redis connection string. If not specified, and internal memcache will be used
 redisCache: redishost
 
-# Lifetime for cached objects. Default is 3600 (1 hour)
-cacheTtl: 3600
+# Lifetime for cached objects. Specified as common intervals (5m, 0.5h, 2d, etc.). If unit is omitted, assumes ms. Default is 1h.
+cacheTtl: 1h
+
+# Enable local caching. This causes additional objects to be cached, moving load from the local filesystem to the configured cache.
+localCache: false
 ```
 
 ## UI Options
