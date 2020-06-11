@@ -32,6 +32,7 @@ import { MarkdownModule } from 'ngx-markdown';
 import { AboutComponent } from './about/about.component';
 import { DocumentComponent } from './document/document.component';
 import { ScanResultComponent } from './scan-result/scan-result.component';
+import { CookieService } from 'ngx-cookie-service';
 
 @NgModule({
   declarations: [
@@ -51,7 +52,7 @@ import { ScanResultComponent } from './scan-result/scan-result.component';
     HttpClientModule,
     AppRoutingModule
   ],
-  providers: [ ],
+  providers: [ CookieService ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
