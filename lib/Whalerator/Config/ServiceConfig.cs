@@ -16,11 +16,10 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Whalerator.Config
 {
@@ -37,7 +36,8 @@ namespace Whalerator.Config
 
         public string RedisCache { get; set; }
 
-        public int CacheTtl { get; set; } = 3600;
+        public string CacheTtl { get; set; } = "1h";
+        public bool LocalCache { get; set; }
 
         public string IndexFolder { get; set; } = GetTempFolder();
 

@@ -35,6 +35,8 @@ namespace Whalerator.DockerClient
         private readonly IDockerClient innerClient;
         private readonly ICacheFactory cacheFactory;
 
+        public bool CacheLocalData { get; set; }
+
         public CachedDockerClient(ServiceConfig config, IDockerClient innerClient, ICacheFactory cacheFactory, IAuthHandler auth) : base(config, auth)
         {
             this.innerClient = innerClient;
@@ -42,6 +44,8 @@ namespace Whalerator.DockerClient
         }
 
         Task<T> ExecAsync<T>(string scope, string key, Func<Task<T>> func) where T : class => cacheFactory.Get<T>().ExecAsync(scope, key, AuthHandler, func);
+
+        #region fully cached methods
 
         public IEnumerable<Model.Repository> GetRepositories() =>
             ExecAsync(AuthHandler.CatalogScope(), CatalogKey(), () => Task.FromResult(innerClient.GetRepositories())).Result;
@@ -74,17 +78,30 @@ namespace Whalerator.DockerClient
             await innerClient.DeleteRepositoryAsync(repository);
         }
 
+        #endregion
+
+        #region locally cached methods
+        // these methods are normally cheap to run from disk, but in case of a high-latency filesystem (looking at you, Azure File) we can still cache them
+
+        public Task<ImageSet> GetImageSetAsync(string repository, string tag) => CacheLocalData ?
+            ExecAsync(AuthHandler.RepoPullScope(repository), RepoImageSetKey(repository, tag), () => innerClient.GetImageSetAsync(repository, tag)) :
+            innerClient.GetImageSetAsync(repository, tag);
+
+        public Task<Layer> GetLayerAsync(string repository, string layerDigest) => CacheLocalData ?
+            ExecAsync(AuthHandler.RepoPullScope(repository), ObjectDigestKey(layerDigest), () => innerClient.GetLayerAsync(repository, layerDigest)) :
+            innerClient.GetLayerAsync(repository, layerDigest);
+
+        public Task<ImageConfig> GetImageConfigAsync(string repository, string digest) => CacheLocalData ?
+            ExecAsync(AuthHandler.RepoPullScope(repository), ObjectDigestKey(digest), () => innerClient.GetImageConfigAsync(repository, digest)) :
+            innerClient.GetImageConfigAsync(repository, digest);
+
+        #endregion
+
         #region passthrough methods
-
-        public Task<Stream> GetFileAsync(string repository, Layer layer, string path) => innerClient.GetFileAsync(repository, layer, path);
-
-        public Task<ImageConfig> GetImageConfigAsync(string repository, string digest) => innerClient.GetImageConfigAsync(repository, digest);
-
-        public Task<ImageSet> GetImageSetAsync(string repository, string tag) => innerClient.GetImageSetAsync(repository, tag);
 
         public IEnumerable<LayerIndex> GetIndexes(string repository, Image image, params string[] targets) => innerClient.GetIndexes(repository, image, targets);
 
-        public Task<Layer> GetLayerAsync(string repository, string layerDigest) => innerClient.GetLayerAsync(repository, layerDigest);
+        public Task<Stream> GetFileAsync(string repository, Layer layer, string path) => innerClient.GetFileAsync(repository, layer, path);
 
         public Task<Stream> GetLayerArchiveAsync(string repository, string layerDigest) => innerClient.GetLayerArchiveAsync(repository, layerDigest);
 

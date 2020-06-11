@@ -63,9 +63,6 @@ namespace Whalerator.WebAPI
 
         public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig, ILogger logger)
         {
-            var volatileTtl = new TimeSpan(0, 0, config.CacheTtl);
-            logger?.LogInformation($"Cache lifetime for volatile registry objects: {volatileTtl}");
-
             services.AddScoped<IClientFactory, ClientFactory>();
 
             uiConfig.Registry = config.Registry;
@@ -123,11 +120,13 @@ namespace Whalerator.WebAPI
 
         public static IServiceCollection AddWhaleCache(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
+            logger?.LogInformation($"Default object cache lifetime: {config.CacheTtl}");
+
             if (string.IsNullOrEmpty(config.RedisCache))
             {
                 logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
-                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>()));
+                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>()) { Ttl = IntervalParser.Parse(config.CacheTtl) });
             }
             else
             {
@@ -150,7 +149,7 @@ namespace Whalerator.WebAPI
                     }
                 }
 
-                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>() });
+                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Ttl = IntervalParser.Parse(config.CacheTtl) });
             }
 
             return services;

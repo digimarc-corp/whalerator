@@ -25,5 +25,7 @@ namespace Whalerator
     public interface ICacheFactory
     {
         ICache<T> Get<T>() where T : class;
+
+        TimeSpan Ttl { get; set; }
     }
 }

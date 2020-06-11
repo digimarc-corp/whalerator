@@ -32,6 +32,8 @@ namespace Whalerator.Support
             this.cache = cache;
         }
 
-        public ICache<T> Get<T>() where T : class => new MemCache<T>(cache);
+        public ICache<T> Get<T>() where T : class => new MemCache<T>(cache) { Ttl = Ttl };
+
+        public TimeSpan Ttl { get; set; }
     }
 }

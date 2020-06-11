@@ -27,6 +27,8 @@ namespace Whalerator.Support
     {
         public IConnectionMultiplexer Mux { get; set; }
 
-        public ICache<T> Get<T>() where T : class => new RedCache<T>(Mux);
+        public ICache<T> Get<T>() where T : class => new RedCache<T>(Mux) { Ttl = Ttl };
+
+        public TimeSpan Ttl { get; set; }
     }
 }

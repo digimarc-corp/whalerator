@@ -61,21 +61,27 @@ namespace Whalerator
 
         public IDockerClient GetClient(IAuthHandler auth)
         {
+            var host = auth.GetRegistryHost(config.IgnoreInternalAlias);
             if (string.IsNullOrEmpty(config.RegistryRoot))
             {
                 /* this is convoluted. The local client needs to call back to the remote client to fetch layers or other blobs as needed, but the remote client needs to call down 
                  * to the local client to actually load data, interperet manifests, etc. So, a circular dependency exists. Still waiting on an epiphany to make it cleaner.
                  */
 
-                var host = auth.GetRegistryHost(config.IgnoreInternalAlias);
                 var httpClient = new HttpClient(new AuthenticatedParameterizedHttpClientHandler(ClientTokenCallback(auth))) { BaseAddress = new Uri(RegistryCredentials.HostToEndpoint(host)) };
                 var service = RestService.For<IDockerDistribution>(httpClient);
                 var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryCache, Host = host };
                 var remoteClient = new RemoteDockerClient(config, auth, service, localClient, cacheFactory) { Host = host };
                 localClient.RecurseClient = remoteClient;
 
-                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = host };
+                var cachedClient = new CachedDockerClient(config, remoteClient, cacheFactory, auth) { Host = host, CacheLocalData = config.LocalCache };
 
+                return cachedClient;
+            }
+            else if (config.LocalCache)
+            {
+                var localClient = new LocalDockerClient(config, indexer, extractor, auth, loggerFactory.CreateLogger<LocalDockerClient>()) { RegistryRoot = config.RegistryRoot };
+                var cachedClient = new CachedDockerClient(config, localClient, cacheFactory, auth) { Host = host, CacheLocalData = config.LocalCache };
                 return cachedClient;
             }
             else

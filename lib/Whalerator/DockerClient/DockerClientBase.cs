@@ -45,6 +45,8 @@ namespace Whalerator.DockerClient
 
         protected string RepoTagsKey(string repository) => $"{Host}:repository:{repository}:tags";
         protected string RepoTagDigestKey(string repository, string tag) => $"{Host}:repository:{repository}:{tag}";
+        protected string RepoImageSetKey(string repository, string tag) => $"{Host}:repository:{repository}:{tag}:imageset";
+        protected string ObjectDigestKey(string digest) => $"{Host}:object:{digest}";
 
         protected async Task<string> ReadFileAsync(string path)
         {
