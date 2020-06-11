@@ -39,6 +39,13 @@ export class ConfigService extends WebService {
   public themes: Theme[];
   public currentTheme: Theme;
 
+  public get pagerSize(): number {
+    return Number(localStorage.getItem('pager'));
+  }
+  public set pagerSize(value: number) {
+    localStorage.setItem('pager', value.toString());
+  }
+
   constructor(private http: HttpClient) {
     super();
     this.apiBase = environment.serviceBaseUri;

@@ -22,8 +22,9 @@ import { CatalogService } from '../catalog.service';
 import { Repository } from '../models/repository';
 import { isError } from '../web-service';
 import { Title } from '@angular/platform-browser';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
+import { ConfigService } from '../config.service';
 
 @Component({
   selector: 'app-catalog',
@@ -32,16 +33,51 @@ import { Location } from '@angular/common';
 })
 export class CatalogComponent implements OnInit {
 
+  constructor(public sessionService: SessionService,
+    private configService: ConfigService,
+    private catalogService: CatalogService,
+    private location: Location,
+    private router: Router,
+    private route: ActivatedRoute,
+    private titleService: Title) { }
+
   public repos: Repository[];
   public repoError: { [repo: string]: string } = {};
   public repoWorking: { [repo: string]: string } = {};
   public errorMessage: string;
 
-  constructor(public sessionService: SessionService,
-    private catalogService: CatalogService,
-    private location: Location,
-    private router: Router,
-    private titleService: Title) { }
+  pagedRepos: Repository[];
+
+  get repoCount(): number {
+    return this.repos ? this.repos.length : 0;
+  }
+
+  _pageCurrent = 1;
+  get pageCurrent(): number {
+    return this._pageCurrent;
+  }
+  set pageCurrent(value: number) {
+    this._pageCurrent = value;
+    this.updatePage();
+  }
+
+  get pageSize(): number {
+    const size = this.configService.pagerSize;
+    return size ? size : 25;
+  }
+  set pageSize(value: number) {
+    this.configService.pagerSize = value;
+    if (value > 1) {
+      const currentItem = (this.pageCurrent - 1) * this.pageSize;
+      this.pageCurrent = Math.floor(currentItem / this.pageSize) + 1;
+    } else {
+      this.pageCurrent = 1;
+    }
+  }
+
+  get pageCount(): number {
+    return Math.max(1, Math.floor(this.repoCount / this.pageSize) + 1);
+  }
 
   ngOnInit() {
     this.titleService.setTitle(this.sessionService.activeRegistry + ' - Catalog');
@@ -56,8 +92,44 @@ export class CatalogComponent implements OnInit {
         }
       } else {
         this.repos = r;
+        this.route.queryParams.subscribe(p => {
+          this.pageSize = isNaN(p['items']) ? this.pageSize : Number(p['items']);
+          this.pageCurrent = isNaN(p['page']) ? this.pageCurrent : Number(p['page']);
+        });
       }
     });
+  }
+
+  updatePage() {
+    if (this.pageSize > 0) {
+      const start = (this.pageCurrent - 1) * this.pageSize;
+      const end = start + this.pageSize;
+
+      this.pagedRepos = this.repos.slice(start, end);
+    } else {
+      this.pagedRepos = this.repos;
+    }
+    this.router.navigate([], { relativeTo: this.route, queryParams: { items: this.pageSize, page: this.pageCurrent, }, replaceUrl: true });
+  }
+
+  pageHome() {
+    this.pageCurrent = 1;
+  }
+
+  pageBack() {
+    if (this.pageCurrent > 1) {
+      this.pageCurrent--;
+    }
+  }
+
+  pageNext() {
+    if (this.pageCurrent < this.pageCount) {
+      this.pageCurrent++;
+    }
+  }
+
+  pageEnd() {
+    this.pageCurrent = this.pageCount;
   }
 
   delete(repo: Repository) {

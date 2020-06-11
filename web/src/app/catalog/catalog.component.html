@@ -14,17 +14,39 @@
     <tr *ngIf="(errorMessage)">
       <td colspan="2" style="text-align: center;"><span class="errorBox">{{errorMessage}}</span></td>
     </tr>
-    <tr *ngFor="let repo of repos" [class.working]="repoWorking[repo.name]">
+    <tr *ngFor="let repo of pagedRepos" [class.working]="repoWorking[repo.name]">
       <td>
         <img src="assets/buoy.svg" class="action-icon" />
         <a routerLink="/r/{{repo.name}}">{{repo.name}}</a>
       </td>
       <td class="right">
-          <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>
-          <span *ngIf="repoWorking[repo.name]" class="working">{{repoWorking[repo.name]}}</span>
-          <span class="badge tag-count">{{repo.tags}}</span>
-        <img *ngIf="repo.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon" (click)="delete(repo)"/>
+        <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>
+        <span *ngIf="repoWorking[repo.name]" class="working">{{repoWorking[repo.name]}}</span>
+        <span class="badge tag-count">{{repo.tags}}</span>
+        <img *ngIf="repo.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon"
+          (click)="delete(repo)" />
       </td>
     </tr>
   </tbody>
+  <tfoot>
+    <tr>
+      <td>
+        <a class="pager" (click)="pageHome()">&lt;&lt;</a>
+        <a class="pager" (click)="pageBack()">&lt;</a>
+        {{pageCurrent}} / {{pageCount}}
+        <a class="pager" (click)="pageNext()">&gt;</a>
+        <a class="pager" (click)="pageEnd()">&gt;&gt;</a>
+      </td>
+      <td class="right">
+        Show
+        <select [(ngModel)]="pageSize">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="40">40</option>
+          <option value="-1">All</option>
+        </select>
+        ({{repoCount}} total)
+      </td>
+    </tr>
+  </tfoot>
 </table>
