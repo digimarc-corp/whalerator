@@ -9,7 +9,7 @@
   <thead>
     <tr>
       <td>Repository</td>
-      <td class="right">Tags</td>
+      <td class="right"></td>
     </tr>
   </thead>
   <tbody>
@@ -27,18 +27,15 @@
       </td>
       <td *ngIf="!isRepo(item)">
         <img src="assets/folder-outline.svg" class="action-icon" />
-        <a routerLink="/catalog" [queryParams]="{ path: item }" queryParamsHandling="merge">{{item}}</a>
+        <a routerLink="/catalog" [queryParams]="{ path: path(item) }" queryParamsHandling="merge">{{item}}</a>
       </td>
-      <td *ngIf="isRepo(item)" class="right">
+      <td class="right">
         <span *ngIf="repoError[item.name]" class="errorBox">{{repoError[item.name]}}</span>
         <span *ngIf="repoWorking[item.name]" class="working">{{repoWorking[item.name]}}</span>
-        <span class="badge tag-count">{{item.tags}}</span>
-        <img *ngIf="item.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon"
+        <span class="badge tag-count">{{childCount(item)}}</span>
+        <img [style.visibility]="isRepo(item) && item.canDelete ? 'visible' : 'hidden'" src="assets/trash.svg" title="Delete Repository" class="action-icon"
           (click)="delete(repo)" />
-      </td>
-      <td *ngIf="!isRepo(item)" class="right">
-
-      </td>
+      </td>      
     </tr>
   </tbody>
   <tfoot>
@@ -51,6 +48,7 @@
         <a class="pager" (click)="pageEnd()">&gt;&gt;</a>
       </td>
       <td class="right">
+        <span style="margin-right: 2em;">Collapse folders: <input class="checkbox" type="checkbox" [(ngModel)]="collapse" /></span>
         Show
         <select [(ngModel)]="pageSize">
           <option value="10">10</option>
