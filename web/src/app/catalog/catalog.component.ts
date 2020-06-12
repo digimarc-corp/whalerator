@@ -25,6 +25,9 @@ import { Title } from '@angular/platform-browser';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { ConfigService } from '../config.service';
+import { stringify } from 'querystring';
+import { CatalogItem } from '../models/catalog-item';
+import { CatalogSort } from '../sorts/catalog-sort';
 
 @Component({
   selector: 'app-catalog',
@@ -39,17 +42,30 @@ export class CatalogComponent implements OnInit {
     private location: Location,
     private router: Router,
     private route: ActivatedRoute,
-    private titleService: Title) { }
+    private titleService: Title) {
+    route.queryParams.subscribe(p => this.checkParams(p));
+  }
 
   public repos: Repository[];
+  public paths: string[];
+  public items: Array<Repository | string> = [];
   public repoError: { [repo: string]: string } = {};
   public repoWorking: { [repo: string]: string } = {};
   public errorMessage: string;
 
-  pagedRepos: Repository[];
+  _folder: string;
+  get folder(): string {
+    return this._folder;
+  }
+  set folder(value: string) {
+    this._folder = value;
+    this.UpdateItems();
+  }
+
+  pagedItems: Array<Repository | string>;
 
   get repoCount(): number {
-    return this.repos ? this.repos.length : 0;
+    return this.items ? this.items.length : 0;
   }
 
   _pageCurrent = 1;
@@ -81,23 +97,74 @@ export class CatalogComponent implements OnInit {
 
   ngOnInit() {
     this.titleService.setTitle(this.sessionService.activeRegistry + ' - Catalog');
-    this.catalogService.getRepos().subscribe(r => {
-      if (isError(r)) {
-        if (r.resultCode === 401) {
+    this.catalogService.getRepos().subscribe(repos => {
+      if (isError(repos)) {
+        if (repos.resultCode === 401) {
           this.sessionService.logout();
           this.router.navigate(['/login'], { queryParams: { requested: this.location.path() } });
         } else {
           this.errorMessage = 'There was an error fetching the repository catalog.';
-          console.log(r.message);
+          console.log(repos.message);
         }
       } else {
-        this.repos = r;
-        this.route.queryParams.subscribe(p => {
-          this.pageSize = isNaN(p['items']) ? this.pageSize : Number(p['items']);
-          this.pageCurrent = isNaN(p['page']) ? this.pageCurrent : Number(p['page']);
-        });
+        this.repos = repos;
+        const paths = this.repos
+          .map(r => r.name.split('/'))
+          .filter(r => r.length > 1)
+          .map(r => r.slice(0, r.length - 1).join('/'));
+        this.paths = Array.from(new Set(paths));
+
+        this.UpdateItems();
+
+        this.route.queryParams.subscribe(p => this.checkParams(p));
       }
     });
+  }
+
+  private checkParams(p) {
+    this.folder = p['path'];
+    this.pageSize = isNaN(p['items']) ? this.pageSize : Number(p['items']);
+
+    // pageCurrent setter triggers updates that could update the route, so it must be set last
+    this.pageCurrent = isNaN(p['page']) ? this.pageCurrent : Number(p['page']);
+  }
+
+  private UpdateItems() {
+    let paths: string[];
+    let repos: Repository[];
+    if (this.folder) {
+      paths = this.paths.filter(a => a !== this.folder && a.startsWith(this.folder));
+      repos = this.repos.filter(a => a.name.startsWith(this.folder));
+    } else {
+      paths = this.paths;
+      repos = this.repos;
+    }
+
+    // further filter path list to those that aren't sub-paths of another item
+    const topPaths = paths.filter(a => !paths.some(b => a !== b && a.startsWith(b)));
+
+    const items = repos.filter(r => !topPaths.some(p => r.name.startsWith(p)));
+    this.items = [].concat(items).concat(topPaths);
+    this.items.sort(CatalogSort.sort);
+  }
+
+  isRepo(item: Repository | string): item is Repository {
+    return typeof item !== 'string';
+  }
+
+  breadCrumbs(): [string, string][] {
+    const crumbs: [string, string][] = [];
+    if (this.folder && this.paths) {
+      const parents = this.paths.filter(p => this.folder.startsWith(p)).sort();
+      let i: number;
+      for (i = 0; i < parents.length; i++) {
+        const path = parents[i];
+        const label = i > 0 ? path.replace(parents[i - 1] + '/', '') : path;
+        crumbs.push([path, label]);
+      }
+    }
+
+    return crumbs;
   }
 
   updatePage() {
@@ -105,11 +172,15 @@ export class CatalogComponent implements OnInit {
       const start = (this.pageCurrent - 1) * this.pageSize;
       const end = start + this.pageSize;
 
-      this.pagedRepos = this.repos.slice(start, end);
+      this.pagedItems = this.items.slice(start, end);
     } else {
-      this.pagedRepos = this.repos;
+      this.pagedItems = this.items;
     }
-    this.router.navigate([], { relativeTo: this.route, queryParams: { items: this.pageSize, page: this.pageCurrent, }, replaceUrl: true });
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { items: this.pageSize, page: this.pageCurrent, path: this.folder, },
+      replaceUrl: true
+    });
   }
 
   pageHome() {

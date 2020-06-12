@@ -1,7 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { SemverSort } from './semver-sort';
 
-describe('RepositoryComponent', () => {
+describe('SemverSort', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({})

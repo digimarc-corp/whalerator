@@ -1,4 +1,9 @@
-<h2>{{sessionService.registryLabel}}</h2>
+<h2>
+  <a routerLink="/catalog">{{sessionService.registryLabel}}</a>
+  <span *ngFor="let crumb of breadCrumbs()">
+    /<a routerLink="/catalog" [queryParams]="{ path: crumb[0] }" queryParamsHandling="merge">{{crumb[1]}}</a>
+  </span>
+</h2>
 
 <table class="pure-table pure-table-horizontal catalog">
   <thead>
@@ -8,23 +13,31 @@
     </tr>
   </thead>
   <tbody>
-    <tr *ngIf="(!repos) && (!errorMessage)">
+    <tr *ngIf="(!items) && (!errorMessage)">
       <td colspan="2" style="text-align: center;">Loading...</td>
     </tr>
     <tr *ngIf="(errorMessage)">
       <td colspan="2" style="text-align: center;"><span class="errorBox">{{errorMessage}}</span></td>
     </tr>
-    <tr *ngFor="let repo of pagedRepos" [class.working]="repoWorking[repo.name]">
-      <td>
-        <img src="assets/buoy.svg" class="action-icon" />
-        <a routerLink="/r/{{repo.name}}">{{repo.name}}</a>
+    <tr *ngFor="let item of pagedItems" [class.working]="repoWorking[item.name]">
+      <td *ngIf="isRepo(item)">
+        <img src="assets/layers.svg" class="action-icon" />
+        <a *ngIf="!folder" routerLink="/r/{{item.name}}">{{item.name}}</a>
+        <a *ngIf="folder" routerLink="/r/{{item.name}}">{{item.shortName}}</a>
       </td>
-      <td class="right">
-        <span *ngIf="repoError[repo.name]" class="errorBox">{{repoError[repo.name]}}</span>
-        <span *ngIf="repoWorking[repo.name]" class="working">{{repoWorking[repo.name]}}</span>
-        <span class="badge tag-count">{{repo.tags}}</span>
-        <img *ngIf="repo.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon"
+      <td *ngIf="!isRepo(item)">
+        <img src="assets/folder-outline.svg" class="action-icon" />
+        <a routerLink="/catalog" [queryParams]="{ path: item }" queryParamsHandling="merge">{{item}}</a>
+      </td>
+      <td *ngIf="isRepo(item)" class="right">
+        <span *ngIf="repoError[item.name]" class="errorBox">{{repoError[item.name]}}</span>
+        <span *ngIf="repoWorking[item.name]" class="working">{{repoWorking[item.name]}}</span>
+        <span class="badge tag-count">{{item.tags}}</span>
+        <img *ngIf="item.canDelete" src="assets/trash.svg" title="Delete Repository" class="action-icon"
           (click)="delete(repo)" />
+      </td>
+      <td *ngIf="!isRepo(item)" class="right">
+
       </td>
     </tr>
   </tbody>

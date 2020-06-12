@@ -28,6 +28,11 @@ export class Repository {
     public tags: number;
     public permissions: Permissions;
 
+    public get shortName() {
+        const parts = this.name.split('/');
+        return parts[parts.length - 1];
+    }
+
     public get canDelete(): boolean {
         return this.permissions >= Permissions.Admin;
     }
