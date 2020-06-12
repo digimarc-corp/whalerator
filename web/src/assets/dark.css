@@ -72,6 +72,10 @@ img.image-icon {
     opacity: 0.4;
 }
 
+.tab.document img {
+    filter: invert(1);
+}
+
 div.box {
     border-color: #424242;
     background: #373737;

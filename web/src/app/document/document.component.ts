@@ -108,8 +108,10 @@ export class DocumentComponent implements OnInit {
               if (doc) {
                 this.select(doc);
               } else {
-                this.loadDocument(image, digest, path, true);
+                const loadedDoc = this.loadDocument(image, digest, path, true);
+                loadedDoc.closeable = true;
               }
+              document.getElementById('docViewer').scrollIntoView();
             } else {
               // it's something else, open in new window/tab
               const svc = new URL(environment.serviceBaseUri);
@@ -160,6 +162,16 @@ export class DocumentComponent implements OnInit {
         svc.search = `?path=${path}`;
         img.src = svc.toString();
       }
+    }
+  }
+
+  close(item: Document) {
+    const i = this.image.documents.indexOf(item);
+    const selected = this.selected === item;
+
+    this.image.documents.splice(i, 1);
+    if (selected) {
+      this.selected = this.image.documents[Math.min(i - 1, 0)];
     }
   }
 
@@ -286,7 +298,7 @@ export class DocumentComponent implements OnInit {
     }
   }
 
-  loadDocument(image: Image, layer: string, path: string, focus?: boolean) {
+  loadDocument(image: Image, layer: string, path: string, focus?: boolean): Document {
     const document = new Document();
     document.name = path;
     document.content = `*Loading ${path}...*\n\n\n\n\n \`${layer}\``;
@@ -304,6 +316,7 @@ export class DocumentComponent implements OnInit {
         }
       }
     });
+    return document;
   }
 
   rotateSearchStatus(spin: number) {

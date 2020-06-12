@@ -1,4 +1,4 @@
-<div class="documentViewer">
+<div id="docViewer" class="documentViewer">
   <div *ngIf="!image; then imageLoading else imageDocs"></div>
   <ng-template #imageLoading>Loading image</ng-template>
   <ng-template #imageDocs>
@@ -8,7 +8,10 @@
       <span *ngIf="!image.scanResult">Requesting scan</span>
     </span>
     <span class="tab document" *ngFor="let document of image.documents" (click)="select(document)"
-      [class.selected]="selected === document">{{document.name}}</span>
+      [class.selected]="selected === document">
+      {{document.name}}
+      <img *ngIf="document.closeable" class="action-icon" src="assets/close.svg" title="Close document" (click)="close(document)" />
+    </span>
     <span *ngIf="searchStatus" class="tab searching" [class.selected]="!selected">{{searchStatus}}</span>
     <div class="tab searching" *ngIf="!selected">
       <img src="assets/search.svg" style="width: 25%; opacity: 0.33;" title="Searching for documentation" />
