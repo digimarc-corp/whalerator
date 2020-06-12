@@ -33,30 +33,33 @@
         <span *ngIf="repoError[item.name]" class="errorBox">{{repoError[item.name]}}</span>
         <span *ngIf="repoWorking[item.name]" class="working">{{repoWorking[item.name]}}</span>
         <span class="badge tag-count">{{childCount(item)}}</span>
-        <img [style.visibility]="isRepo(item) && item.canDelete ? 'visible' : 'hidden'" src="assets/trash.svg" title="Delete Repository" class="action-icon"
-          (click)="delete(item)" />
-      </td>      
+        <img [style.visibility]="isRepo(item) && item.canDelete ? 'visible' : 'hidden'" src="assets/trash.svg"
+          title="Delete Repository" class="action-icon" (click)="delete(item)" />
+      </td>
     </tr>
   </tbody>
   <tfoot>
     <tr>
-      <td>
-        <a class="pager" (click)="pageHome()">&lt;&lt;</a>
-        <a class="pager" (click)="pageBack()">&lt;</a>
-        {{pageCurrent}} / {{pageCount}}
-        <a class="pager" (click)="pageNext()">&gt;</a>
-        <a class="pager" (click)="pageEnd()">&gt;&gt;</a>
-      </td>
-      <td class="right">
-        <span style="margin-right: 2em;">Collapse folders: <input class="checkbox" type="checkbox" [(ngModel)]="collapse" /></span>
-        Show
-        <select [(ngModel)]="pageSize">
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="40">40</option>
-          <option value="-1">All</option>
-        </select>
-        ({{repoCount}} total)
+      <td class="pager" colspan="2">
+        <span class="left">
+          <a class="pager" (click)="pageHome()">&lt;&lt;</a>
+          <a class="pager" (click)="pageBack()">&lt;</a>
+          {{pageCurrent}} / {{pageCount}}
+          <a class="pager" (click)="pageNext()">&gt;</a>
+          <a class="pager" (click)="pageEnd()">&gt;&gt;</a>
+        </span>
+        <span class="center">Collapse folders: <input class="checkbox" type="checkbox"
+            [(ngModel)]="collapse" /></span>
+        <span class="right">
+          Show
+          <select [(ngModel)]="pageSize">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="40">40</option>
+            <option value="-1">All</option>
+          </select>
+          ({{repoCount}} total)
+        </span>
       </td>
     </tr>
   </tfoot>

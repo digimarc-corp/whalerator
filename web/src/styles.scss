@@ -214,6 +214,8 @@ table.catalog td {
 
 td.right {
     text-align: right;
+    width: 1px;
+    white-space: nowrap;
 }
 
 .textured {
@@ -224,3 +226,52 @@ td.right {
 a.pager {
     cursor: pointer;
 }
+
+td.pager {
+    text-align: center;
+}
+
+td.pager span {
+    white-space: nowrap;
+    @media (min-width: $width-break-md) {
+        margin: 1em;
+    }
+    @media (max-width: $width-break-md) {
+        margin: 0.2em;
+    }
+}
+
+td.pager span.right {
+    @media (min-width: $width-break-md) {
+        float: right;
+    }
+    @media (max-width: $width-break-md) {
+        display: block;
+    }
+}
+
+td.pager span.left {
+    @media (min-width: $width-break-md) {
+        float: left;
+    }
+    @media (max-width: $width-break-md) {
+        display: block;
+    }
+}
+
+td.pager span.center {
+    display: inline-block;    
+}
+
+/*
+span.block {
+    margin: 1em; 
+    white-space: nowrap;
+}
+@media (min-width: $width-break-md) {
+    margin-top: 5em;
+}
+@media (max-width: $width-break-md) {
+    margin-top: 1em;
+}
+*/
