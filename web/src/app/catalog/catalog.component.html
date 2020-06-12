@@ -9,7 +9,7 @@
   <thead>
     <tr>
       <td>Repository</td>
-      <td class="right"></td>
+      <td class="right">Tags</td>
     </tr>
   </thead>
   <tbody>
@@ -34,7 +34,7 @@
         <span *ngIf="repoWorking[item.name]" class="working">{{repoWorking[item.name]}}</span>
         <span class="badge tag-count">{{childCount(item)}}</span>
         <img [style.visibility]="isRepo(item) && item.canDelete ? 'visible' : 'hidden'" src="assets/trash.svg" title="Delete Repository" class="action-icon"
-          (click)="delete(repo)" />
+          (click)="delete(item)" />
       </td>      
     </tr>
   </tbody>

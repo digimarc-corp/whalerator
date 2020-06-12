@@ -146,7 +146,8 @@ export class CatalogComponent implements OnInit {
     if (this.isRepo(item)) {
       return item.tags;
     } else {
-      return this.repos.filter(r => r.name.startsWith(item as string)).length;
+      const path = this.path(item);
+      return this.repos.filter(r => r.name.startsWith(path)).map(r => r.tags).reduce((t, c) => t + c);
     }
   }
 
@@ -251,6 +252,8 @@ export class CatalogComponent implements OnInit {
             } else {
               this.repos = this.repos.filter(r => r.name !== repo.name);
               delete this.repoWorking[name];
+              this.updateItems();
+              this.updatePage();
             }
           });
         }
