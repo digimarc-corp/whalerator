@@ -130,22 +130,24 @@ export class CatalogComponent implements OnInit {
   }
 
   private UpdateItems() {
-    let paths: string[];
-    let repos: Repository[];
-    if (this.folder) {
-      paths = this.paths.filter(a => a !== this.folder && a.startsWith(this.folder));
-      repos = this.repos.filter(a => a.name.startsWith(this.folder));
-    } else {
-      paths = this.paths;
-      repos = this.repos;
+    if (this.repos) {
+      let paths: string[];
+      let repos: Repository[];
+      if (this.folder) {
+        paths = this.paths.filter(a => a !== this.folder && a.startsWith(this.folder));
+        repos = this.repos.filter(a => a.name.startsWith(this.folder));
+      } else {
+        paths = this.paths;
+        repos = this.repos;
+      }
+
+      // further filter path list to those that aren't sub-paths of another item
+      const topPaths = paths.filter(a => !paths.some(b => a !== b && a.startsWith(b)));
+
+      const items = repos.filter(r => !topPaths.some(p => r.name.startsWith(p)));
+      this.items = [].concat(items).concat(topPaths);
+      this.items.sort(CatalogSort.sort);
     }
-
-    // further filter path list to those that aren't sub-paths of another item
-    const topPaths = paths.filter(a => !paths.some(b => a !== b && a.startsWith(b)));
-
-    const items = repos.filter(r => !topPaths.some(p => r.name.startsWith(p)));
-    this.items = [].concat(items).concat(topPaths);
-    this.items.sort(CatalogSort.sort);
   }
 
   isRepo(item: Repository | string): item is Repository {
