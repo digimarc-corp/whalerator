@@ -25,8 +25,6 @@ import { Title } from '@angular/platform-browser';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { ConfigService } from '../config.service';
-import { stringify } from 'querystring';
-import { CatalogItem } from '../models/catalog-item';
 import { CatalogSort } from '../sorts/catalog-sort';
 
 @Component({
