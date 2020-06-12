@@ -39,6 +39,21 @@ export class ConfigService extends WebService {
   public themes: Theme[];
   public currentTheme: Theme;
 
+  public get collapseCatalog(): boolean {
+    const collapse = localStorage.getItem('collapseCatalog');
+    return collapse ? collapse === 'true' : true;
+  }
+  public set collapseCatalog(value: boolean) {
+    localStorage.setItem('collapseCatalog', value.toString());
+  }
+
+  public get pagerSize(): number {
+    return Number(localStorage.getItem('pager'));
+  }
+  public set pagerSize(value: number) {
+    localStorage.setItem('pager', value.toString());
+  }
+
   constructor(private http: HttpClient) {
     super();
     this.apiBase = environment.serviceBaseUri;

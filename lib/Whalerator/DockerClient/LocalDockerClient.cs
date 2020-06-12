@@ -277,18 +277,19 @@ namespace Whalerator.DockerClient
                 {
                     continue;
                 }
-                else if (Directory.Exists(Path.Combine(d, tagsFolder)))
-                {
-                    if (Directory.EnumerateDirectories(Path.Combine(d, tagsFolder)).Count() > 0)
-                    {
-                        yield return new DirectoryInfo(d).Name;
-                    }
-                }
                 else
                 {
                     foreach (var sd in GetRepositories(d))
                     {
                         yield return Path.Combine(new DirectoryInfo(d).Name, sd);
+                    }
+                }
+
+                if (Directory.Exists(Path.Combine(d, tagsFolder)))
+                {
+                    if (Directory.EnumerateDirectories(Path.Combine(d, tagsFolder)).Count() > 0)
+                    {
+                        yield return new DirectoryInfo(d).Name;
                     }
                 }
             }
