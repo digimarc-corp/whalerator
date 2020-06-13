@@ -28,11 +28,11 @@ export class CatalogSort {
         if (a_str && b_str) {
             return (a as string).localeCompare(b as string);
         } else if (a_str && !b_str) {
-            return (a as string).localeCompare((b as Repository).name);
+            return (a as string).localeCompare((b as Repository).shortName);
         } else if (!a_str && b_str) {
-            return (a as Repository).name.localeCompare(b as string);
+            return (a as Repository).shortName.localeCompare(b as string);
         } else {
-            return (a as Repository).name.localeCompare((b as Repository).name);
+            return (a as Repository).shortName.localeCompare((b as Repository).shortName);
         }
     }
 

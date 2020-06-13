@@ -155,17 +155,17 @@ export class CatalogComponent implements OnInit {
         let paths: string[];
         let repos: Repository[];
         if (this.folder) {
-          paths = this.paths.filter(a => a !== this.folder && a.startsWith(this.folder));
-          repos = this.repos.filter(a => a.name.startsWith(this.folder));
+          paths = this.paths.filter(a => a !== this.folder && a.startsWith(this.folder + '/'));
+          repos = this.repos.filter(a => a.name.startsWith(this.folder + '/'));
         } else {
           paths = this.paths;
           repos = this.repos;
         }
 
         // further filter path list to those that aren't sub-paths of another item
-        const topPaths = paths.filter(a => !paths.some(b => a !== b && a.startsWith(b)));
+        const topPaths = paths.filter(a => !paths.some(b => a !== b && a.startsWith(b + '/')));
 
-        const items = repos.filter(r => !topPaths.some(p => r.name.startsWith(p)));
+        const items = repos.filter(r => !topPaths.some(p => r.name.startsWith(p + '/')));
         this.items = [].concat(items).concat(topPaths.map(p => p.replace(this.folder + '/', '')));
         this.items.sort(CatalogSort.sort);
       } else {
@@ -182,7 +182,7 @@ export class CatalogComponent implements OnInit {
   breadCrumbs(): [string, string][] {
     const crumbs: [string, string][] = [];
     if (this.folder && this.paths) {
-      const parents = this.paths.filter(p => this.folder.startsWith(p)).sort();
+      const parents = this.paths.filter(p => p === this.folder || this.folder.startsWith(p + '/')).sort();
       let i: number;
       for (i = 0; i < parents.length; i++) {
         const path = parents[i];

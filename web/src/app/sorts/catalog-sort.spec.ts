@@ -39,7 +39,7 @@ describe('CatalogSort', () => {
             new Repository({ name: 'able' }),
             'joe',
             'xyz',
-            new Repository({ name: 'charlie' }),
+            new Repository({ name: 'z/charlie' }),
             'foo',
         ];
         const sorted = [
@@ -47,7 +47,7 @@ describe('CatalogSort', () => {
             new Repository({ name: 'able' }),
             'alpha',
             new Repository({ name: 'baker' }),
-            new Repository({ name: 'charlie' }),
+            new Repository({ name: 'z/charlie' }),
             'foo',
             'foo/bar',
             'joe',
