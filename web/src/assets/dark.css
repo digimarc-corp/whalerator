@@ -166,6 +166,21 @@ div.image-detail {
     color: #26c36d
 }
 
+.tab.banner {
+    background-color: #292929;
+    color: #bbbbbb
+}
+
+.tab.banner.selected {
+    border-left: 0.1em solid #bbbbbb;
+}
+
+.tab.tab.banner div {
+    background-color: #292929;
+    color: #a2a2a2;
+    border-color: #292929;
+}
+
 .tab.document.selected {
     border-left: 0.1em solid #26c36d;
 }

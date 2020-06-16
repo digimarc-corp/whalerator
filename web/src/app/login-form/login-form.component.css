@@ -35,3 +35,11 @@ form > * {
     text-align: center;
     padding: 1em;
 }
+
+.banner-container {
+    display: inline-block;
+}
+
+.banner {
+    text-align: left;
+}

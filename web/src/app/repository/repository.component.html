@@ -90,7 +90,7 @@
                 {{platform.label}}
               </span>
             </div>
-            <app-document [repository]="name" [image]="selectedImage"></app-document>
+            <app-document [repository]="name" [image]="selectedImage" [banner]="selectedImageSet.banner"></app-document>
           </ng-template>
           <ng-template #loadingBlock>
             <span>Loading image details</span>

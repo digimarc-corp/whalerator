@@ -29,4 +29,6 @@ export class Config {
     public docScanner: boolean;
     public autoLogin: boolean;
     public themes: Theme[];
+
+    public loginBanner: string;
 }

@@ -31,4 +31,5 @@ export class ImageSet {
     public setDigest: string;
     public tags: string[];
     public images: Image[];
+    public banner: string;
 }

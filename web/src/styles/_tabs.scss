@@ -58,6 +58,17 @@ div.tab.searching {
     padding: 0.4em;
 }
 
+.banner div {
+    border: 0.01em $grey solid;
+    padding: 0.4em;
+}
+
+.tab.banner {
+    border-color: $grey-dark;
+    background-color: $grey-light;
+    color: $grey-dark;
+}
+
 .tab.history {
     border-color: $purple-dark;
     background-color: $purple-light;

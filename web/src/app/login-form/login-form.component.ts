@@ -48,6 +48,10 @@ export class LoginFormComponent implements OnInit {
   themes: Theme[];
   showPreview = false;
 
+  get banner() {
+    return this.configService.config.loginBanner;
+  }
+
   public sortOptions = Object.keys(SortOrder);
   public get defaultSort() {
     return this.configService.getDefaultSort();

@@ -106,6 +106,10 @@ div.image-detail {
     border-left: 0.1em solid #26c36d;
 }
 
+.tab.banner.selected {
+    border-left: 0.1em solid #292929;
+}
+
 .tab.scanning {
     color: #851717
 }

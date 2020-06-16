@@ -46,6 +46,22 @@ export class CatalogService extends WebService {
   constructor(private http: HttpClient,
     private sessionService: SessionService) { super(); }
 
+  getBanner(repo?: string, tag?: string): Observable<string | ServiceError> {
+    let bannerUrl: string;
+    if (repo) {
+      if (!tag) { tag = 'latest'; }
+      bannerUrl = this.apiBase + `/repository/${repo}/banner/${tag}`;
+    } else {
+      bannerUrl = this.apiBase + '/repositories/banner';
+    }
+    let headers = new HttpHeaders();
+    headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
+    return this.http.get(bannerUrl, { headers: headers, responseType: 'text' }).pipe(
+      tap(b => console.log('got file contents')),
+      catchError(this.handleError('getFile', 'No embedded documentation found'))
+    );
+  }
+
   getRepos(): Observable<Repository[] | ServiceError> {
     const listUrl = this.apiBase + '/repositories/list';
     let headers = new HttpHeaders();

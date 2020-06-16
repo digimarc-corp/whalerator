@@ -1,3 +1,9 @@
+<div class="section" *ngIf="banner">
+  <div class="banner-container">
+    <markdown class="banner" [data]="banner"></markdown>
+  </div>
+</div>
+
 <div *ngIf="sessionService.sessionToken; then thenBlock else elseBlock"></div>
 <ng-template #thenBlock>
   <div *ngIf="themes">

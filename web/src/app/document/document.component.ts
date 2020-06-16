@@ -30,7 +30,6 @@ import { Observable, Subscriber } from 'rxjs';
 import { delay } from 'q';
 import { FileListing } from '../models/file-listing';
 import { HttpResponse } from '@angular/common/http';
-import { stringify } from 'querystring';
 import { MarkdownComponent } from 'ngx-markdown';
 import { environment } from 'src/environments/environment';
 
@@ -42,6 +41,21 @@ import { environment } from 'src/environments/environment';
 export class DocumentComponent implements OnInit {
 
   @Input() repository: string;
+
+  @Input() banner: string;
+
+  get bannerTitle(): string {
+    if (this.banner) {
+      const match = /^\s*#{1,3}\s+(.*)\n/.exec(this.banner);
+      if (match) {
+        return match[1];
+      } else {
+        return 'Info';
+      }
+    } else {
+      return null;
+    }
+  }
 
   _image: Image;
   @Input()
@@ -60,13 +74,15 @@ export class DocumentComponent implements OnInit {
         this.selected = image.documents[0];
         this.searchStatus = null;
       }
+    } else if (this.banner) {
+      this.selected = this.banner;
     } else {
       this.selected = image.history;
     }
   }
   get image(): Image { return this._image; }
 
-  selected: Document | History[] | ScanResult;
+  selected: Document | History[] | ScanResult | string;
   searching: Observable<string>[] = [];
   searchStatus: string;
 
@@ -220,6 +236,10 @@ export class DocumentComponent implements OnInit {
     return this.configService.config.docScanner;
   }
 
+  isBanner(obj: any): boolean {
+    return obj && obj === this.banner;
+  }
+
   isHistory(obj: any): boolean {
     return obj && obj[0] instanceof History;
   }
@@ -230,6 +250,10 @@ export class DocumentComponent implements OnInit {
 
   isScan(obj: any): boolean {
     return obj instanceof ScanResult;
+  }
+
+  selectBanner() {
+    this.selected = this.banner;
   }
 
   selectHistory() {
@@ -292,6 +316,9 @@ export class DocumentComponent implements OnInit {
       const matches = files.filter(f => this.configService.config.searchLists.flat().some(s => s.toLowerCase() === f.path.toLowerCase()));
       if (matches.length > 0) {
         matches.map(m => this.loadDocument(image, m.layer, m.path));
+      } else if (this.banner) {
+        this.searchStatus = null;
+        this.selectBanner();
       } else {
         this.selectHistory();
       }
@@ -326,8 +353,6 @@ export class DocumentComponent implements OnInit {
     } else {
       if (this.image.documents) {
         this.searchStatus = null;
-      } else {
-        this.searchStatus = 'No docs found';
       }
     }
     this.changeDetector.detectChanges();

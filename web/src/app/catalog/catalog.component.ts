@@ -25,6 +25,7 @@ import { Title } from '@angular/platform-browser';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { ConfigService } from '../config.service';
+import { MarkdownComponent } from 'ngx-markdown';
 import { CatalogSort } from '../sorts/catalog-sort';
 
 @Component({
@@ -50,6 +51,8 @@ export class CatalogComponent implements OnInit {
   public repoError: { [repo: string]: string } = {};
   public repoWorking: { [repo: string]: string } = {};
   public errorMessage: string;
+
+  public banner: string;
 
   _folder: string;
   get folder(): string {
@@ -104,6 +107,13 @@ export class CatalogComponent implements OnInit {
 
   ngOnInit() {
     this.titleService.setTitle(this.sessionService.activeRegistry + ' - Catalog');
+    this.catalogService.getBanner().subscribe(b => {
+      if (isError(b)) {
+        // do something
+      } else {
+        this.banner = b;
+      }
+    });
     this.catalogService.getRepos().subscribe(repos => {
       if (isError(repos)) {
         if (repos.resultCode === 401) {

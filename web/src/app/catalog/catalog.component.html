@@ -1,3 +1,7 @@
+<div *ngIf="banner">
+  <markdown [data]="banner"></markdown>
+</div>
+
 <h2>
   <a routerLink="/catalog">{{sessionService.registryLabel}}</a>
   <span *ngFor="let crumb of breadCrumbs()">
