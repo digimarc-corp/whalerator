@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 using Whalerator.Client;
+using Whalerator.Config;
 using Whalerator.Model;
 using Whalerator.Support;
 
@@ -36,11 +38,34 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoriesController : WhaleratorControllerBase
     {
+        private readonly ServiceConfig config;
         private IClientFactory clientFactory;
 
-        public RepositoriesController(ILoggerFactory logFactory, IAuthHandler auth, IClientFactory regFactory) : base(logFactory, auth)
+        public RepositoriesController(ILoggerFactory logFactory, ServiceConfig config, IAuthHandler auth, IClientFactory regFactory) : base(logFactory, auth)
         {
+            this.config = config;
             this.clientFactory = regFactory;
+        }
+
+        [HttpGet("banner")]
+        public IActionResult GetBanner()
+        {
+            try
+            {
+                var banner = Banners.ReadBanner(config.CatalogBanner);
+                var stream = new MemoryStream();
+                using (var sr = new StreamWriter(stream, leaveOpen: true))
+                {
+                    sr.Write(banner);
+                }
+                stream.Seek(0, SeekOrigin.Begin);
+                return File(stream, "text/markdown");
+
+            }
+            catch (FileNotFoundException)
+            {
+                return NotFound();
+            }
         }
 
         [HttpGet("list")]

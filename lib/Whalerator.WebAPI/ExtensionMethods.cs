@@ -19,6 +19,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Whalerator.Client;
@@ -40,6 +42,16 @@ namespace Whalerator.WebAPI
 {
     public static class ExtensionMethods
     {
+        public static IEnumerable<(string source, string pattern)> GetStaticDocuments(this IConfiguration configuration) => configuration.AsEnumerable()
+            .Where(p => p.Key.StartsWith("staticDocs:", StringComparison.InvariantCultureIgnoreCase))
+            .GroupBy(p => p.Key.Split(':')[1])
+            .OrderBy(g => g.Key)
+            .Select(g => (
+                source: g.FirstOrDefault(k => k.Key.EndsWith("path", StringComparison.InvariantCultureIgnoreCase)).Value ?? g.FirstOrDefault(k => k.Key.EndsWith(g.Key)).Value,
+                pattern: g.FirstOrDefault(k => k.Key.EndsWith("pattern", StringComparison.InvariantCultureIgnoreCase)).Value
+            ));
+
+
         public static RegistryCredentials ToRegistryCredentials(this ClaimsPrincipal principal)
         {
             return new RegistryCredentials

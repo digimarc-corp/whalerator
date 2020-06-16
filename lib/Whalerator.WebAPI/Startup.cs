@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
@@ -38,6 +39,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Content;
+using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
 using Whalerator.Support;
@@ -58,26 +60,39 @@ namespace Whalerator.WebAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            var config = new ServiceConfig();
-            Configuration.Bind(config);
-            var uiConfig = new PublicConfig()
+            try
             {
-                Themes = config.Themes
-            };
+                var config = new ServiceConfig();
+                Configuration.Bind(config);
 
-            services.AddSingleton(config);
-            services.AddSingleton(Logger);
+                // load and cache static documents
+                config.StaticDocuments = Configuration.GetStaticDocuments().ToList();
 
-            services.AddWhaleCrypto(config, Logger)
-                .AddWhaleAuth()
-                .AddWhaleDebug()
-                .AddWhaleSerialization()
-                .AddWhaleVulnerabilities(config, uiConfig, Logger)
-                .AddWhaleDocuments(config, uiConfig, Logger)
-                .AddWhaleCache(config, Logger)
-                .AddWhaleRegistry(config, uiConfig, Logger);
+                var uiConfig = new PublicConfig()
+                {
+                    Themes = config.Themes,
+                    LoginBanner = Banners.ReadBanner(config.LoginBanner)
+                };
 
-            services.AddSingleton(uiConfig);
+                services.AddSingleton(config);
+                services.AddSingleton(Logger);
+
+                services.AddWhaleCrypto(config, Logger)
+                    .AddWhaleAuth()
+                    .AddWhaleDebug()
+                    .AddWhaleSerialization()
+                    .AddWhaleVulnerabilities(config, uiConfig, Logger)
+                    .AddWhaleDocuments(config, uiConfig, Logger)
+                    .AddWhaleCache(config, Logger)
+                    .AddWhaleRegistry(config, uiConfig, Logger);
+
+                services.AddSingleton(uiConfig);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("There was an error during startup.", ex);
+                Environment.Exit(-1);
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

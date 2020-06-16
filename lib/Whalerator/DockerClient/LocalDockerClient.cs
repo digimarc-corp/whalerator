@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Whalerator.Client;
 using Whalerator.Config;
@@ -129,12 +130,20 @@ namespace Whalerator.DockerClient
                 // In docker-land, a fat manifest is just a bunch of regular manifests bundled together under a single digest
                 // In whalerator-land, there are no non-fat manifests, just fat manifests with a single image
 
-                return mediaType switch
+                var image = mediaType switch
                 {
                     string m when m.StartsWith(ManifestV2MediaType) => await ParseV2ThinManifest(repository, digest, manifest),
                     string m when m.StartsWith(ManifestListV2MediaType) => await ParseV2FatManifest(repository, digest, manifest),
                     _ => ParseV1Manifest(digest, manifest)
                 };
+
+                var banner = Config.StaticDocuments.FirstOrDefault(d => string.IsNullOrEmpty(d.pattern) || Regex.IsMatch($"{repository}:{tag}", d.pattern)).source;
+                if (!string.IsNullOrEmpty(banner))
+                {
+                    image.Banner = Banners.ReadBanner(banner);
+                }
+
+                return image;
             }
             catch
             {

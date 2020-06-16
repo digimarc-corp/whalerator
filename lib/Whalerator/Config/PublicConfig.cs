@@ -34,5 +34,6 @@ namespace Whalerator.Config
         public bool SecScanner { get; set; }
         public bool DocScanner { get; set; }
         public IEnumerable<IEnumerable<string>> SearchLists { get; set; }
+        public string LoginBanner { get; set; }
     }
 }

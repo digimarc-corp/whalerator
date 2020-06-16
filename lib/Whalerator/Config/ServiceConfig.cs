@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,6 +51,11 @@ namespace Whalerator.Config
         // If set on the frontend (but not the backend) it will only apply to webhook updates. UI searches will still trigger targeted indexing, unless a deep index already exists
         // If set on the backend worker, it will apply to all searches.
         public List<string> Documents { get; set; } = new List<string>();
+
+        public List<(string source, string pattern)> StaticDocuments { get; set; } = new List<(string pattern, string source)>();
+
+        public string LoginBanner { get; set; }
+        public string CatalogBanner { get; set; }
 
         public bool DeepIndexing { get; set; }
 

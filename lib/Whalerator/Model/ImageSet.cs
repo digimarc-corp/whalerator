@@ -28,5 +28,6 @@ namespace Whalerator.Model
         public string SetDigest { get; set; }
         public DateTime Date { get; set; }
         public IEnumerable<Image> Images { get; set; }
+        public string Banner { get; set; }
     }
 }

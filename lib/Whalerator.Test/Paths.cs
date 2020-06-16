@@ -25,11 +25,37 @@ using Whalerator.Client;
 using Whalerator.Support;
 using Xunit;
 using System.Xml.Serialization;
+using System.Runtime.InteropServices;
+using System.IO;
 
 namespace Whalerator.Test
 {
     public class Paths
     {
+        [Theory]
+        [InlineData(" Hi! ")]
+        [InlineData("Hi! ")]
+        [InlineData(" Hi!")]
+        [InlineData(" \t\n")]
+        [InlineData("# Hi there\n\nHow's it going?")]
+        [InlineData("\tGreetings, fellow kids!")]
+        [InlineData("")]
+        [InlineData(null)]
+        public void BannerReaderCanIgnoreNonPaths(string source) =>
+            Assert.Equal(source, Banners.ReadBanner(source));
+
+        [Theory]
+        [InlineData("/test.md")]
+        [InlineData("/test/my.md")]
+        [InlineData("/test/a long filename.md")]
+        [InlineData("f")]
+        public void BannerReaderTriesToReadPaths(string source)
+        {
+            var ex = Assert.Throws<FileNotFoundException>(() => Banners.ReadBanner(source));
+            Assert.Equal(source, ex.FileName);
+        }
+
+
         [Theory]
         [InlineData("sha256:056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c", "sha256/05/056e909defe3ff3eb5514843a64521abf0f40b20ff270cc1a394b45bf815698c")]
         [InlineData("mydigest:abcd123", "mydigest/ab/abcd123")]
