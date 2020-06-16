@@ -153,7 +153,7 @@ namespace Whalerator.Support
                                         var json = JObject.Parse(errorContent);
                                         lastError = (string)json["Error"]["Message"];
                                     }
-                                    catch { logger.LogError($"Could not parse Clair error response '{errorContent}'", ex); }
+                                    catch { logger.LogError(ex, $"Could not parse Clair error response '{errorContent}'"); }
                                     continue;
                                 }
                                 else { throw; }

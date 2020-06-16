@@ -90,7 +90,7 @@ namespace Whalerator.WebAPI
             }
             catch (Exception ex)
             {
-                Logger.LogError("There was an error during startup.", ex);
+                Logger.LogError(ex, "There was an error during startup.");
                 Environment.Exit(-1);
             }
         }

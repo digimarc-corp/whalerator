@@ -253,7 +253,7 @@ namespace Whalerator.DockerClient
                     }
                     catch (SharpZipBaseException ex)
                     {
-                        logger.LogError("Encountered corrupt layer archive, halting index.", ex);
+                        logger.LogError(ex, "Encountered corrupt layer archive, halting index.");
                         yield break;
                     }
                 }
