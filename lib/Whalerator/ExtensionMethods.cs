@@ -23,11 +23,17 @@ using System.Text;
 using System.Linq;
 using Whalerator.Client;
 using Whalerator.Model;
+using Microsoft.Extensions.Logging;
 
 namespace Whalerator
 {
     public static class ExtensionMethods
     {
+        // catch bad calls to LogError
+        [Obsolete("Reversed arguments")]
+        public static void LogError(this ILogger logger, string message, Exception ex)
+            => Microsoft.Extensions.Logging.LoggerExtensions.LogError(logger, ex, message);
+
         /*
         public static Permissions GetPermissions(this IAuthHandler handler, string repository)
         {
