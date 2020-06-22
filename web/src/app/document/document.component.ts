@@ -96,7 +96,7 @@ export class DocumentComponent implements OnInit {
   public onMarkdownLoad(event: string) {
     const element = document.getElementById('mdViewer');
     if (element) {
-      this.reEl(element);
+      this.recurseElements(element);
     }
   }
 
@@ -148,7 +148,7 @@ export class DocumentComponent implements OnInit {
     }
   }
 
-  reEl(element: Element) {
+  recurseElements(element: Element) {
     if (element.tagName.toLowerCase() === 'a') {
       this.retargetAnchor(element);
     } else if (element.tagName.toLowerCase() === 'img') {
@@ -156,7 +156,7 @@ export class DocumentComponent implements OnInit {
     } else {
       let i: number;
       for (i = 0; i < element.children.length; i++) {
-        this.reEl(element.children[i]);
+        this.recurseElements(element.children[i]);
       }
     }
   }
