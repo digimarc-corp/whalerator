@@ -43,4 +43,25 @@ themes:
   - name: anchors
     style: assets/classic.css
 
+loginBanner: |
+  ```
+   ____
+  < hi >
+   ----
+      \
+       \
+        \
+                      ##        .
+                ## ## ##       ==
+             ## ## ## ##      ===
+         /""""""""""""""""___/ ===
+    ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~
+         \______ o          __/
+          \    \        __/
+            \____\______/
+  ```
+catalogBanner: catalog.md
+staticDocs:
+  - "## Undocumented image\nThis image does not contain a `readme.md` or `relnotes.md`. 🙁"
+
 logLevel: "Information"

@@ -11,7 +11,7 @@ services:
   redis:
     image: redis
   clair:
-    image: quay.io/coreos/clair:v2.1.0
+    image: quay.io/coreos/clair:v2.1.4
     ports:
     - "6060:6060"
     restart: on-failure
@@ -30,6 +30,7 @@ services:
     build: ../..
     volumes:
     - './whalerator-service.yaml:/app/config.yaml'
+    - './catalog.md:/app/catalog.md'
     - './samplekey.pem:/app/key.pem'
     - 'registrydata:/var/lib/registry'
     - 'indexdata:/var/data/whalerator/indexes'

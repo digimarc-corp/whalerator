@@ -25,3 +25,5 @@ services:
     - REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis
     - REGISTRY_REDIS_ADDR=redis:6379
     - REGISTRY_REDIS_DB=1
+    volumes:
+    - 'e:\dmrcio:/var/lib/registry'

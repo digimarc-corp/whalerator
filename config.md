@@ -62,9 +62,20 @@ logStack: false
 
 ## Document options
 
-These options control the discovery of embedded documents like a `readme.md`.
+These options control the discovery of embedded and static documents like a `readme.md` or a banners.
 
 ```{yaml}
+# Controls static content presented on the login or catalog views. Can be either a local file path, or inline markdown
+loginBanner:
+catalogBanner:
+
+# Controls static content presented on the repository view when an image does not contain any in-built documentation.
+# An entry can be just a filename/markdown, or a path + regex pattern pair. The first document to match a given repo name will be used.
+staticDocs:
+  - path: default-readme.md
+    pattern: "whalerator"
+  - "# Default Readme"
+
 # Filesystem location for generate image indexes. This location must be shared between all instances. Defaults to a local temp folder.
 indexFolder:
 
