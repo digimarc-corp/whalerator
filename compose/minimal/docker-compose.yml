@@ -1,0 +1,18 @@
+# A minimal sample with a registry on port 5000 and Whalerator on port 5001
+
+version: '3.7'
+services:
+  registry:
+    image: registry:2.7
+    ports:
+    - "5000:5000"
+  whalerator:
+    build: ../..
+    environment:
+    - REGISTRY=localhost:5000
+    - AUTOLOGIN=true
+    - REGISTRYALIASES__0__REGISTRY=localhost:5000
+    - REGISTRYALIASES__0__ALIAS=registry:5000
+    ports:
+    - "5001:80"
+
