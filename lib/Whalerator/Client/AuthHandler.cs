@@ -1,4 +1,4 @@
-/*
+﻿/*
    Copyright 2018 Digimarc, Inc
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -197,7 +197,7 @@ namespace Whalerator.Client
             return await authCache.ExistsAsync(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, scope, granted);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, scope, password, granted);
 
         public string ParseScope(Uri uri)
         {

@@ -30,9 +30,12 @@ namespace Whalerator.Client
         public bool Anonymous { get; set; }
         public bool DockerHub { get; set; }
 
-        public static string CacheKey(string registry, string username, string scope, bool grant = true)
+        public static string CacheKey(string registry, string username, string password, string scope, bool grant = true)
         {
-            var rawKey = $"{registry}:{username}:{scope}";
+            // including the password in the key hash lets us use cached tokens without needing to actually validate the
+            // credentials with the token service every time. 
+
+            var rawKey = $"{registry}:{username}:{password}:{scope}";
             var hash = System.Security.Cryptography.SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(rawKey));
             return $"auth:{(grant ? "grant" : "denial")}:{Convert.ToBase64String(hash)}";
         }
