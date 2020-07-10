@@ -197,7 +197,7 @@ namespace Whalerator.Client
             return await authCache.ExistsAsync(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, password, scope, granted);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, scope, granted);
 
         public string ParseScope(Uri uri)
         {
