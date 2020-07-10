@@ -23,7 +23,7 @@ fi
 echo "Preparing to build and release version $revision ($hash)"
 
 # build
-docker build . --pull --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision -t $repo:$revision -t $repo:$release -t $repo:latest
+docker build . --pull --build-arg SRC_HASH=$hash --build-arg RELEASE=$revision -t $repo:$revision -t $repo:$release -t $repo:$major -t $repo:latest
 
 # push
 #docker push $repo:$revision
