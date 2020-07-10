@@ -10,6 +10,7 @@ lib/Whalerator.WebAPI/Properties/launchSettings.json
 lib/Whalerator.WebAPI/wwwroot
 
 .vscode/
+.DS_Store
 
 # User-specific files
 *.suo
