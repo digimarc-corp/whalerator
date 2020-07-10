@@ -46,7 +46,7 @@ Certificates should be PEM-encoded, and need not be signed. **This certificate i
 
 ## Security Notes
 
-Docker Regsitry authorization is a subject unto itself. In theory the Docker client and Registry both support OAuth, but in reality Registry just points to an external token service that end users must supply themselves. There are open source implementations available for the token service, such as ["Docker Auth"](https://github.com/cesanta/docker_auth), but Docker Hub uses its own proprietary system.
+Docker Registry authorization is a subject unto itself. In theory the Docker client and Registry both support OAuth, but in reality Registry just points to an external token service that end users must supply themselves. There are open source implementations available for the token service, such as ["Docker Auth"](https://github.com/cesanta/docker_auth), but Docker Hub uses its own proprietary system.
 
 The flow is something like:
 
