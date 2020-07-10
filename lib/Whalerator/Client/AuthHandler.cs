@@ -197,7 +197,7 @@ namespace Whalerator.Client
             return await authCache.ExistsAsync(GetKey(scope, granted: true));
         }
 
-        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, password, scope, granted);
+        private string GetKey(string scope, bool granted) => Authorization.CacheKey(GetRegistryEndpoint(), username, scope, password, granted);
 
         public string ParseScope(Uri uri)
         {
@@ -272,21 +272,31 @@ namespace Whalerator.Client
             // otherwise, process the claims returned
             else
             {
-                var payload = Jose.JWT.Payload(token);
-                var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
-
-                var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
-
                 var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
-                if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
+                try
                 {
-                    await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
-                    return true;
+                    // if possible, parse the token as a JWT and verify we got the claims we expected
+                    var payload = Jose.JWT.Payload(token);
+                    var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
+
+                    var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+
+                    if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
+                    {
+                        await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
+                        return true;
+                    }
+                    else
+                    {
+                        await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
+                        return false;
+                    }
                 }
-                else
+                catch
                 {
-                    await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
-                    return false;
+                    // otherwise, treat this as an opaque token and assume it's valid for the requested scope with a short ttl
+                    await authCache.SetAsync(GetKey(scope, granted: true), authorization, TimeSpan.FromMinutes(5));
+                    return true;
                 }
             }
         }
