@@ -2,7 +2,7 @@
 
 Whalerator is a portable front-end for Docker Registry/Distribution. It allows discovering Docker images available to you on a registry, as well as displaying embedded documentation from an image, without downloading entire images or even running Docker locally.
 
-By default, Whalerator looks for a `readme.md` in the root of a given image, and if it finds one, it displays it with standard markdown formatting. It also understands multi-platform and cross-platform images, and can correllate tag references between many tags. Assuming the correct permissions, it can also delete images and associated tags, or entire repositories. For more, see ["discovery.md"]("discovery.md").
+By default, Whalerator looks for a `readme.md` in the root of a given image, and if it finds one, it displays it with standard markdown formatting. It also understands multi-platform and cross-platform images, and can correllate tag references between many tags. Assuming the correct permissions, it can also delete images and associated tags, or entire repositories. For more, see [discovery.md]("discovery.md").
 
 Whalerator requires no special access to your Docker registry, and does not store any user credentials for normal operations. If your login has access to your registry's catalog, Whalerator will figure out the rest.
 
