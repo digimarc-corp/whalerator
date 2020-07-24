@@ -35,7 +35,7 @@ jobs:
     - name: Npm install
       run: npm install
     - name: Angular install
-      run: npm install @angular/cli
+      run: npm install -g @angular/cli
       working-directory: ./web
     - name: Build SPA
       run: ng build
