@@ -34,9 +34,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Npm install
       run: npm install
-    - name: Angular install
-      run: npm install -g @angular/cli
-      working-directory: ./web
     - name: Build SPA
-      run: ng build
+      run: npm run build
       working-directory: ./web
