@@ -16,6 +16,7 @@ jobs:
     # dotnet components
     - name: Restore Packages
       run: dotnet restore
+      working-directory: ./lib
     - name: Build Core
       run: dotnet build
       working-directory: ./lib/Whalerator
