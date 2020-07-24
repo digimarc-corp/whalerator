@@ -1,0 +1,34 @@
+name: Build and Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    # dotnet components
+    - name: Restore Packages
+      run: dotnet restore
+    - name: Build Core
+      run: dotnet build
+      working-directory: ./lib/Whalerator
+    - name: Build WebAPI
+      run: dotnet build
+      working-directory: ./lib/Whalerator.WebAPI
+    - name: Run Tests
+      run: dotnet test
+      working-directory: ./lib/Whalerator.Test
+
+    # node/angular components
+    - name: Npm install
+      run: npm install
+      working-directory: ./web
+    - name: Build SPA
+      run: ng build
