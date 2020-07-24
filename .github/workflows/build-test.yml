@@ -3,6 +3,8 @@ name: Build and Test
 on:
   push:
   pull_request:
+  schedule: 
+    - cron: '0 0 * * *'    
 
 jobs:
 
@@ -10,33 +12,33 @@ jobs:
   dotnet:
 
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./lib
 
     steps:
     - uses: actions/checkout@v2
     - name: Restore Packages
       run: dotnet restore
-      working-directory: ./lib
     - name: Build Core
-      run: dotnet build
-      working-directory: ./lib/Whalerator
+      run: dotnet build Whalerator
     - name: Build WebAPI
-      run: dotnet build
-      working-directory: ./lib/Whalerator.WebAPI
+      run: dotnet build Whalerator.WebAPI
     - name: Run Tests
-      run: dotnet test
-      working-directory: ./lib/Whalerator.Test
+      run: dotnet test Whalerator.Test
 
   # node/angular components
   angular:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
 
     steps:
     - uses: actions/checkout@v2
     - name: Npm install
       run: npm install
-    - name: Angular install
-      run: npm install -g @angular/cli
-      working-directory: ./web
     - name: Build SPA
-      run: ng build
-      working-directory: ./web
+      run: npm run build
+    - name: Run Tests
+      run: npm run test-headless

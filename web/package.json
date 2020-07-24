@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
+    "test-headless": "ng test --watch=false --browsers=ChromeHeadless",
     "lint": "ng lint",
     "e2e": "ng e2e"
   },
@@ -44,6 +45,7 @@
     "karma-jasmine": "~2.0",
     "karma-jasmine-html-reporter": "^1.5.4",
     "protractor": "^5.4.4",
+    "puppeteer": "^5.2.1",
     "ts-node": "~7.0",
     "tslint": "~5.12",
     "typescript": "~3.5.3"
