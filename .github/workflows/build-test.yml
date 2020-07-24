@@ -6,14 +6,13 @@ on:
 
 jobs:
 
-  build:
+  # dotnet components
+  dotnet:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-
-    # dotnet components
     - name: Restore Packages
       run: dotnet restore
       working-directory: ./lib
@@ -27,9 +26,17 @@ jobs:
       run: dotnet test
       working-directory: ./lib/Whalerator.Test
 
-    # node/angular components
+  # node/angular components
+  angular:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
     - name: Npm install
       run: npm install
+    - name: Angular install
+      run: npm install @angular/cli
       working-directory: ./web
     - name: Build SPA
       run: ng build
+      working-directory: ./web
