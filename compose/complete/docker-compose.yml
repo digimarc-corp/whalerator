@@ -15,8 +15,9 @@ services:
     ports:
     - "6060:6060"
     restart: on-failure
-    volumes:
-    - './clair-config.yaml:/etc/clair/config.yaml'
+    configs:
+    - source: clair_config
+      target: /etc/clair/config.yaml
   registry:
     image: registry:2.7
     environment:
@@ -58,3 +59,6 @@ services:
 volumes:
   registrydata:
   indexdata:
+configs:
+  clair_config:
+    file: clair-config.yaml
