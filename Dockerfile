@@ -14,7 +14,7 @@
 #
 #  SPDX-License-Identifier: Apache-2.0
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
 COPY lib .
 WORKDIR /src/Whalerator.WebAPI
@@ -34,7 +34,7 @@ RUN npm install
 RUN npm install @angular/cli
 RUN /web/node_modules/@angular/cli/bin/ng build --prod --output-path /dist
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS final
 WORKDIR /app
 COPY --from=publish /app .
 COPY --from=ngbuild /dist ./wwwroot
