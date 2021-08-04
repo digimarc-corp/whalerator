@@ -26,7 +26,7 @@
     "ngx-markdown": "^8.2.2",
     "purecss": "^1.0.0",
     "rxjs": "^6.5.5",
-    "zone.js": "~0.9.1"
+    "zone.js": "~0.11.4"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^0.803.28",
