@@ -23,12 +23,13 @@ using System.Threading.Tasks;
 
 namespace Whalerator.WebAPI
 {
-    public class Token
+    public record Token
     {
-        public string Crd { get; set; }
-        public string Usr { get; set; }
-        public string Reg { get; set; }
-        public long Iat { get; set; }
-        public long Exp { get; set; }
+        public string Crd { get; init; }
+        public string Usr { get; init; }
+        public string Pwd { get; init; }
+        public string Reg { get; init; }
+        public long Iat { get; init; }
+        public long Exp { get; init; }
     }
 }

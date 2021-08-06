@@ -31,10 +31,10 @@ namespace Whalerator.WebAPI
 {
     public class RegistryAuthenticationDecoder
     {
-        private ICryptoAlgorithm crypto;
+        private System.Security.Cryptography.AsymmetricAlgorithm crypto;
         private ServiceConfig config;
 
-        public RegistryAuthenticationDecoder(ICryptoAlgorithm crypto, ServiceConfig config)
+        public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config)
         {
             this.crypto = crypto;
             this.config = config;
@@ -45,15 +45,19 @@ namespace Whalerator.WebAPI
             try
             {
                 var header = AuthenticationHeaderValue.Parse(authorization);
-                var token = Jose.JWT.Decode<Token>(header.Parameter, crypto.ToDotNetRSA());
+                var token = Jose.JWT.Decode<Token>(header.Parameter, crypto);
 
                 if (token.Exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
                     return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The token has expired\" }"));
                 }
 
-                var json = crypto.Decrypt(token.Crd);
-                var credentials = JsonConvert.DeserializeObject<RegistryCredentials>(json);
+                var credentials = new RegistryCredentials
+                {
+                    Password = token.Pwd,
+                    Username = token.Usr,
+                    Registry = token.Reg
+                };
 
                 if (!string.IsNullOrEmpty(config.Registry) && RegistryCredentials.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
                 {

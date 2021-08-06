@@ -24,6 +24,7 @@
     <PackageReference Include="Refit" Version="5.2.4" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.62" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.5" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="5.0.1" />
   </ItemGroup>
 
   <ItemGroup>

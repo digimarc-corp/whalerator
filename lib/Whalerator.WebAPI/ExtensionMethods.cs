@@ -97,19 +97,21 @@ namespace Whalerator.WebAPI
 
         public static IServiceCollection AddWhaleCrypto(this IServiceCollection services, ServiceConfig config, ILogger logger)
         {
-            RSA crypto;
+            System.Security.Cryptography.RSA crypto;
+
             var keyFile = config.AuthTokenKey;
             if (!string.IsNullOrEmpty(keyFile) && File.Exists(keyFile))
             {
                 logger?.LogInformation($"Loading private key from {config.AuthTokenKey}.");
-                crypto = new RSA(File.ReadAllText(keyFile));
+                crypto = System.Security.Cryptography.RSA.Create();
+                crypto.ImportFromPem(File.ReadAllText(keyFile));
             }
             else
             {
                 logger?.LogInformation($"Generating temporary private key.");
-                crypto = new RSA(2048);
+                crypto = System.Security.Cryptography.RSA.Create(4096);                
             }
-            services.AddSingleton<ICryptoAlgorithm>(crypto);
+            services.AddSingleton<System.Security.Cryptography.AsymmetricAlgorithm>(crypto);
 
             return services;
         }

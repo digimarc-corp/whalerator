@@ -20,7 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Jose;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -35,14 +37,14 @@ namespace Whalerator.WebAPI.Controllers
     [Route("api/Token")]
     public class TokenController : ControllerBase
     {
-        private ICryptoAlgorithm crypto;
+        private readonly AsymmetricAlgorithm crypto;
         private ICache<Authorization> cache;
         private readonly ILoggerFactory loggerFactory;
 
         public ILogger<TokenController> Logger { get; }
         public ServiceConfig Config { get; }
 
-        public TokenController(ICryptoAlgorithm crypto, ICache<Authorization> cache, ILoggerFactory loggerFactory, ServiceConfig config)
+        public TokenController(AsymmetricAlgorithm crypto, ICache<Authorization> cache, ILoggerFactory loggerFactory, ServiceConfig config)
         {
             this.crypto = crypto;
             this.cache = cache;
@@ -68,18 +70,22 @@ namespace Whalerator.WebAPI.Controllers
                 var handler = new AuthHandler(cache, Config, loggerFactory.CreateLogger<AuthHandler>());
                 await handler.LoginAsync(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
-                var cipherText = crypto.Encrypt(json);
+                //var cipherText = crypto.Encrypt(json);
+
+                var token = new Token
+                {
+                    Usr = credentials.Username,
+                    Pwd = credentials.Password,
+                    Reg = credentials.Registry,
+                    Iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime
+                };
+
+                var jwe = Jose.JWT.Encode(token, crypto, JweAlgorithm.RSA_OAEP, JweEncryption.A256GCM);
 
                 return Ok(new
                 {
-                    token = Jose.JWT.Encode(new Token
-                    {
-                        Crd = cipherText,
-                        Usr = credentials.Username,
-                        Reg = credentials.Registry,
-                        Iat = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                        Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime
-                    }, crypto.ToDotNetRSA(), Jose.JwsAlgorithm.RS256)
+                    token = jwe
                 });
             }
             catch (Exception ex)
