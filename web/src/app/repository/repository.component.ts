@@ -98,7 +98,7 @@ export class RepositoryComponent implements OnInit {
       const snapshot = this.route.snapshot.children[0];
       this.name = snapshot ? snapshot.url.join('/') : 'unknown';
       this.requestedTag = p['tag'];
-      this.titleService.setTitle(this.sessionService.activeRegistry + '/' + this.name);
+      this.titleService.setTitle(this.sessionService.sessionLabel + '/' + this.name);
       this.getRepo();
     });
   }

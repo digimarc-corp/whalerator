@@ -50,7 +50,7 @@
     <button (click)="resetSorts()">Reset prefs</button>
   </div>
   <div class="section">
-    <div>Connected to {{sessionService.activeRegistry}} as {{sessionService.userLabel}}.</div>
+    <div>Connected to {{sessionService.sessionLabel}}</div>
     <div>Last login: {{sessionService.sessionStart}}</div>
     <div>Session expires: {{sessionService.sessionExpiry}}</div>
     <button (click)="logout()">Log out</button>

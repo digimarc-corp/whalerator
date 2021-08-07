@@ -44,46 +44,44 @@ export class SessionService extends WebService {
   }
 
   sessionToken: string;
-  activeRegistry: string;
-  activeUser: string;
+  sessionRegistry: string;
   sessionExpiry: any;
   sessionStart: any;
 
   whaleratorUrl = environment.serviceBaseUri;
 
+  
   get registryLabel(): string {
-    if (this.activeRegistry === 'registry-1.docker.io') {
+    if (this.sessionRegistry === 'registry-1.docker.io') {
       return 'Docker Hub';
     } else {
-      return this.activeRegistry;
+      return this.sessionRegistry;
     }
   }
 
   get registryPath(): string {
-    if (this.activeRegistry === 'registry-1.docker.io') {
+    if (this.sessionRegistry === 'registry-1.docker.io') {
       return '';
     } else {
-      return this.activeRegistry + '/';
+      return this.sessionRegistry + '/';
     }
   }
+  
 
-  public get userLabel(): string {
-    return this.sessionToken ? (this.activeUser || 'anonymous') : 'Login';
+  public get sessionLabel(): string {
+    return this.sessionToken ? "Connected to " + this.registryLabel : 'Login';
   }
 
   private setSession(token: string) {
     this.sessionToken = token;
     if (token) {
-      const helper = new JwtHelperService();
-      const credential = helper.decodeToken(token);
-      this.activeRegistry = credential.Reg || 'Unknown Registry';
-      this.activeUser = credential.Usr;
-      this.sessionExpiry = new Date(credential.Exp * 1000).toLocaleString();
-      this.sessionStart = new Date(credential.Iat * 1000).toLocaleString();
+      let header = JSON.parse(atob(token.split('.')[0]));
+      this.sessionRegistry = header.reg;
+      this.sessionExpiry = new Date(header.exp * 1000).toLocaleString();
+      this.sessionStart = new Date(header.iat * 1000).toLocaleString();
       this.cookieService.set('jwt', token, null, null, null, false); // , token, null, null, null, true, 'Strict');
     } else {
-      this.activeRegistry = null;
-      this.activeUser = null;
+      this.sessionRegistry = null;
       this.sessionExpiry = null;
       this.sessionStart = null;
       this.cookieService.deleteAll();
