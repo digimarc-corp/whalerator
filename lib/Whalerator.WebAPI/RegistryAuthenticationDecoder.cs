@@ -31,8 +31,8 @@ namespace Whalerator.WebAPI
 {
     public class RegistryAuthenticationDecoder
     {
-        private System.Security.Cryptography.AsymmetricAlgorithm crypto;
-        private ServiceConfig config;
+        private readonly System.Security.Cryptography.AsymmetricAlgorithm crypto;
+        private readonly ServiceConfig config;
 
         public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config)
         {

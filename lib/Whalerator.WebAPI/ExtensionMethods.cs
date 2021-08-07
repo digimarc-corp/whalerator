@@ -64,8 +64,7 @@ namespace Whalerator.WebAPI
 
         public static ClaimsIdentity ToClaimsIdentity(this RegistryCredentials credentials)
         {
-            var claims = new List<Claim>();
-            claims.Add(new Claim(nameof(RegistryCredentials.Registry), credentials.Registry, ClaimValueTypes.String));
+            var claims = new List<Claim>() { new Claim(nameof(RegistryCredentials.Registry), credentials.Registry, ClaimValueTypes.String) };
             if (!string.IsNullOrEmpty(credentials.Username)) { claims.Add(new Claim(nameof(RegistryCredentials.Username), credentials.Username, ClaimValueTypes.String)); }
             if (!string.IsNullOrEmpty(credentials.Password)) { claims.Add(new Claim(nameof(RegistryCredentials.Password), credentials.Password, ClaimValueTypes.String)); }
 
@@ -73,7 +72,7 @@ namespace Whalerator.WebAPI
             return identity;
         }
 
-        public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig, ILogger logger)
+        public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig)
         {
             services.AddScoped<IClientFactory, ClientFactory>();
 
@@ -109,7 +108,7 @@ namespace Whalerator.WebAPI
             else
             {
                 logger?.LogInformation($"Generating temporary private key.");
-                crypto = System.Security.Cryptography.RSA.Create(4096);                
+                crypto = System.Security.Cryptography.RSA.Create(4096);
             }
             services.AddSingleton<System.Security.Cryptography.AsymmetricAlgorithm>(crypto);
 

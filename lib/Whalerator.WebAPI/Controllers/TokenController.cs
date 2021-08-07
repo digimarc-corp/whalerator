@@ -38,7 +38,7 @@ namespace Whalerator.WebAPI.Controllers
     public class TokenController : ControllerBase
     {
         private readonly AsymmetricAlgorithm crypto;
-        private ICache<Authorization> cache;
+        private readonly ICache<Authorization> cache;
         private readonly ILoggerFactory loggerFactory;
 
         public ILogger<TokenController> Logger { get; }

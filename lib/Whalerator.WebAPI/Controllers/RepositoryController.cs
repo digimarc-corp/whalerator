@@ -43,11 +43,11 @@ namespace Whalerator.WebAPI.Controllers
     [Authorize]
     public class RepositoryController : WhaleratorControllerBase
     {
-        private IClientFactory clientFactory;
-        private ILogger<RepositoryController> logger;
+        private readonly IClientFactory clientFactory;
+        private readonly ILogger<RepositoryController> logger;
         private readonly IIndexStore indexStore;
         private readonly IWorkQueue<IndexRequest> indexQueue;
-        private ISecurityScanner secScanner;
+        private readonly ISecurityScanner secScanner;
 
         public RepositoryController(ILoggerFactory logFactory, IAuthHandler auth, IClientFactory clientFactory, IIndexStore indexStore, IWorkQueue<IndexRequest> indexQueue, ISecurityScanner secScanner = null) :
             base(logFactory, auth)
@@ -136,7 +136,7 @@ namespace Whalerator.WebAPI.Controllers
             {
                 if (string.IsNullOrEmpty(RegistryCredentials.Registry)) { return BadRequest("Session is missing registry information. Try creating a new session."); }
 
-                var targetList = string.IsNullOrEmpty(targets) ? new string[0] : targets.Split(';');
+                var targetList = string.IsNullOrEmpty(targets) ? Array.Empty<string>() : targets.Split(';');
 
                 var client = clientFactory.GetClient(AuthHandler);
                 var imageSet = await client.GetImageSetAsync(repository, digest);
@@ -198,10 +198,9 @@ namespace Whalerator.WebAPI.Controllers
                 var layer = await client.GetLayerAsync(repository, digest);
 
                 var result = await client.GetFileAsync(repository, layer, path);
-
-                string contentType;
                 IContentTypeProvider ct = new FileExtensionContentTypeProvider();
-                if (!ct.TryGetContentType(path, out contentType))
+
+                if (!ct.TryGetContentType(path, out var contentType))
                 {
                     contentType = "application/octet-stream";
                 }
@@ -235,7 +234,7 @@ namespace Whalerator.WebAPI.Controllers
 
                 var client = clientFactory.GetClient(AuthHandler);
                 var permissions = await client.GetPermissionsAsync(repository);
-                var tags = permissions >= Permissions.Pull ? client.GetTags(repository) : new string[0];
+                var tags = permissions >= Permissions.Pull ? client.GetTags(repository) : Array.Empty<string>();
 
                 return Ok(new TagSet { Tags = tags, Permissions = permissions });
             }
