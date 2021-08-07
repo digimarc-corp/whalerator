@@ -32,7 +32,7 @@ COPY web/tsconfig.json /web/
 WORKDIR /web
 RUN npm install
 RUN npm install @angular/cli
-RUN /web/node_modules/@angular/cli/bin/ng build --prod --output-path /dist
+RUN /web/node_modules/@angular/cli/bin/ng build --configuration production --output-path /dist
 
 FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS final
 WORKDIR /app
