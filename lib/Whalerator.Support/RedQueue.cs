@@ -34,9 +34,9 @@ namespace Whalerator.Support
          * Failures on the queue will be resubmitted by the polling process, and otherwise we can just fail cheaply and move on
          */
 
-        private IConnectionMultiplexer mux;
-        private ILogger<RedQueue<T>> logger;
-        private string queueName;
+        private readonly IConnectionMultiplexer mux;
+        private readonly ILogger<RedQueue<T>> logger;
+        private readonly string queueName;
 
         public RedQueue(IConnectionMultiplexer redisMux, ILogger<RedQueue<T>> logger, string queueName)
         {

@@ -84,7 +84,7 @@ namespace Whalerator.WebAPI
                     .AddWhaleVulnerabilities(config, uiConfig, Logger)
                     .AddWhaleDocuments(config, uiConfig, Logger)
                     .AddWhaleCache(config, Logger)
-                    .AddWhaleRegistry(config, uiConfig, Logger);
+                    .AddWhaleRegistry(config, uiConfig);
 
                 services.AddSingleton(uiConfig);
             }

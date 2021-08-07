@@ -37,6 +37,8 @@ namespace Whalerator.Client
         public RegistryCredentials RegistryCredentials { get; }
         bool AnonymousMode { get; }
         bool TokensRequired { get; }
+        string Service { get; }
+        string Realm { get; }
 
         Task<AuthenticationHeaderValue> GetAuthorizationAsync(string scope);
         Task<bool> AuthorizeAsync(string scope);

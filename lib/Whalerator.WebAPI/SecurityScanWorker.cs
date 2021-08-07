@@ -35,9 +35,9 @@ namespace Whalerator.WebAPI
 {
     public class SecurityScanWorker : QueueWorker<ScanRequest>
     {
-        private ISecurityScanner scanner;
+        private readonly ISecurityScanner scanner;
         private readonly IAuthHandler authHandler;
-        private RegistryAuthenticationDecoder authDecoder;
+        private readonly RegistryAuthenticationDecoder authDecoder;
 
         public SecurityScanWorker(ILogger<SecurityScanWorker> logger, ServiceConfig config, IWorkQueue<ScanRequest> queue, ISecurityScanner scanner, IClientFactory clientFactory,
             RegistryAuthenticationDecoder authDecoder, IAuthHandler authHandler) : base(logger, config, queue, clientFactory)

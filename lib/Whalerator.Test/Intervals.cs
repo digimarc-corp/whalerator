@@ -46,7 +46,7 @@ namespace Whalerator.Test
         [Theory, ClassData(typeof(TimeSpanData))]
         public void CanTryParseIntervals(string str, TimeSpan? expected)
         {
-            Assert.Equal(expected == null ? false : true, IntervalParser.TryParse(str, out var timeSpan));
+            Assert.Equal(expected != null, IntervalParser.TryParse(str, out var timeSpan));
             Assert.Equal(expected ?? default, timeSpan);
         }
 

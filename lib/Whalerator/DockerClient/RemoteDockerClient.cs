@@ -35,7 +35,6 @@ namespace Whalerator.DockerClient
 {
     public class RemoteDockerClient : DockerClientBase, IDockerClient
     {
-        private readonly IAuthHandler auth;
         private readonly IDockerDistribution dockerDistribution;
         private readonly ILocalDockerClient localClient;
         private readonly ICacheFactory cacheFactory;
@@ -45,13 +44,10 @@ namespace Whalerator.DockerClient
         public RemoteDockerClient(ServiceConfig config, IAuthHandler auth, IDockerDistribution dockerDistribution, ILocalDockerClient localClient, ICacheFactory cacheFactory) : 
             base(config, auth)
         {
-            this.auth = auth;
             this.dockerDistribution = dockerDistribution;
             this.localClient = localClient;
             this.cacheFactory = cacheFactory;
         }
-
-        IDockerDistribution api => RestService.For<IDockerDistribution>(auth.GetRegistryEndpoint(Config.IgnoreInternalAlias));
 
         private async Task FetchBlobAsync(string repository, string layerDigest, string scope)
         {
@@ -173,7 +169,7 @@ namespace Whalerator.DockerClient
         public async Task<string> GetTagDigestAsync(string repository, string tag)
         {
             var result = await dockerDistribution.GetTagDigestAsync(repository, tag, AuthHandler.RepoPullScope(repository));
-            return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
+            return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest", StringComparison.OrdinalIgnoreCase)).Value.First();
         }
 
         public IEnumerable<Model.Repository> GetRepositories() => GetRepositoriesAsync().Result;
@@ -190,7 +186,7 @@ namespace Whalerator.DockerClient
             {
                 if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    repos = new string[0];
+                    repos = Array.Empty<string>();
                 }
                 else
                 {
@@ -230,13 +226,13 @@ namespace Whalerator.DockerClient
             try
             {
                 result = dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)).Result;
-                return result?.Tags ?? new string[0];
+                return result?.Tags ?? Array.Empty<string>();
             }
             catch (AggregateException ex)
             {
-                if (ex.InnerException is ApiException && ((ApiException)ex.InnerException).StatusCode == System.Net.HttpStatusCode.NotFound)
+                if (ex.InnerException is ApiException apiEx && apiEx.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    return new string[0];
+                    return Array.Empty<string>();
                 }
                 else
                 {
@@ -249,13 +245,13 @@ namespace Whalerator.DockerClient
         {
             try
             {
-                return (await dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)))?.Tags ?? new string[0];
+                return (await dockerDistribution.GetTagListAsync(repository, AuthHandler.RepoPullScope(repository)))?.Tags ?? Array.Empty<string>();
             }
             catch (ApiException ex)
             {
                 if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    return new string[0];
+                    return Array.Empty<string>();
                 }
                 else
                 {
