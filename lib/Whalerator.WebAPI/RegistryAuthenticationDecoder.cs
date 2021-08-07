@@ -45,13 +45,14 @@ namespace Whalerator.WebAPI
             try
             {
                 var header = AuthenticationHeaderValue.Parse(authorization);
-                var token = Jose.JWT.Decode<Token>(header.Parameter, crypto);
+                var jweHeader = Jose.JWT.Headers(header.Parameter);
 
-                if (token.Exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+                if (!jweHeader.ContainsKey("exp") || (long)jweHeader["exp"] <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
                     return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The token has expired\" }"));
                 }
 
+                var token = Jose.JWT.Decode<Token>(header.Parameter, crypto);
                 var credentials = new RegistryCredentials
                 {
                     Password = token.Pwd,

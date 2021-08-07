@@ -70,7 +70,14 @@ namespace Whalerator.WebAPI.Controllers
                 var handler = new AuthHandler(cache, Config, loggerFactory.CreateLogger<AuthHandler>());
                 await handler.LoginAsync(credentials.Registry, credentials.Username, credentials.Password);
                 var json = JsonConvert.SerializeObject(credentials);
-                //var cipherText = crypto.Encrypt(json);
+
+                // publicly visible parameters for session validation
+                var headers = new Dictionary<string, object>
+                {
+                    { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
+                    { "exp", DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime },
+                    { "sub", handler.Realm }
+                };
 
                 var token = new Token
                 {
@@ -81,7 +88,7 @@ namespace Whalerator.WebAPI.Controllers
                     Exp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime
                 };
 
-                var jwe = Jose.JWT.Encode(token, crypto, JweAlgorithm.RSA_OAEP, JweEncryption.A256GCM);
+                var jwe = Jose.JWT.Encode(token, crypto, JweAlgorithm.RSA_OAEP, JweEncryption.A256GCM, extraHeaders: headers);
 
                 return Ok(new
                 {
