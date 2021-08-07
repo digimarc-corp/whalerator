@@ -106,7 +106,7 @@ export class CatalogComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.titleService.setTitle(this.sessionService.activeRegistry + ' - Catalog');
+    this.titleService.setTitle(this.sessionService.sessionLabel + ' - Catalog');
     this.catalogService.getBanner().subscribe(b => {
       if (isError(b)) {
         // do something

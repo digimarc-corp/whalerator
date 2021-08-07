@@ -151,10 +151,6 @@ div.image-detail {
     border-left: none;
 }
 
-#session::before {
-    content: "ahoy";
-}
-
 .tab.searching {
     border-color: #292929;
     color: #666666;

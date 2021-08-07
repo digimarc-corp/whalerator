@@ -44,44 +44,44 @@ export class SessionService extends WebService {
   }
 
   sessionToken: string;
-  sessionRealm: string;
+  sessionRegistry: string;
   sessionExpiry: any;
   sessionStart: any;
 
   whaleratorUrl = environment.serviceBaseUri;
 
-  /*
+  
   get registryLabel(): string {
-    if (this.activeRegistry === 'registry-1.docker.io') {
+    if (this.sessionRegistry === 'registry-1.docker.io') {
       return 'Docker Hub';
     } else {
-      return this.activeRegistry;
+      return this.sessionRegistry;
     }
   }
 
   get registryPath(): string {
-    if (this.activeRegistry === 'registry-1.docker.io') {
+    if (this.sessionRegistry === 'registry-1.docker.io') {
       return '';
     } else {
-      return this.activeRegistry + '/';
+      return this.sessionRegistry + '/';
     }
   }
-  */
+  
 
   public get sessionLabel(): string {
-    return this.sessionToken ? (new URL(this.sessionRealm).host || 'anonymous') : 'Login';
+    return this.sessionToken ? "Connected to " + this.registryLabel : 'Login';
   }
 
   private setSession(token: string) {
     this.sessionToken = token;
     if (token) {
       let header = JSON.parse(atob(token.split('.')[0]));
-      this.sessionRealm = header.sub;      
+      this.sessionRegistry = header.reg;
       this.sessionExpiry = new Date(header.exp * 1000).toLocaleString();
       this.sessionStart = new Date(header.iat * 1000).toLocaleString();
       this.cookieService.set('jwt', token, null, null, null, false); // , token, null, null, null, true, 'Strict');
     } else {
-      this.sessionRealm = null;
+      this.sessionRegistry = null;
       this.sessionExpiry = null;
       this.sessionStart = null;
       this.cookieService.deleteAll();

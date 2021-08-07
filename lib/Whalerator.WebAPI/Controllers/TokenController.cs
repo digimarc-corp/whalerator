@@ -76,7 +76,7 @@ namespace Whalerator.WebAPI.Controllers
                 {
                     { "iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
                     { "exp", DateTimeOffset.UtcNow.ToUnixTimeSeconds() + Config.AuthTokenLifetime },
-                    { "sub", handler.Realm }
+                    { "reg", credentials.Registry }
                 };
 
                 var token = new Token
