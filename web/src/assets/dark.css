@@ -151,7 +151,7 @@ div.image-detail {
     border-left: none;
 }
 
-#user::before {
+#session::before {
     content: "ahoy";
 }
 
