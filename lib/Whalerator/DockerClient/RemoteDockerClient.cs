@@ -173,7 +173,7 @@ namespace Whalerator.DockerClient
         public async Task<string> GetTagDigestAsync(string repository, string tag)
         {
             var result = await dockerDistribution.GetTagDigestAsync(repository, tag, AuthHandler.RepoPullScope(repository));
-            return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest")).Value.First();
+            return result.Headers.First(h => h.Key.Equals("Docker-Content-Digest", StringComparison.OrdinalIgnoreCase)).Value.First();
         }
 
         public IEnumerable<Model.Repository> GetRepositories() => GetRepositoriesAsync().Result;
