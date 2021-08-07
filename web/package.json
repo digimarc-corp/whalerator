@@ -22,7 +22,7 @@
     "@angular/router": "^10.2.5",
     "@auth0/angular-jwt": "^2.0.0",
     "core-js": "^2.6.11",
-    "ngx-cookie-service": "^3.0.4",
+    "ngx-cookie-service": "^10.0.4",
     "ngx-markdown": "^10.0.0",
     "purecss": "^1.0.0",
     "rxjs": "^6.5.5",
