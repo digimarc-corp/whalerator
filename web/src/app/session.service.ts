@@ -25,7 +25,6 @@ import { TokenRequest } from './token-request';
 import { environment } from '../environments/environment';
 import { WebService } from './web-service';
 import { ServiceError } from './service-error';
-import { JwtHelperService } from '@auth0/angular-jwt';
 import { CookieService } from 'ngx-cookie-service';
 
 
