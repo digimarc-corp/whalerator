@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { ScanResultComponent } from './scan-result.component';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +9,7 @@ describe('ScanResultComponent', () => {
   let component: ScanResultComponent;
   let fixture: ComponentFixture<ScanResultComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [FormsModule],
       declarations: [ScanResultComponent]
