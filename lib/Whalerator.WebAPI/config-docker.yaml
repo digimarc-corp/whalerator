@@ -4,6 +4,9 @@
 indexFolder: /var/data/whalerator/indexes
 registryCache: /var/data/whalerator/cache
 
+# Path to PEM-formatted RSA private key to use for session encryption
+authTokenKey:
+
 themes:
   - name: dark
     style: assets/dark.css
