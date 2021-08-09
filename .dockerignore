@@ -1,10 +1,13 @@
-#ignore all by default
+# ignore all by default
 *
-
 .vs
+.git
 
-#include only lib & web folders
+# include only lib & web folders
 !/lib
 !/web
 !/*.md
+
+# but still ignore this stuff
 /web/node_modules
+**/*.pem
