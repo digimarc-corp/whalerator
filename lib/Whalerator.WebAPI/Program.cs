@@ -28,6 +28,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Whalerator.Client;
 using Whalerator.Config;
@@ -46,14 +47,19 @@ namespace Whalerator.WebAPI
                 .WithParsed(o => options = o)
                 .WithNotParsed(e => Environment.Exit(-1));
 
-            if (!options.NoBanner)
-            {
-                PrintSplash();
-            }
+            if (!options.NoBanner) { PrintSplash(); }
 
-            var builder = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
+            var host = CreateHostBuilder(args).Build();
+
+            if (options.Rescan) { Rescan(host.Services).Wait(); }
+
+            if (options.Exit) { Environment.Exit(0); }
+
+            host.Run();
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     var env = hostingContext.HostingEnvironment;
@@ -86,33 +92,22 @@ namespace Whalerator.WebAPI
 
                     config.AddEnvironmentVariables();
                 })
-                .ConfigureLogging((hostingContext, logging) =>
+                .ConfigureLogging((builder, logging) =>
                 {
-                    GetLogSettings(hostingContext, out var logLevel, out var msLogLevel, out var logStack, out var logHeader);
+                    GetLogSettings(builder, out var logLevel, out var msLogLevel, out var logStack, out var logHeader);
 
                     logging.SetMinimumLevel(logLevel);
 
                     logging.AddProvider(new ConsoleLoggerProvider(logStack, logHeader));
                     logging.AddFilter("Microsoft", (level) => level >= msLogLevel);
                     logging.AddDebug();
+                })
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
                 });
-            builder.UseStartup<Startup>();
-            var webHost = builder.Build();
 
-            if (options.Rescan)
-            {
-                Rescan(webHost.Services).Wait();
-            }
-
-            if (options.Exit)
-            {
-                Environment.Exit(0);
-            }
-
-            webHost.Run();
-        }
-
-        private static void GetLogSettings(WebHostBuilderContext hostingContext, out LogLevel logLevel, out LogLevel msLogLevel, out bool logStack, out bool logHeader)
+        private static void GetLogSettings(HostBuilderContext hostingContext, out LogLevel logLevel, out LogLevel msLogLevel, out bool logStack, out bool logHeader)
         {
             try
             {

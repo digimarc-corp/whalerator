@@ -48,10 +48,10 @@ namespace Whalerator.WebAPI
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, ILogger<Startup> logger)
+        public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            this.Logger = logger;
+            this.logger = new ConsoleLoggerProvider(true, false).CreateLogger("Startup");
 
             Config = new ServiceConfig();
             Configuration.Bind(Config);
@@ -65,7 +65,7 @@ namespace Whalerator.WebAPI
 
         public IConfiguration Configuration { get; }
         public ServiceConfig Config { get; }
-        public ILogger Logger { get; }
+        private readonly ILogger logger;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -80,22 +80,22 @@ namespace Whalerator.WebAPI
                 };
 
                 services.AddSingleton(Config);
-                services.AddSingleton(Logger);
+                services.AddSingleton(logger);
 
-                services.AddWhaleCrypto(Config, Logger)
+                services.AddWhaleCrypto(Config, logger)
                     .AddWhaleAuth()
                     .AddWhaleDebug()
                     .AddWhaleSerialization()
-                    .AddWhaleVulnerabilities(Config, uiConfig, Logger)
-                    .AddWhaleDocuments(Config, uiConfig, Logger)
-                    .AddWhaleCache(Config, Logger)
+                    .AddWhaleVulnerabilities(Config, uiConfig, logger)
+                    .AddWhaleDocuments(Config, uiConfig, logger)
+                    .AddWhaleCache(Config, logger)
                     .AddWhaleRegistry(Config, uiConfig);
 
                 services.AddSingleton(uiConfig);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "There was an error during startup.");
+                logger.LogError(ex, "There was an error during startup.");
                 Environment.Exit(-1);
             }
         }
@@ -156,7 +156,6 @@ namespace Whalerator.WebAPI
 
                     app.Map("/index.html", (c) => c.Run((context) =>
                     {
-                        Console.WriteLine("Index served");
                         context.Response.ContentType = "text/html";
                         context.Response.WriteAsync(newIndex);
                         return Task.FromResult(new Microsoft.AspNetCore.Mvc.OkResult());
@@ -165,7 +164,7 @@ namespace Whalerator.WebAPI
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, $"Could not rewrite SPA baseUrl to reflect custom value '{baseUrl}'");
+                logger.LogError(ex, $"Could not rewrite SPA baseUrl to reflect custom value '{baseUrl}'");
             }
 
             app.UseStaticFiles();

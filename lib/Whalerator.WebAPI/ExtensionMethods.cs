@@ -74,7 +74,7 @@ namespace Whalerator.WebAPI
 
         public static IServiceCollection AddWhaleRegistry(this IServiceCollection services, ServiceConfig config, PublicConfig uiConfig)
         {
-            services.AddScoped<IClientFactory, ClientFactory>();
+            services.AddSingleton<IClientFactory, ClientFactory>();
 
             uiConfig.Registry = config.Registry;
             uiConfig.AutoLogin = config.AutoLogin;
@@ -125,7 +125,7 @@ namespace Whalerator.WebAPI
                 o.DefaultForbidScheme = "Bearer";
             }).AddScheme<AuthenticationSchemeOptions, RegistryAuthenticationHandler>("Bearer", o => { });
 
-            services.AddScoped(p => p.GetService<ICacheFactory>().Get<Authorization>());
+            services.AddSingleton(p => p.GetService<ICacheFactory>().Get<Authorization>());
             services.AddTransient<IAuthHandler, AuthHandler>();
 
             return services;
@@ -139,7 +139,7 @@ namespace Whalerator.WebAPI
             {
                 logger?.LogInformation("Using in-memory cache.");
                 services.AddSingleton<IMemoryCache>(new MemoryCache(new MemoryCacheOptions { }));
-                services.AddScoped<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>()) { Ttl = IntervalParser.Parse(config.CacheTtl) });
+                services.AddSingleton<ICacheFactory>(provider => new MemCacheFactory(provider.GetService<IMemoryCache>()) { Ttl = IntervalParser.Parse(config.CacheTtl) });
             }
             else
             {
@@ -162,7 +162,7 @@ namespace Whalerator.WebAPI
                     }
                 }
 
-                services.AddScoped<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Ttl = IntervalParser.Parse(config.CacheTtl) });
+                services.AddSingleton<ICacheFactory>(p => new RedCacheFactory { Mux = p.GetService<IConnectionMultiplexer>(), Ttl = IntervalParser.Parse(config.CacheTtl) });
             }
 
             return services;
@@ -188,10 +188,9 @@ namespace Whalerator.WebAPI
             bool contentWorker = config.IndexWorker;
             bool contentUI = (config.Documents?.Count ?? 0) > 0;
 
-            services.AddScoped<IAufsFilter>(p => new AufsFilter() { CaseInsensitiveSearch = config.CaseInsensitive });
-            services.AddScoped<ILayerExtractor, LayerExtractor>();
-
-            services.AddScoped<IIndexStore>(p => new IndexStore() { StoreFolder = config.IndexFolder });
+            services.AddSingleton<IAufsFilter>(p => new AufsFilter() { CaseInsensitiveSearch = config.CaseInsensitive });
+            services.AddSingleton<ILayerExtractor, LayerExtractor>();
+            services.AddSingleton<IIndexStore>(p => new IndexStore() { StoreFolder = config.IndexFolder });
 
             if (contentWorker)
             {
@@ -214,7 +213,7 @@ namespace Whalerator.WebAPI
             }
             else
             {
-                services.AddScoped<IWorkQueue<IndexRequest>>(p => new RedQueue<IndexRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
+                services.AddSingleton<IWorkQueue<IndexRequest>>(p => new RedQueue<IndexRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
                     p.GetRequiredService<ILogger<RedQueue<IndexRequest>>>(),
                     IndexRequest.WorkQueueKey));
             }
@@ -255,7 +254,7 @@ namespace Whalerator.WebAPI
                 }
                 else
                 {
-                    services.AddScoped<IWorkQueue<Security.ScanRequest>>(p => new RedQueue<Security.ScanRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
+                    services.AddSingleton<IWorkQueue<Security.ScanRequest>>(p => new RedQueue<Security.ScanRequest>(p.GetRequiredService<IConnectionMultiplexer>(),
                         p.GetRequiredService<ILogger<RedQueue<Security.ScanRequest>>>(),
                         Security.ScanRequest.WorkQueueKey));
                 }
