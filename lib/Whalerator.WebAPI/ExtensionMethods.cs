@@ -177,7 +177,7 @@ namespace Whalerator.WebAPI
             });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v0", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Whalerator", Version = "v0" });
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Whalerator", Version = "v1" });
             });
 #endif
             return services;

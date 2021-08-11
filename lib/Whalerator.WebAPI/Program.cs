@@ -45,8 +45,6 @@ namespace Whalerator.WebAPI
             var parseResult = Parser.Default.ParseArguments<Options>(args)
                 .WithParsed(o => options = o)
                 .WithNotParsed(e => Environment.Exit(-1));
-            
-
 
             if (!options.NoBanner)
             {

@@ -54,6 +54,8 @@ namespace Whalerator.WebAPI
             this.Logger = logger;
         }
 
+        public const string ApiBase = "api/v1/";
+
         public IConfiguration Configuration { get; }
         public ILogger Logger { get; }
 
@@ -103,8 +105,18 @@ namespace Whalerator.WebAPI
                 app.UseDeveloperExceptionPage();
             }
 
+            var baseUrl = string.Empty;
+            baseUrl = "test/";
+            // remove any leading/trailing slashes so we can format them correctly below
+            baseUrl = baseUrl.Trim('/');
+            var index = File.ReadAllText("wwwroot/index.html");
+            var regex = new System.Text.RegularExpressions.Regex("<base (.*)>");
+            var newIndex = regex.Replace(index, $"<base href=\"/{baseUrl}\">");
+
+            if (!string.IsNullOrEmpty(baseUrl)) { app.UsePathBase($"/{baseUrl}"); }
+
             //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
-            app.UseActionReverser("/api/repository", 2);
+            app.UseActionReverser($"/{ApiBase}repository", 2);
 
             app.UseCors(builder =>
                 builder.AllowAnyOrigin()
@@ -116,7 +128,7 @@ namespace Whalerator.WebAPI
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v0/swagger.json", "Whalerator v0");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Whalerator v1");
             });
 #endif
 
@@ -128,14 +140,28 @@ namespace Whalerator.WebAPI
                 endpoints.MapControllers();
             });
 
+
+
             // serve angular SPA
             var options = new RewriteOptions()
-                .AddRewrite("^login.*", "index.html", skipRemainingRules: true)
-                .AddRewrite("^catalog.*", "index.html", skipRemainingRules: true)
-                .AddRewrite(@"^r\/.*", "index.html", skipRemainingRules: true);
+                .AddRewrite($"^login.*", "index.html", skipRemainingRules: true)
+                .AddRewrite($"^catalog.*", "index.html", skipRemainingRules: true)
+                .AddRewrite($"^r\\/.*", "index.html", skipRemainingRules: true);
             app.UseRewriter(options);
             app.UseDefaultFiles();
+
+            app.Map("/index.html", (c) => c.Run((context) =>
+            {
+                Console.WriteLine("Index served");
+                context.Response.ContentType = "text/html";
+                context.Response.WriteAsync(newIndex);
+                return Task.FromResult(new Microsoft.AspNetCore.Mvc.OkResult());
+            }));
+
             app.UseStaticFiles();
+            //if (!string.IsNullOrEmpty(baseUrl)) { app.UseStaticFiles($"/{baseUrl}"); }
+
+
         }
     }
 }

@@ -34,7 +34,7 @@ using Whalerator.Support;
 namespace Whalerator.WebAPI.Controllers
 {
     [Produces("application/json")]
-    [Route("api/Token")]
+    [Route(Startup.ApiBase + "[controller]")]
     public class TokenController : ControllerBase
     {
         private readonly AsymmetricAlgorithm crypto;

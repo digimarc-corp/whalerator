@@ -38,8 +38,7 @@ using YamlDotNet.Core.Tokens;
 
 namespace Whalerator.WebAPI.Controllers
 {
-    [Produces("application/json")]
-    [Route("api/repository")]
+    [Route(Startup.ApiBase + "[controller]")]
     [Authorize]
     public class RepositoryController : WhaleratorControllerBase
     {
@@ -66,6 +65,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="digest">Manifest digest. Must be for a discrete image, not a multiplatform image.</param>
         /// <returns></returns>
         [HttpGet("sec/{digest}/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetSecScanAsync(string repository, string digest)
         {
             if (secScanner == null) { return StatusCode(503, "Security scanning is not currently enabled."); }
@@ -127,6 +127,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="targets">Optional target paths. Indexing will halt once all targets are found, and return only those layers needed to reach the deepest target.</param>
         /// <returns></returns>
         [HttpGet("files/{digest}/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetFilesAsync(string repository, string digest, string targets)
         {
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
@@ -184,6 +185,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("file/{digest}/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetFileAsync(string repository, string digest, string path)
         {
             if (string.IsNullOrEmpty(digest)) { return BadRequest("An image digest is required."); }
@@ -226,6 +228,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("tags/list/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetTagsAsync(string repository)
         {
             try
@@ -253,6 +256,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("tag/{tag}/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetImagesAsync(string repository, string tag)
         {
             try
@@ -329,6 +333,7 @@ namespace Whalerator.WebAPI.Controllers
         /// <param name="tag"></param>
         /// <returns></returns>
         [HttpGet("digest/{tag}/{*repository}")]
+        [Produces("application/json")]
         public async Task<IActionResult> GetImagesDigestAsync(string repository, string tag)
         {
             try

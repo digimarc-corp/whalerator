@@ -27,8 +27,7 @@ using Whalerator.Config;
 
 namespace Whalerator.WebAPI.Controllers
 {
-    [Produces("application/json")]
-    [Route("api/config")]
+    [Route(Startup.ApiBase + "[controller]")]
     public class ConfigController : ControllerBase
     {
         public ConfigController(ILogger<ConfigController> logger, PublicConfig config)
@@ -45,6 +44,7 @@ namespace Whalerator.WebAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
+        [Produces("application/json")]
         public IActionResult Get() => Ok(Config);
     }
 }
