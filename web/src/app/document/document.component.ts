@@ -288,7 +288,6 @@ export class DocumentComponent implements OnInit {
   }
 
   getFileListing(image: Image) {
-    console.log(`Requesting file index`);
     const targets = this.configService.config.searchLists.flat().join(';');
     this.catalog.getFileList(this.repository, this.image.digest, targets).subscribe(r => {
       if (isError(r)) {

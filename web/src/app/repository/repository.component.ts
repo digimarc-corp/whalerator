@@ -189,7 +189,6 @@ export class RepositoryComponent implements OnInit {
     if (this.selectedImageSet) {
       if (!this.selectedPlatform || !this.selectedImageSet.platforms.some(p => p.label === this.selectedPlatform.label)) {
         this.selectedPlatform = this.selectedImageSet.images[0].platform;
-        console.log('Setting platform ' + this.selectedPlatform.label);
       }
       this.selectedImage = this.selectedImageSet.images.find(i => i.platform.label === this.selectedPlatform.label);
     }
@@ -198,7 +197,7 @@ export class RepositoryComponent implements OnInit {
 
   getRepo(): void {
     if (this.loadRequested) {
-      console.log('tag load already requested');
+      return;
     } else {
       this.loadRequested = true;
       this.catalog.getTags(this.name).subscribe(tagset => {

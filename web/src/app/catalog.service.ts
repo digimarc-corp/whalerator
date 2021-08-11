@@ -57,7 +57,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get(bannerUrl, { headers: headers, responseType: 'text' }).pipe(
-      tap(b => console.log('got file contents')),
       catchError(this.handleError('getFile', 'No embedded documentation found'))
     );
   }
@@ -67,7 +66,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<Repository[]>(listUrl, { headers: headers }).pipe(
-      tap(repos => console.log('got repo list')),
       map(repos => repos.map(r => new Repository(r))),
       catchError(this.handleError<Repository[]>('getRepos'))
     );
@@ -87,7 +85,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<TagSet>(tagsUrl, { headers: headers }).pipe(
-      tap(tags => console.log('got tag list')),
       map(tags => new TagSet(tags)),
       catchError(this.handleError<TagSet>('getTags'))
     );
@@ -98,7 +95,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<ImageSet>(imageUrl, { headers: headers }).pipe(
-      tap(img => console.log('got image set')),
       tap(imgset => imgset.images.forEach(img => img.history = img.history.map(i => History.From(i)))),
       map(i => new ImageSet(i)),
       catchError(this.handleError<ImageSet>('getImage'))
@@ -119,7 +115,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<string>(imageUrl, { headers: headers }).pipe(
-      tap(repos => console.log('got image set')),
       catchError(this.handleError<string>('getImage'))
     );
   }
@@ -129,7 +124,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<FileListing[]>(filesUrl, { headers: headers, observe: 'response' }).pipe(
-      tap(list => console.log('got file listings')),
       catchError(this.handleError<FileListing[]>('getScan'))
     );
   }
@@ -139,7 +133,6 @@ export class CatalogService extends WebService {
     let headers = new HttpHeaders();
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get(fileUrl, { headers: headers, responseType: 'text', observe: 'response' }).pipe(
-      tap(repos => console.log('got file contents')),
       catchError(this.handleError('getFile', 'No embedded documentation found'))
     );
   }
@@ -150,7 +143,6 @@ export class CatalogService extends WebService {
     headers = headers.append('Authorization', `Bearer ${this.sessionService.sessionToken}`);
     return this.http.get<ScanResult>(scanUrl, { headers: headers }).pipe(
       tap(scan => scan.digest = digest),
-      tap(scan => console.log('got scan results')),
       catchError(this.handleError<ScanResult>('getScan'))
     );
   }
