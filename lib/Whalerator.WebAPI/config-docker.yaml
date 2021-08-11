@@ -7,6 +7,9 @@ registryCache: /var/data/whalerator/cache
 # Path to PEM-formatted RSA private key to use for session encryption
 authTokenKey:
 
+# optional prefix for all whalerator urls, both service and UI. Useful for running behind a reverse proxy on a subpath, e.g. my.site.io/browse
+baseUrl:
+
 themes:
   - name: dark
     style: assets/dark.css
