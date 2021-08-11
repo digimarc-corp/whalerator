@@ -52,11 +52,19 @@ namespace Whalerator.WebAPI
         {
             Configuration = configuration;
             this.Logger = logger;
+
+            Config = new ServiceConfig();
+            Configuration.Bind(Config);
+
+            // load and cache static documents
+            Config.StaticDocuments = Configuration.GetStaticDocuments().ToList();
+
         }
 
         public const string ApiBase = "api/v1/";
 
         public IConfiguration Configuration { get; }
+        public ServiceConfig Config { get; }
         public ILogger Logger { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -64,29 +72,24 @@ namespace Whalerator.WebAPI
         {
             try
             {
-                var config = new ServiceConfig();
-                Configuration.Bind(config);
-
-                // load and cache static documents
-                config.StaticDocuments = Configuration.GetStaticDocuments().ToList();
 
                 var uiConfig = new PublicConfig()
                 {
-                    Themes = config.Themes,
-                    LoginBanner = Banners.ReadBanner(config.LoginBanner)
+                    Themes = Config.Themes,
+                    LoginBanner = Banners.ReadBanner(Config.LoginBanner)
                 };
 
-                services.AddSingleton(config);
+                services.AddSingleton(Config);
                 services.AddSingleton(Logger);
 
-                services.AddWhaleCrypto(config, Logger)
+                services.AddWhaleCrypto(Config, Logger)
                     .AddWhaleAuth()
                     .AddWhaleDebug()
                     .AddWhaleSerialization()
-                    .AddWhaleVulnerabilities(config, uiConfig, Logger)
-                    .AddWhaleDocuments(config, uiConfig, Logger)
-                    .AddWhaleCache(config, Logger)
-                    .AddWhaleRegistry(config, uiConfig);
+                    .AddWhaleVulnerabilities(Config, uiConfig, Logger)
+                    .AddWhaleDocuments(Config, uiConfig, Logger)
+                    .AddWhaleCache(Config, Logger)
+                    .AddWhaleRegistry(Config, uiConfig);
 
                 services.AddSingleton(uiConfig);
             }
@@ -105,14 +108,8 @@ namespace Whalerator.WebAPI
                 app.UseDeveloperExceptionPage();
             }
 
-            var baseUrl = string.Empty;
-            baseUrl = "test/";
             // remove any leading/trailing slashes so we can format them correctly below
-            baseUrl = baseUrl.Trim('/');
-            var index = File.ReadAllText("wwwroot/index.html");
-            var regex = new System.Text.RegularExpressions.Regex("<base (.*)>");
-            var newIndex = regex.Replace(index, $"<base href=\"/{baseUrl}\">");
-
+            var baseUrl = Config.BaseUrl?.Trim('/') ?? string.Empty;
             if (!string.IsNullOrEmpty(baseUrl)) { app.UsePathBase($"/{baseUrl}"); }
 
             //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
@@ -140,8 +137,6 @@ namespace Whalerator.WebAPI
                 endpoints.MapControllers();
             });
 
-
-
             // serve angular SPA
             var options = new RewriteOptions()
                 .AddRewrite($"^login.*", "index.html", skipRemainingRules: true)
@@ -150,18 +145,30 @@ namespace Whalerator.WebAPI
             app.UseRewriter(options);
             app.UseDefaultFiles();
 
-            app.Map("/index.html", (c) => c.Run((context) =>
+            try
             {
-                Console.WriteLine("Index served");
-                context.Response.ContentType = "text/html";
-                context.Response.WriteAsync(newIndex);
-                return Task.FromResult(new Microsoft.AspNetCore.Mvc.OkResult());
-            }));
+                // if we're configured with a custom baseUrl, rewrite the SPA index.html
+                if (!string.IsNullOrEmpty(baseUrl))
+                {
+                    var index = File.ReadAllText("wwwroot/index.html");
+                    var regex = new System.Text.RegularExpressions.Regex("<base (.*)>");
+                    var newIndex = regex.Replace(index, $"<base href=\"/{baseUrl}/\">");
+
+                    app.Map("/index.html", (c) => c.Run((context) =>
+                    {
+                        Console.WriteLine("Index served");
+                        context.Response.ContentType = "text/html";
+                        context.Response.WriteAsync(newIndex);
+                        return Task.FromResult(new Microsoft.AspNetCore.Mvc.OkResult());
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Could not rewrite SPA baseUrl to reflect custom value '{baseUrl}'");
+            }
 
             app.UseStaticFiles();
-            //if (!string.IsNullOrEmpty(baseUrl)) { app.UseStaticFiles($"/{baseUrl}"); }
-
-
         }
     }
 }
