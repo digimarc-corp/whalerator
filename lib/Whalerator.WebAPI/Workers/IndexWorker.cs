@@ -22,11 +22,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Whalerator;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Queue;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.WebAPI.Workers
 {
     public class IndexWorker : QueueWorker<IndexRequest>
     {

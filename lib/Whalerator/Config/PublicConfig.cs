@@ -28,12 +28,17 @@ namespace Whalerator.Config
     /// </summary>
     public class PublicConfig
     {
-        public IEnumerable<Theme> Themes { get; set; }
-        public string Registry { get; set; }
+        public Placeholder UserName { get; set; }
+        public Placeholder Password { get; set; }
+        public Placeholder Registry { get; set; }
+
         public bool AutoLogin { get; set; }
+
+        public IEnumerable<Theme> Themes { get; set; }
         public bool SecScanner { get; set; }
         public bool DocScanner { get; set; }
         public IEnumerable<IEnumerable<string>> SearchLists { get; set; }
+
         public string LoginBanner { get; set; }
     }
 }

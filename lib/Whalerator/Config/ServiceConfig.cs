@@ -66,6 +66,30 @@ namespace Whalerator.Config
         public int AuthTokenLifetime { get; set; } = 2419200;
         public string AuthTokenKey { get; set; }
 
+        /// <summary>
+        /// Changes the placeholder text and behavior in the UI login form.
+        /// </summary>
+        public Placeholder UserName { get; set; } = new() { PlaceholderText = "username" };
+        public Placeholder Password { get; set; } = new() { PlaceholderText = "password" };
+
+        /// <summary>
+        /// Changes the placeholder text in the UI login form.
+        /// </summary>
+        public string PlaceholderPassword { get; set; } = "password";
+
+        /// <summary>
+        /// Changes the placeholder text in the UI login form.
+        /// </summary>
+        public string PlaceholderRegistry { get; set; } = "registry";
+
+        /// <summary>
+        /// If true, the UI will automatically attempt to login to the default registry as an anonymous user.
+        /// </summary>
+        public bool AutoLogin { get; set; }
+
+        /// <summary>
+        /// If set, this is the default target registry. The UI will have this set as a read-only default and login attempts for other registries will be rejected.
+        /// </summary>
         public string Registry { get; set; }
         public string RegistryRoot { get; set; }
         public string RegistryUser { get; set; }
@@ -81,7 +105,6 @@ namespace Whalerator.Config
         /// services locally while Registry and Clair are in a docker-compose env.
         /// </summary>
         public bool IgnoreInternalAlias { get; set; }
-        public bool AutoLogin { get; set; }
 
         public List<string> Repositories { get; set; } = new List<string>();
         //public List<string> HiddenRepositories { get; set; } = new List<string>();

@@ -25,13 +25,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Whalerator;
 using Whalerator.Client;
 using Whalerator.Config;
 using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.WebAPI.Workers
 {
     public class SecurityScanWorker : QueueWorker<ScanRequest>
     {
@@ -90,7 +91,7 @@ namespace Whalerator.WebAPI
                             if (request.Submitted)
                             {
                                 // we've already submitted this one to the scanner, just sleep on it for a few seconds
-                                System.Threading.Thread.Sleep(2000);
+                                Thread.Sleep(2000);
                             }
                             else
                             {
