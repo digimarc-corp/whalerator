@@ -36,6 +36,8 @@ namespace Whalerator.Config
 
         public string RedisCache { get; set; }
 
+        public string BaseUrl { get; set; }
+
         public string CacheTtl { get; set; } = "1h";
         public bool LocalCache { get; set; }
 

@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  serviceBaseUri: '/api'
+  serviceBaseUri: 'api/v1'
 };

@@ -56,14 +56,22 @@ export class ConfigService extends WebService {
 
   constructor(private http: HttpClient) {
     super();
-    this.apiBase = environment.serviceBaseUri;
+    let serviceUri = environment.serviceBaseUri;
+
+    if (serviceUri.indexOf('http://') === 0 || serviceUri.indexOf('https://') === 0) {
+      this.apiBase = serviceUri;
+    } else {
+      let baseUri = document.baseURI;
+      if (!baseUri.endsWith('/')) { baseUri = baseUri + '/'; }
+      this.apiBase = new URL(environment.serviceBaseUri, baseUri).href;
+    }
+
     this.getConfig();
     this.getVersion();
   }
 
   getVersion() {
     this.http.get<any>('/assets/v.json').pipe(
-      tap(v => console.log('got app version')),
       catchError(this.handleError<any>('getVersion'))
     ).subscribe(v => {
       if (isError<any>(v)) {
@@ -78,7 +86,6 @@ export class ConfigService extends WebService {
   getConfig() {
     const configUrl = this.apiBase + '/config';
     this.http.get<Config>(configUrl).pipe(
-      tap(config => console.log('got service config')),
       catchError(this.handleError<Config>('getConfig'))
     ).subscribe(c => {
       if (isError<Config>(c)) {

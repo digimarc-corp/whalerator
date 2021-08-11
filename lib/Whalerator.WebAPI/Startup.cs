@@ -48,49 +48,54 @@ namespace Whalerator.WebAPI
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, ILogger<Startup> logger)
+        public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            this.Logger = logger;
+            this.logger = new ConsoleLoggerProvider(true, false).CreateLogger("Startup");
+
+            Config = new ServiceConfig();
+            Configuration.Bind(Config);
+
+            // load and cache static documents
+            Config.StaticDocuments = Configuration.GetStaticDocuments().ToList();
+
         }
 
+        public const string ApiBase = "api/v1/";
+
         public IConfiguration Configuration { get; }
-        public ILogger Logger { get; }
+        public ServiceConfig Config { get; }
+        private readonly ILogger logger;
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             try
             {
-                var config = new ServiceConfig();
-                Configuration.Bind(config);
-
-                // load and cache static documents
-                config.StaticDocuments = Configuration.GetStaticDocuments().ToList();
 
                 var uiConfig = new PublicConfig()
                 {
-                    Themes = config.Themes,
-                    LoginBanner = Banners.ReadBanner(config.LoginBanner)
+                    Themes = Config.Themes,
+                    LoginBanner = Banners.ReadBanner(Config.LoginBanner)
                 };
 
-                services.AddSingleton(config);
-                services.AddSingleton(Logger);
+                services.AddSingleton(Config);
+                services.AddSingleton(logger);
 
-                services.AddWhaleCrypto(config, Logger)
+                services.AddWhaleCrypto(Config, logger)
                     .AddWhaleAuth()
                     .AddWhaleDebug()
                     .AddWhaleSerialization()
-                    .AddWhaleVulnerabilities(config, uiConfig, Logger)
-                    .AddWhaleDocuments(config, uiConfig, Logger)
-                    .AddWhaleCache(config, Logger)
-                    .AddWhaleRegistry(config, uiConfig);
+                    .AddWhaleVulnerabilities(Config, uiConfig, logger)
+                    .AddWhaleDocuments(Config, uiConfig, logger)
+                    .AddWhaleCache(Config, logger)
+                    .AddWhaleRegistry(Config, uiConfig);
 
                 services.AddSingleton(uiConfig);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "There was an error during startup.");
+                logger.LogError(ex, "There was an error during startup.");
                 Environment.Exit(-1);
             }
         }
@@ -103,8 +108,12 @@ namespace Whalerator.WebAPI
                 app.UseDeveloperExceptionPage();
             }
 
+            // remove any leading/trailing slashes so we can format them correctly below
+            var baseUrl = Config.BaseUrl?.Trim('/') ?? string.Empty;
+            if (!string.IsNullOrEmpty(baseUrl)) { app.UsePathBase($"/{baseUrl}"); }
+
             //reformat repository requests to allow paths like /api/repository/some/arbitrary/path/tags
-            app.UseActionReverser("/api/repository", 2);
+            app.UseActionReverser($"/{ApiBase}repository", 2);
 
             app.UseCors(builder =>
                 builder.AllowAnyOrigin()
@@ -116,7 +125,7 @@ namespace Whalerator.WebAPI
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v0/swagger.json", "Whalerator v0");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Whalerator v1");
             });
 #endif
 
@@ -130,11 +139,34 @@ namespace Whalerator.WebAPI
 
             // serve angular SPA
             var options = new RewriteOptions()
-                .AddRewrite("^login.*", "index.html", skipRemainingRules: true)
-                .AddRewrite("^catalog.*", "index.html", skipRemainingRules: true)
-                .AddRewrite(@"^r\/.*", "index.html", skipRemainingRules: true);
+                .AddRewrite($"^login.*", "index.html", skipRemainingRules: true)
+                .AddRewrite($"^catalog.*", "index.html", skipRemainingRules: true)
+                .AddRewrite($"^r\\/.*", "index.html", skipRemainingRules: true);
             app.UseRewriter(options);
             app.UseDefaultFiles();
+
+            try
+            {
+                // if we're configured with a custom baseUrl, rewrite the SPA index.html
+                if (!string.IsNullOrEmpty(baseUrl))
+                {
+                    var index = File.ReadAllText("wwwroot/index.html");
+                    var regex = new System.Text.RegularExpressions.Regex("<base (.*)>");
+                    var newIndex = regex.Replace(index, $"<base href=\"/{baseUrl}/\">");
+
+                    app.Map("/index.html", (c) => c.Run((context) =>
+                    {
+                        context.Response.ContentType = "text/html";
+                        context.Response.WriteAsync(newIndex);
+                        return Task.FromResult(new Microsoft.AspNetCore.Mvc.OkResult());
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Could not rewrite SPA baseUrl to reflect custom value '{baseUrl}'");
+            }
+
             app.UseStaticFiles();
         }
     }

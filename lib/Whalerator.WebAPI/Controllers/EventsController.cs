@@ -32,7 +32,7 @@ using Whalerator.Security;
 
 namespace Whalerator.WebAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route(Startup.ApiBase + "[controller]")]
     [ApiController]
     public class EventsController : ControllerBase
     {

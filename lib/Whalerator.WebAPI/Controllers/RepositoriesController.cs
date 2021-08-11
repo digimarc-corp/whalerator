@@ -33,8 +33,7 @@ using Whalerator.Support;
 
 namespace Whalerator.WebAPI.Controllers
 {
-    [Produces("application/json")]
-    [Route("api/repositories")]
+    [Route(Startup.ApiBase + "[controller]")]
     [Authorize]
     public class RepositoriesController : WhaleratorControllerBase
     {
@@ -48,6 +47,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("banner")]
+        [Produces("text/markdown")]
         public IActionResult GetBanner()
         {
             try
@@ -69,6 +69,7 @@ namespace Whalerator.WebAPI.Controllers
         }
 
         [HttpGet("list")]
+        [Produces("application/json")]
         public IActionResult Get()
         {
             try
