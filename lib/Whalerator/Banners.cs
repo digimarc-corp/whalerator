@@ -35,7 +35,7 @@ namespace Whalerator
                 }
                 else
                 {
-                    throw new FileNotFoundException($"The file does not exist. ({source})", source);
+                    throw new FileNotFoundException($"The file does not exist ({source}). To use literal text, the banner must include at least one newline, or leading/trailing whitespace.", source);
                 }
             }
             return source;
