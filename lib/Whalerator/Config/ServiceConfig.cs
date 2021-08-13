@@ -70,17 +70,11 @@ namespace Whalerator.Config
         /// Changes the placeholder text and behavior in the UI login form.
         /// </summary>
         public Placeholder UserName { get; set; } = new() { PlaceholderText = "username" };
+
+        /// <summary>
+        /// Changes the placeholder text and behavior in the UI login form.
+        /// </summary>
         public Placeholder Password { get; set; } = new() { PlaceholderText = "password" };
-
-        /// <summary>
-        /// Changes the placeholder text in the UI login form.
-        /// </summary>
-        public string PlaceholderPassword { get; set; } = "password";
-
-        /// <summary>
-        /// Changes the placeholder text in the UI login form.
-        /// </summary>
-        public string PlaceholderRegistry { get; set; } = "registry";
 
         /// <summary>
         /// If true, the UI will automatically attempt to login to the default registry as an anonymous user.

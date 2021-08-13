@@ -144,26 +144,29 @@ namespace Whalerator.WebAPI
 
         public static IServiceCollection AddWhalePublicConfig(this IServiceCollection services, ServiceConfig config)
         {
+            if (config.Password.IsDefault)
+            {
+                throw new ArgumentException("Cannot set a default password.");
+            }
+
+            var docsEnabled = (config.Documents?.Count ?? 0) > 0;
+
             var uiConfig = new PublicConfig()
             {
                 Themes = config.Themes,
-                LoginBanner = Banners.ReadBanner(config.LoginBanner)
-            };
-
-
-            if ((config.Documents?.Count ?? 0) > 0)
-            {
-                uiConfig.DocScanner = true;
-                uiConfig.SearchLists = config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)));
-            }
-
-            uiConfig.SecScanner = config.Vulnerabilities;
-
-            if (!string.IsNullOrEmpty(config.Registry))
-            {
-                uiConfig.Registry = new() { PlaceholderText = config.Registry, IsDefault = true, IsReadonly = true };
-                uiConfig.AutoLogin = config.AutoLogin;
-            }
+                LoginBanner = Banners.ReadBanner(config.LoginBanner),
+                DocScanner = docsEnabled,
+                SearchLists = docsEnabled 
+                    ? config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f))) 
+                    : Array.Empty<string[]>(),
+                SecScanner = config.Vulnerabilities,
+                AutoLogin = config.AutoLogin,
+                Registry = string.IsNullOrEmpty(config.Registry) 
+                    ? new() { PlaceholderText = "registry" } 
+                    : new() { PlaceholderText = config.Registry, IsDefault = true, IsReadonly = true },
+                UserName = config.UserName,
+                Password = config.Password
+            };            
 
             services.AddSingleton(uiConfig);
             return services;
