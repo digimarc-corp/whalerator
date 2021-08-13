@@ -42,7 +42,8 @@ export class LoginFormComponent implements OnInit {
   username: string;
   password: string;
   registry: string;
-  registryLocked = false;
+  
+  passwordVisible = false;
   remember = true;
   anonymous = false;
   themes: Theme[];
@@ -60,10 +61,6 @@ export class LoginFormComponent implements OnInit {
     this.configService.setDefaultSort(value as SortOrder);
   }
 
-  lorem = '## Readme\n' +
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n' +
-    '```\nprint("Hello, world!")```';
-
   get selectedTheme(): string {
     return this.configService.currentTheme.name;
   }
@@ -71,16 +68,61 @@ export class LoginFormComponent implements OnInit {
     this.configService.setTheme(this.themes.find(t => t.name === theme));
   }
 
+  get usernamePlaceholder(): string {
+    return this.configService.config.userName.placeholderText ?? "Username";
+  }
+
+  get usernameHidden(): boolean {
+    return this.configService.config.userName.isHidden || this.anonymous;
+  }
+
+  get usernameLocked(): boolean {
+    return this.configService.config.userName.isReadonly ?? false;
+  }
+
+  get passwordPlaceholder(): string {
+    return this.configService.config.password.placeholderText ?? "Password";
+  }
+
+  get passwordHidden(): boolean {
+    return this.configService.config.password.isHidden || this.anonymous;
+  }
+
+  get passwordLocked(): boolean {
+    return this.configService.config.password.isReadonly ?? false;
+  }
+
+  get passwordType(): string {
+    return this.passwordVisible ? "textbox" : "password";
+  }
+
+  get registryPlaceholder(): string {
+    return this.configService.config.registry.placeholderText ?? "Registry";
+  }
+
+  get registryHidden(): boolean {
+    return this.configService.config.registry.isHidden || this.anonymous;
+  }
+
+  get registryLocked(): boolean {
+    return this.configService.config.registry.isReadonly ?? false;
+  }
+
+  
   errorMessage: string;
   isErrored = false;
 
   forwardingRoute: string;
 
   ngOnInit() {
-    if (this.configService.config.registry) {
-      this.registry = this.configService.config.registry;
-      this.registryLocked = true;
+    if (this.configService.config.registry.isDefault) {
+      this.registry = this.configService.config.registry.placeholderText;
     }
+    
+    if (this.configService.config.userName.isDefault) {
+      this.username = this.configService.config.userName.placeholderText;
+    }
+    
     const title = (this.registry || 'Whalerator') + ' Login';
     this.titleService.setTitle(title);
 

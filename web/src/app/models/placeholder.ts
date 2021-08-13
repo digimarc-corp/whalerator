@@ -16,23 +16,15 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
-import { Placeholder } from './placeholder';
 import { Theme } from './theme';
 
-export class Config {
+export class Placeholder {
     constructor(obj?: any) {
         Object.assign(this, obj);
     }
 
-    public registry: Placeholder;
-    public userName: Placeholder;
-    public password: Placeholder;
-
-    public searchLists: string[][];
-    public secScanner: boolean;
-    public docScanner: boolean;
-    public autoLogin: boolean;
-    public themes: Theme[];
-
-    public loginBanner: string;
+    public placeholderText: string;
+    public isDefault: boolean;
+    public isReadonly: boolean;
+    public isHidden: boolean;
 }

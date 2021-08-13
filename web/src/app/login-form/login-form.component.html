@@ -66,17 +66,22 @@
   <div class="formBox">
     <form (ngSubmit)="submit()">
       <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
-        [(ngModel)]="username" name="username" placeholder="Username" [hidden]="anonymous" />
+        [(ngModel)]="username" name="username" [placeholder]="usernamePlaceholder" [readonly]="usernameLocked" [hidden]="usernameHidden" />
       <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
-        [(ngModel)]="password" name="password" type="password" placeholder="Password" [hidden]="anonymous" />
+        [(ngModel)]="password" name="password" [type]="passwordType" [placeholder]="passwordPlaceholder" [hidden]="passwordHidden" />
       <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="textBox"
         [(ngModel)]="registry" name="registry" placeholder="Registry" [readonly]="registryLocked" />
-      <span>Stay logged in:
+      <span>
+        Stay logged in:
         <input [(ngModel)]="remember" name="remember" type="checkbox" />
       </span>
       <span>
         Anonymous:
         <input [(ngModel)]="anonymous" name="anonymous" type="checkbox" />
+      </span>
+      <span>
+        Show password:
+        <input [(ngModel)]="passwordVisible" name="passwordVisible" type="checkbox" />
       </span>
       <div style="display: flex; align-items: center; justify-items: left;">
         <button (click)="submit()">Submit</button>

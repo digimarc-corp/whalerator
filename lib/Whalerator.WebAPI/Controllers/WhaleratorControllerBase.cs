@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Whalerator.Client;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.WebAPI.Controllers
 {
     [Authorize]
     public abstract class WhaleratorControllerBase : ControllerBase
