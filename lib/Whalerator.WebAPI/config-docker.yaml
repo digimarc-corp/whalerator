@@ -10,6 +10,17 @@ authTokenKey:
 # optional prefix for all whalerator urls, both service and UI. Useful for running behind a reverse proxy on a subpath, e.g. my.site.io/browse
 baseUrl:
 
+# Optional configuration of placeholder text on login screen
+#userName:
+#  placeholderText: Username
+#  isDefault: false
+#  isHidden: false
+#  isReadOnly: false
+#password:
+#  placeholderText: Password
+#  isHidden: false
+#  isReadOnly: false
+
 themes:
   - name: dark
     style: assets/dark.css
