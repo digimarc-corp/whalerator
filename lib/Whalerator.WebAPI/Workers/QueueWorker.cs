@@ -24,14 +24,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Whalerator;
 using Whalerator.Config;
 using Whalerator.Model;
 using Whalerator.Queue;
 using Whalerator.Security;
 
-namespace Whalerator.WebAPI
+namespace Whalerator.WebAPI.Workers
 {
-    public abstract class QueueWorker<T> : IHostedService where T : Whalerator.RequestBase
+    public abstract class QueueWorker<T> : IHostedService where T : RequestBase
     {
         protected ILogger logger;
         protected ServiceConfig config;
@@ -54,7 +55,7 @@ namespace Whalerator.WebAPI
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation($"{this.GetType().Name} starting");
+            logger.LogInformation($"{GetType().Name} starting");
 
             timer = new Timer(DoWork);
             StartTimer();

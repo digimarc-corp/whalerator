@@ -72,26 +72,18 @@ namespace Whalerator.WebAPI
         {
             try
             {
-
-                var uiConfig = new PublicConfig()
-                {
-                    Themes = Config.Themes,
-                    LoginBanner = Banners.ReadBanner(Config.LoginBanner)
-                };
-
-                services.AddSingleton(Config);
+               services.AddSingleton(Config);
                 services.AddSingleton(logger);
 
                 services.AddWhaleCrypto(Config, logger)
                     .AddWhaleAuth()
                     .AddWhaleDebug()
                     .AddWhaleSerialization()
-                    .AddWhaleVulnerabilities(Config, uiConfig, logger)
-                    .AddWhaleDocuments(Config, uiConfig, logger)
+                    .AddWhaleVulnerabilities(Config, logger)
+                    .AddWhaleDocuments(Config, logger)
                     .AddWhaleCache(Config, logger)
-                    .AddWhaleRegistry(Config, uiConfig);
-
-                services.AddSingleton(uiConfig);
+                    .AddWhaleRegistry()
+                    .AddWhalePublicConfig(Config);                
             }
             catch (Exception ex)
             {
