@@ -38,4 +38,4 @@ caseInsensitive: true
 
 indexWorker: true
 
-logLevel: "Warning"
+logLevel: "Information"
