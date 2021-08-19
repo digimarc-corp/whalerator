@@ -51,7 +51,13 @@ namespace Whalerator.WebAPI
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-            this.logger = new ConsoleLoggerProvider(true, false).CreateLogger("Startup");
+
+            var (logLevel, msLogLevel, logStack) = Configuration.GetLogSettings();
+            logger = LoggerFactory.Create(builder => builder
+                .SetMinimumLevel(logLevel)
+                .AddConsoleFormatter<AnsiLogFormatter, AnsiLogOptions>(o => o.LogStack = logStack)
+                .AddConsole(o => o.FormatterName = nameof(AnsiLogFormatter)))
+                .CreateLogger("Startup");
 
             Config = new ServiceConfig();
             Configuration.Bind(Config);
@@ -72,7 +78,7 @@ namespace Whalerator.WebAPI
         {
             try
             {
-               services.AddSingleton(Config);
+                services.AddSingleton(Config);
                 services.AddSingleton(logger);
 
                 services.AddWhaleCrypto(Config, logger)
@@ -83,7 +89,7 @@ namespace Whalerator.WebAPI
                     .AddWhaleDocuments(Config, logger)
                     .AddWhaleCache(Config, logger)
                     .AddWhaleRegistry()
-                    .AddWhalePublicConfig(Config);                
+                    .AddWhalePublicConfig(Config);
             }
             catch (Exception ex)
             {
@@ -160,6 +166,8 @@ namespace Whalerator.WebAPI
             }
 
             app.UseStaticFiles();
+
+            app.LogEndpoints(logger);
         }
     }
 }
