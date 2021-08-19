@@ -306,6 +306,7 @@ namespace Whalerator.Client
             using (var client = new HttpClient())
             {
                 var uri = new UriBuilder(Realm);
+                logger.LogTrace($"Authenticating against {Realm}");
 
                 var parameters = $"service={WebUtility.UrlEncode(Service)}";
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
@@ -328,6 +329,7 @@ namespace Whalerator.Client
                 }
                 else
                 {
+                    logger.LogDebug($"Authentication failed: {response.StatusCode} - {response.Content.ToString()}");
                     return null;
                 }
             }
