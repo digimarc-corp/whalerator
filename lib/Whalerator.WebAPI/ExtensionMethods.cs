@@ -16,7 +16,10 @@
    SPDX-License-Identifier: Apache-2.0
 */
 
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +38,66 @@ namespace Whalerator.WebAPI
                 pattern: g.FirstOrDefault(k => k.Key.EndsWith("pattern", StringComparison.InvariantCultureIgnoreCase)).Value
             ));
 
+        public static (LogLevel logLevel, LogLevel msLogLevel, bool logStack) GetLogSettings(this IConfiguration configuration)
+        {
+            LogLevel logLevel, msLogLevel;
+            bool logStack;
+
+            try
+            {
+                var str = configuration.GetValue(typeof(string), "logLevel") as string;
+                logLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
+            }
+            catch
+            {
+                logLevel = LogLevel.Information;
+                Console.WriteLine($"Could not get log level from config. Defaulting to '{logLevel}'");
+            }
+
+            try
+            {
+                var str = configuration.GetValue(typeof(string), "msLogLevel") as string;
+                msLogLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
+            }
+            catch
+            {
+                msLogLevel = LogLevel.Warning;
+            }
+
+            try
+            {
+                logStack = (bool)configuration.GetValue(typeof(bool), "logStack");
+            }
+            catch
+            {
+                logStack = false;
+            }
+
+            return (logLevel, msLogLevel, logStack);
+        }
+
+        public static void LogEndpoints(this IApplicationBuilder app, ILogger log)
+        {
+            try
+            {
+                var addr = app.ServerFeatures[typeof(IServerAddressesFeature)] as IServerAddressesFeature;
+                if (addr?.Addresses?.Count > 0)
+                {
+                    foreach (var a in addr?.Addresses)
+                    {
+                        log?.LogInformation($"Listening on {a}");
+                    }
+                }
+                else
+                {
+                    log?.LogInformation("No listeners active.");
+                }
+            }
+            catch (Exception ex)
+            {
+                log?.LogError(ex, "Couldn't get list of listening addresses.");
+            }
+        }
 
         public static RegistryCredentials ToRegistryCredentials(this ClaimsPrincipal principal)
         {
