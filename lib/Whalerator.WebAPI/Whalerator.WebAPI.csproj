@@ -32,10 +32,4 @@
     <ProjectReference Include="..\Whalerator\Whalerator.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="key.pem">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

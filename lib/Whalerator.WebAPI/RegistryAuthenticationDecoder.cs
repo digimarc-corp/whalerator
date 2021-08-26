@@ -17,6 +17,7 @@
 */
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -33,11 +34,13 @@ namespace Whalerator.WebAPI
     {
         private readonly System.Security.Cryptography.AsymmetricAlgorithm crypto;
         private readonly ServiceConfig config;
+        private readonly ILogger<RegistryAuthenticationDecoder> logger;
 
-        public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config)
+        public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config, ILogger<RegistryAuthenticationDecoder> logger)
         {
             this.crypto = crypto;
             this.config = config;
+            this.logger = logger;
         }
 
         public Task<AuthenticateResult> AuthenticateAsync(string authorization)
@@ -45,7 +48,10 @@ namespace Whalerator.WebAPI
             try
             {
                 var header = AuthenticationHeaderValue.Parse(authorization);
+                logger.LogTrace($"Got authorization header: {header}");
+
                 var jweHeader = Jose.JWT.Headers(header.Parameter);
+                logger.LogDebug($"JWE Header: {jweHeader}");
 
                 if (!jweHeader.ContainsKey("exp") || (long)jweHeader["exp"] <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
@@ -59,6 +65,7 @@ namespace Whalerator.WebAPI
                     Username = token.Usr,
                     Registry = token.Reg
                 };
+                logger.LogDebug($"Decoded token for {credentials.Registry}");
 
                 if (!string.IsNullOrEmpty(config.Registry) && RegistryCredentials.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
                 {
@@ -70,8 +77,9 @@ namespace Whalerator.WebAPI
 
                 return Task.FromResult(AuthenticateResult.Success(ticket));
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogError(ex, "Token authentication failed.");
                 return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The supplied token is invalid.\" }"));
             }
         }
