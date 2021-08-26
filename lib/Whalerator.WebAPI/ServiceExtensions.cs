@@ -62,7 +62,16 @@ namespace Whalerator.WebAPI
             {
                 logger?.LogInformation($"Loading private key from {config.AuthTokenKey}.");
                 crypto = System.Security.Cryptography.RSA.Create();
-                crypto.ImportFromPem(File.ReadAllText(keyFile));
+                try
+                {
+                    crypto.ImportFromPem(File.ReadAllText(keyFile));
+                    _ = crypto.ExportRSAPrivateKey();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, $"The supplied key ({keyFile}) does not contain a valid RSA private key.");
+                    throw;
+                }
             }
             else
             {
@@ -156,17 +165,17 @@ namespace Whalerator.WebAPI
                 Themes = config.Themes,
                 LoginBanner = Banners.ReadBanner(config.LoginBanner),
                 DocScanner = docsEnabled,
-                SearchLists = docsEnabled 
-                    ? config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f))) 
+                SearchLists = docsEnabled
+                    ? config.Documents?.Select(l => l.Split(';')?.Select(f => f.Trim()).Where(f => !string.IsNullOrWhiteSpace(f)))
                     : Array.Empty<string[]>(),
                 SecScanner = config.Vulnerabilities,
                 AutoLogin = config.AutoLogin,
-                Registry = string.IsNullOrEmpty(config.Registry) 
-                    ? new() { PlaceholderText = "registry" } 
+                Registry = string.IsNullOrEmpty(config.Registry)
+                    ? new() { PlaceholderText = "registry" }
                     : new() { PlaceholderText = config.Registry, IsDefault = true, IsReadonly = true },
                 UserName = config.UserName,
                 Password = config.Password
-            };            
+            };
 
             services.AddSingleton(uiConfig);
             return services;
