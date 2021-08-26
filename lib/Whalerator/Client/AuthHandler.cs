@@ -101,8 +101,11 @@ namespace Whalerator.Client
 
             var key = GetKey(null, granted: true);
 
+            logger.LogDebug($"Logging in to {endpoint} ({host})");
+
             if (await authCache.ExistsAsync(key))
             {
+                logger.LogDebug($"Found cached credentials ({key})");
                 var authorization = await authCache.GetAsync(key);
                 Service = authorization.Service;
                 Realm = authorization.Realm;
@@ -114,6 +117,8 @@ namespace Whalerator.Client
                 using (var client = new HttpClient())
                 {
                     AnonymousMode = (string.IsNullOrEmpty(username) && string.IsNullOrEmpty(password));
+
+                    if (AnonymousMode) { logger.LogDebug("Client is in anon mode."); }
 
                     // if this is a docker hub client, we can't really validate until we have a real resource to fetch,
                     // but we can set some known values
@@ -255,48 +260,69 @@ namespace Whalerator.Client
         public async Task<bool> UpdateAuthorizationAsync(string scope, bool force = false)
         {
             // registry is fully anonymous, so authorization is moot
-            if (AnonymousMode && !DockerHub) { return true; }
-
-            // if this user was recently denied for the same scope, don't waste a roundtrip on it
-            if (!force && await authCache.ExistsAsync(GetKey(scope, granted: false))) { return false; }
-
-            scope = scope ?? string.Empty;
-            var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
-
-            var token = await GetTokenAsync(scope);
-            // if the call failed completely, return false but don't cache the result
-            if (string.IsNullOrEmpty(token))
+            if (AnonymousMode && !DockerHub)
             {
-                return false;
+                logger.LogDebug("Target registry does not require authorization.");
+                return true;
             }
-            // otherwise, process the claims returned
             else
             {
-                var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
-                try
+                // if this user was recently denied for the same scope, don't waste a roundtrip on it
+                if (!force && await authCache.ExistsAsync(GetKey(scope, granted: false)))
                 {
-                    // if possible, parse the token as a JWT and verify we got the claims we expected
-                    var payload = Jose.JWT.Payload(token);
-                    var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
+                    logger.LogDebug($"Skipping authorization for recently denied scope '{scope}' on {this}.");
+                    return false;
+                }
 
-                    var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+                scope = scope ?? string.Empty;
+                var action = string.IsNullOrEmpty(scope) ? null : scope.Split(':')[2].Split(',')[0];
 
-                    if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
+                var token = await GetTokenAsync(scope);
+                // if the call failed completely, return false but don't cache the result
+                if (string.IsNullOrEmpty(token))
+                {
+                    logger.LogWarning($"Failed to get token on request for {this}, scope: '{scope}'.");
+                    return false;
+                }
+                // otherwise, process the claims returned
+                else
+                {
+                    logger.LogTrace($"{this} got token {token}");
+                    var authorization = new Authorization { JWT = token, Realm = Realm, Service = Service };
+                    try
                     {
-                        await authCache.SetAsync(GetKey(scope, granted: true), authorization, expTime - DateTime.UtcNow);
+                        // if possible, parse the token as a JWT and verify we got the claims we expected
+                        var payload = Jose.JWT.Payload(token);
+                        logger.LogTrace($"{this} got token payload {payload}");
+
+                        var tokenObj = JsonConvert.DeserializeAnonymousType(payload, new { access = new List<DockerAccess>(), iat = UInt32.MinValue, exp = UInt32.MinValue });
+
+                        var expTime = DateTime.UnixEpoch.AddSeconds(tokenObj.exp).ToUniversalTime();
+                        var expiresIn = expTime - DateTime.UtcNow;
+                        logger.LogInformation($"Token expires in {expiresIn}");
+
+                        if (string.IsNullOrEmpty(scope) || tokenObj.access.Any(a => a.Actions.Contains(action)))
+                        {
+                            var key = GetKey(scope, granted: true);
+                            await authCache.SetAsync(key, authorization, expiresIn);
+                            logger.LogDebug($"Set cached grant ({key}).");
+                            return true;
+                        }
+                        else
+                        {
+                            var key = GetKey(scope, granted: false);
+                            await authCache.SetAsync(key, authorization, AuthTtl);
+                            logger.LogDebug($"Set cached denial ({key}).");
+                            return false;
+                        }
+                    }
+                    catch
+                    {
+                        // otherwise, treat this as an opaque token and assume it's valid for the requested scope with a short ttl
+                        logger.LogDebug("Treating token as opaque.");
+                        await authCache.SetAsync(GetKey(scope, granted: true), authorization, TimeSpan.FromMinutes(5));
                         return true;
                     }
-                    else
-                    {
-                        await authCache.SetAsync(GetKey(scope, granted: false), authorization, AuthTtl);
-                        return false;
-                    }
-                }
-                catch
-                {
-                    // otherwise, treat this as an opaque token and assume it's valid for the requested scope with a short ttl
-                    await authCache.SetAsync(GetKey(scope, granted: true), authorization, TimeSpan.FromMinutes(5));
-                    return true;
                 }
             }
         }
@@ -332,5 +358,7 @@ namespace Whalerator.Client
                 }
             }
         }
+
+        public override string ToString() => $"Realm: {Realm}, Service: {Service}";
     }
 }
