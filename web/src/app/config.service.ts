@@ -71,7 +71,7 @@ export class ConfigService extends WebService {
   }
 
   getVersion() {
-    const versionUrl = this.apiBase + '/assets/v.json';
+    const versionUrl = document.baseURI + '/assets/v.json';
     this.http.get<any>(versionUrl).pipe(
       catchError(this.handleError<any>('getVersion'))
     ).subscribe(v => {
