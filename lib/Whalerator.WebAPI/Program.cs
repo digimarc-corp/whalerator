@@ -94,60 +94,24 @@ namespace Whalerator.WebAPI
                 })
                 .ConfigureLogging((builder, logging) =>
                 {
-                    GetLogSettings(builder, out var logLevel, out var msLogLevel, out var logStack, out var logHeader);
+                    var (logLevel, msLogLevel, logStack) = builder.Configuration.GetLogSettings();
 
-                    logging.SetMinimumLevel(logLevel);
+                    logging.ClearProviders()
+                        .SetMinimumLevel(logLevel)
+                        .AddFilter("Microsoft", (level) => level >= msLogLevel)
+                        .AddConsole(o => o.FormatterName = nameof(AnsiLogFormatter))
+                        .AddConsoleFormatter<AnsiLogFormatter, AnsiLogOptions>(o => o.LogStack = logStack);
 
-                    logging.AddProvider(new ConsoleLoggerProvider(logStack, logHeader));
-                    logging.AddFilter("Microsoft", (level) => level >= msLogLevel);
+#if DEBUG
                     logging.AddDebug();
+#endif
                 })
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
                 });
 
-        private static void GetLogSettings(HostBuilderContext hostingContext, out LogLevel logLevel, out LogLevel msLogLevel, out bool logStack, out bool logHeader)
-        {
-            try
-            {
-                var str = hostingContext.Configuration.GetValue(typeof(string), "logLevel") as string;
-                logLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
-            }
-            catch
-            {
-                logLevel = LogLevel.Information;
-                Console.WriteLine($"Could not get log level from config. Defaulting to '{logLevel}'");
-            }
 
-            try
-            {
-                var str = hostingContext.Configuration.GetValue(typeof(string), "msLogLevel") as string;
-                msLogLevel = (LogLevel)Enum.Parse(typeof(LogLevel), str, true);
-            }
-            catch
-            {
-                msLogLevel = LogLevel.Warning;
-            }
-
-            try
-            {
-                logStack = (bool)hostingContext.Configuration.GetValue(typeof(bool), "logStack");
-            }
-            catch
-            {
-                logStack = false;
-            }
-
-            try
-            {
-                logHeader = (bool)hostingContext.Configuration.GetValue(typeof(bool), "logHeader");
-            }
-            catch
-            {
-                logHeader = false;
-            }
-        }
 
         private static void PrintSplash()
         {

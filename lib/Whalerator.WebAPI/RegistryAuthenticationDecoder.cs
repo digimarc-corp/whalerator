@@ -48,6 +48,8 @@ namespace Whalerator.WebAPI
             try
             {
                 var header = AuthenticationHeaderValue.Parse(authorization);
+                logger.LogTrace($"Got authorization header: {header}");
+
                 var jweHeader = Jose.JWT.Headers(header.Parameter);
                 logger.LogDebug($"JWE Header: {string.Join(", ", jweHeader.Select(p => string.Join(": ", p.Key, p.Value)))}");
 
@@ -63,6 +65,7 @@ namespace Whalerator.WebAPI
                     Username = token.Usr,
                     Registry = token.Reg
                 };
+                logger.LogDebug($"Decoded token for {credentials.Registry}");
 
                 if (!string.IsNullOrEmpty(config.Registry) && RegistryCredentials.DeAliasDockerHub(config.Registry.ToLowerInvariant()) != credentials.Registry.ToLowerInvariant())
                 {
@@ -74,8 +77,9 @@ namespace Whalerator.WebAPI
 
                 return Task.FromResult(AuthenticateResult.Success(ticket));
             }
-            catch
+            catch (Exception ex)
             {
+                logger.LogError(ex, "Token authentication failed.");
                 return Task.FromResult(AuthenticateResult.Fail("{ \"error\": \"The supplied token is invalid.\" }"));
             }
         }
