@@ -338,8 +338,10 @@ namespace Whalerator.Client
                 parameters += string.IsNullOrEmpty(scope) ? string.Empty : $"&scope={WebUtility.UrlEncode(scope)}";
                 uri.Query = $"?{parameters}";
 
+                var useDefaultCreds = scope == CatalogScope() && !string.IsNullOrEmpty(config.RegistryUser);
+
                 // if we're getting catalog info, and we have a default user configured, use that instead
-                if (scope == CatalogScope() && !string.IsNullOrEmpty(config.RegistryUser))
+                if (useDefaultCreds)
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", EncodeDefaultCredentials());
                 }
@@ -355,7 +357,8 @@ namespace Whalerator.Client
                 }
                 else
                 {
-                    logger.LogDebug($"Authentication failed: {response.StatusCode} - {response.Content.ToString()}");
+                    logger.LogDebug($"Authentication failed: {response.StatusCode} - {response.Content.ReadAsStringAsync().Result}");
+                    if (useDefaultCreds) { logger.LogError($"{this} failed to authenticate with configured default user."); }
                     return null;
                 }
             }

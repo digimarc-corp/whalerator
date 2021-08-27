@@ -80,6 +80,21 @@ namespace Whalerator.WebAPI.Controllers
                 // Tag count also serves as workaround for https://github.com/docker/distribution/issues/2434
                 return Ok(client.GetRepositories().Where(r => r.Permissions >= Permissions.Pull).OrderBy(r => r.Name));
             }
+            catch (AggregateException ex)
+            {
+                IActionResult result = null;
+                ex.Handle((ex) =>
+                {
+                    result = ex switch
+                    {
+                        AuthenticationException => Unauthorized(),
+                        RedisConnectionException => StatusCode(503, "Cannot access cache"),
+                        _ => null
+                    };
+                    return result is not null;
+                });
+                return result;
+            }
             catch (RedisConnectionException)
             {
                 return StatusCode(503, "Cannot access cache");
@@ -103,6 +118,22 @@ namespace Whalerator.WebAPI.Controllers
 
                 await client.DeleteRepositoryAsync(repository);
                 return Ok();
+            }
+            catch (AggregateException ex)
+            {
+                IActionResult result = null;
+                ex.Handle((ex) =>
+                {
+                    result = ex switch
+                    {
+                        AuthenticationException => Unauthorized(),
+                        RedisConnectionException => StatusCode(503, "Cannot access cache"),
+                        NotFoundException => NotFound(),
+                        _ => null
+                    };
+                    return result is not null;
+                });
+                return result;
             }
             catch (RedisConnectionException)
             {
