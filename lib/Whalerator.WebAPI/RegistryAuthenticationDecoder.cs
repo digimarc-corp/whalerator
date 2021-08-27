@@ -51,7 +51,7 @@ namespace Whalerator.WebAPI
                 logger.LogTrace($"Got authorization header: {header}");
 
                 var jweHeader = Jose.JWT.Headers(header.Parameter);
-                logger.LogDebug($"JWE Header: {jweHeader}");
+                logger.LogDebug($"JWE Header: {string.Join(", ", jweHeader.Select(p => string.Join(": ", p.Key, p.Value)))}");
 
                 if (!jweHeader.ContainsKey("exp") || (long)jweHeader["exp"] <= DateTimeOffset.UtcNow.ToUnixTimeSeconds())
                 {
