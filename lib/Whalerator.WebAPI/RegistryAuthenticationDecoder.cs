@@ -17,6 +17,7 @@
 */
 
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -33,11 +34,13 @@ namespace Whalerator.WebAPI
     {
         private readonly System.Security.Cryptography.AsymmetricAlgorithm crypto;
         private readonly ServiceConfig config;
+        private readonly ILogger<RegistryAuthenticationDecoder> logger;
 
-        public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config)
+        public RegistryAuthenticationDecoder(System.Security.Cryptography.AsymmetricAlgorithm crypto, ServiceConfig config, ILogger<RegistryAuthenticationDecoder> logger)
         {
             this.crypto = crypto;
             this.config = config;
+            this.logger = logger;
         }
 
         public Task<AuthenticateResult> AuthenticateAsync(string authorization)
