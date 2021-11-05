@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.Text.Unicode;
 using Whalerator.Client;
 using Whalerator.Model;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,18 @@ namespace Whalerator
         public static void LogError(this ILogger logger, string message, Exception ex)
             => Microsoft.Extensions.Logging.LoggerExtensions.LogError(logger, ex, message);
 
+        /// <summary>
+        /// Hash a credential object, including username, password, and target regsitry
+        /// </summary>
+        /// <param name="credentials"></param>
+        /// <returns></returns>
+        public static string GetCredentialHash(this RegistryCredentials credentials)
+        {
+            var uidBytes = Encoding.UTF8.GetBytes(credentials.Username + credentials.Password + credentials.Registry);
+            var hash = System.Security.Cryptography.SHA256.Create().ComputeHash(uidBytes);
+            return Convert.ToBase64String(hash);
+        }
+        
         /*
         public static Permissions GetPermissions(this IAuthHandler handler, string repository)
         {
