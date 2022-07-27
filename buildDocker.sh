@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # quick-n-dirty build script
-# buildDocker.sh 0 1 2 whalerator/whalerator
+# buildDocker.sh 0.1.2 whalerator/whalerator
 
 # parse version string, discarding leading chars if any
 rawver=$(echo $1 | sed 's/[^[:digit:]\.]//g' )
@@ -31,7 +31,7 @@ else
   exit -1
 fi
 
-echo "Preparing to build and release version $revision ($hash)"
+echo "Preparing to build and release version $version ($hash)"
 
 # build
 docker build . --pull \
