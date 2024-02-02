@@ -2,7 +2,7 @@ clair:
   database:
     type: pgsql
     options:
-      source: host=pgsql port=5432 user=postgres password=abc123 sslmode=disable statement_timeout=60000
+      source: host=pgsql port=5432 user=postgres password=$secret.pgpassword sslmode=disable statement_timeout=60000
       cachesize: 16384
       paginationkey: 
   api:
