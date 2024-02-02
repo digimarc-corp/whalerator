@@ -6,7 +6,7 @@ services:
   pgsql:
     image: postgres:11.2
     environment:
-    - POSTGRES_PASSWORD=abc123
+    - POSTGRES_PASSWORD=$secret.pgpassword
   redis:
     image: redis
   clair:
